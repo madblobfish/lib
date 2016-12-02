@@ -4,8 +4,7 @@ class Field
       Cell.new
     }
 
-    numbers = (0...size**2).to_a
-    numbers = numbers.sample number_mines
+    numbers = [*(0...size**2)].sample number_mines
     numbers.each{ |number|
       @field[number / size][number % size] = Cell.new '+'
     }
