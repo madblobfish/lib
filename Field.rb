@@ -1,8 +1,6 @@
 class Field
   def initialize size, number_mines
-    @field = Array.new2(size){
-      Cell.new
-    }
+    @field = Array.new2 size, &Cell.method(:new)
 
     numbers = [*(0...size**2)].sample number_mines
     numbers.each{ |number|
