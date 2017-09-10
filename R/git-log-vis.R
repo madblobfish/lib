@@ -1,5 +1,6 @@
 # draw pictures with your git histoy!
 # better and way cooler and more flexible version of python/git-heatmap
+# intended for exploration with the console
 
 # gen data with:
 #   git log --format=%%%aN,%aI --shortstat | tr '\n' ',' | sed -re 's/,?, ?/,/g' -e '1s/^%//' -e 's/,%/\n/g' -e 's/ files? changed,/,/g' | sed -re 's/^([a-zA-Z ]+,[^,]+,[0-9]+)(,([0-9]+) insertions?\(\+\))?(,([0-9]+) deletions?\\(\\-\\))?/\1,\3,\5/g' -e 's/(\+[0-9]{2}):([0-9]{2})/\1\2/g' -e '1 i\\name,date,files changed,insertions,deletions' > /tmp/date.csv
