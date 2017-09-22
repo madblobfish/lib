@@ -50,6 +50,7 @@ class IPAddr
   # IPAddr.new('127.0.0.1').obfuscate('jjjj') #=> "2130706433"
   # IPAddr.new('127.0.0.1').obfuscate('+d4ddh') #=> "383.0000.0.0x1"
   public def obfuscate(recipe)
+    recipe = recipe.dup
     raise AddressFamilyError, "only IPv4 supported" unless ipv4?
     unless /\A([1-9]?\+?[dohjHD]){4}\z/ =~ recipe
       raise ArgumentError, 'invalid format string'
@@ -101,6 +102,10 @@ if __FILE__ == $PROGRAM_NAME
   # script mode
   if ARGV.empty?
     puts "Enter Ip Address to obfuscate"
+    exit
+  end
+  if ARGV.length == 2 && ! (IPAddr.new(ARGV[1]) rescue false)
+    puts IPAddr.new(ARGV[0]).obfuscate(ARGV[1])
     exit
   end
   ARGV.each do |addr|
