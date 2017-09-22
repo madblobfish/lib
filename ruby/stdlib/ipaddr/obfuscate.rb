@@ -34,6 +34,7 @@ class IPAddr
   #   o         | octal number
   #   h         | hexadecimal number
   #   j,D       | joined decimal number
+  #   O         | joined octal number
   #   H         | joined hexadecimal number
   #
   # Directives can be prefixed with a number from 1 to 9,
@@ -60,36 +61,36 @@ class IPAddr
     ret = ''
     idx = 0
 
+    pad = Proc.new{|string, base, digit|
+      if !digit.nil? && digit != ''
+        string.to_s(base).rjust(digit.to_i, '0')
+      else
+        string.to_s(base)
+      end
+    }
+
     while match = recipe.match(regexp)
       recipe.gsub!(regexp, '')
       current_value = to_a[idx]
       current_value += 256 if match[:plus] && match[:plus] != '' # overflow
-      string = case match[:name]
-        when 'd'
-          string = current_value.to_s
-        when 'o'
-          string = '0' << current_value.to_s(8)
-        when 'h'
-          string = '0x' << current_value.to_s(16)
-        when 'j', 'D', 'H'
-          n = recipe.match(/\A(\d?\+?#{match[:name]})+/).to_s.count(match[:name])
-          n.times do |i|
-            idx += 1
-            current_value = current_value << 8
-            current_value += to_a[idx]
-            recipe.gsub!(regexp, '')
-          end
-          if match[:name] == 'H'
-            '0x' << current_value.to_s(16)
-          else
-            current_value.to_s(10)
-          end
+      if ['j', 'D', 'H', 'O'].include?(match[:name])
+        n = recipe.match(/\A(\d?\+?#{match[:name]})+/).to_s.count(match[:name])
+        n.times do |i|
+          idx += 1
+          current_value = current_value << 8
+          current_value += to_a[idx]
+          recipe.gsub!(regexp, '')
         end
-      if match[:digit] && match[:digit] != '' # padding
-        pad_len = Integer(match[:digit], 10)
-        string = ('0' * (pad_len - string.length)) << string rescue string
       end
-      ret << string << '.'
+      ret << case match[:name]
+        when 'd', 'D', 'j'
+          pad[current_value, 10, match[:digit]]
+        when 'o', 'O'
+          '0' << pad[current_value, 8, match[:digit]]
+        when 'h', 'H'
+          '0x' << pad[current_value, 16, match[:digit]]
+        end
+      ret << '.'
       idx += 1
     end
     raise ArgumentError, 'recipe broken: ' << recipe unless recipe.empty?
@@ -101,7 +102,16 @@ end
 if __FILE__ == $PROGRAM_NAME
   # script mode
   if ARGV.empty?
-    puts "Enter Ip Address to obfuscate"
+    puts "obfuscate.rb <ipv4addr> <format>"
+    puts "obfuscate.rb <ipv4addr>+"
+    puts "prints the ipaddress in various formats"
+    puts ""
+    puts "format consits of:"
+    puts "[number 1-9][+]{dohDOHj}"
+    puts "two consecutive big letters (same kind) create a joined field"
+    puts "d is for decimal"
+    puts "o is for octal"
+    puts "h is for hecadezimal"
     exit
   end
   if ARGV.length == 2 && ! (IPAddr.new(ARGV[1]) rescue false)
@@ -123,6 +133,7 @@ if __FILE__ == $PROGRAM_NAME
       variants << ip.obfuscate('hhhh')
       variants << ip.obfuscate('oooo')
       variants << ip.obfuscate('oojj')
+      variants << ip.obfuscate('hojj')
       variants << ip.obfuscate('ojjj')
       variants << ip.obfuscate('jjjj')
       variants << ip.obfuscate('+jjjj')
