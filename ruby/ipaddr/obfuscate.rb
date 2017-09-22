@@ -71,7 +71,7 @@ class IPAddr
         when 'h'
           string = '0x' << current_value.to_s(16)
         when 'j', 'D', 'H'
-          n = recipe.match(/\A(\d?\+?[jDH])+/).to_s.count('jDH')
+          n = recipe.match(/\A(\d?\+?#{match[:name]})+/).to_s.count(match[:name])
           n.times do |i|
             idx += 1
             current_value = current_value << 8
@@ -121,6 +121,7 @@ if __FILE__ == $PROGRAM_NAME
       variants << ip.obfuscate('ojjj')
       variants << ip.obfuscate('jjjj')
       variants << ip.obfuscate('HHHH')
+      variants << ip.obfuscate('HHDD')
       variants << ip.obfuscate('d+dd+d')
       variants << ip.obfuscate('+hojj')
       # ...
