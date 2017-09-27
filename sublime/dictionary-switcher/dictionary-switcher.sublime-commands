@@ -1,0 +1,5 @@
+[
+	{"caption":"Dictionary: German", "command": "sublime.active_window().active_view().settings().set('dictionary', 'Packages/Language - German/German.dic')"},
+	{"caption":"Dictionary: English", "command": "sublime.active_window().active_view().settings().set('dictionary', 'Packages/Language - English/en_US.dic')"},
+]
+
