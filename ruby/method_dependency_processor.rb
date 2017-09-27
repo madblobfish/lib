@@ -1,3 +1,11 @@
+# It takes either a directory, a file or code as an argument,
+# then it uses ruby_parser and sexp_processing and
+# tries to find the method callchain.
+#
+# it uses sexp_processor, ruby_parser and my optsparser_generator.
+#
+# results can be output in csv, cypher and plaintext
+
 require 'ruby_parser'
 require 'sexp_processor'
 require 'ostruct'
