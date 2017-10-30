@@ -1,4 +1,3 @@
-Version = Gem::Version
 class Version < Gem::Version
   include Comparable
   def <=>(other)
