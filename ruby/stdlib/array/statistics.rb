@@ -11,8 +11,19 @@ end
 
 class Array
   def average
-    self.reduce(0) do |m, o|
-      m+o
-    end / self.length
+    self.sum / self.length
+  end
+end
+
+class Array
+  def stat
+    minmax = self.minmax
+    {
+      min: minmax[0],
+      average: self.average,
+      median: self.median,
+      max: minmax[1],
+      sum: self.sum,
+    }
   end
 end
