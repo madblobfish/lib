@@ -61,12 +61,8 @@ class IPAddr
     ret = ''
     idx = 0
 
-    pad = Proc.new{|string, base, digit|
-      if !digit.nil? && digit != ''
-        string.to_s(base).rjust(digit.to_i, '0')
-      else
-        string.to_s(base)
-      end
+    pad = lambda{|string, base, digit|
+      string.to_s(base).rjust(digit.to_i, '0')
     }
 
     while match = recipe.match(regexp)
