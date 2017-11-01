@@ -2,7 +2,7 @@ class String
   L337Table = Hash.new{Array.new([nil])}
   L337Table['!'] = ['l','i'],
   L337Table['1'] = ['l','i'],
-  # L337Table['2'] = [],
+  L337Table['2'] = ['z'],
   L337Table['3'] = ['e'],
   L337Table['4'] = ['a'],
   L337Table['5'] = ['s'],
@@ -12,7 +12,7 @@ class String
   L337Table['9'] = ['g'],
   L337Table['0'] = ['o']
 
-  # reverses leetspeek, gives a list of possible kanidates
+  # reverses leetspeek, gives an array of canidates
   def de_leet()
     out = [""]
     self.each_char do |char|
@@ -31,5 +31,8 @@ class String
     end
     out
   end
-  de_leet("h3110")
 end
+
+require_relative '../libexception'
+raise LibException unless "h3110".de_leet.include? "hello"
+raise LibException unless "C001 H4X0R".de_leet.include? "Cool HaXoR"
