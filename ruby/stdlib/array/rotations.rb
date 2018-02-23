@@ -1,10 +1,6 @@
 class Array
   def rotations
-    out = []
-    length.times do |n|
-      out << rotate(n)
-    end
-    out
+    length.times.map{|n| rotate(n)}
   end
 end
 
