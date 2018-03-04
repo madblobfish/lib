@@ -48,6 +48,7 @@ class Bao
   # end
 
   def move(num)
+    raise InvalidMove, "move is outside board size (0 - #{@board_size-1})" unless (0...@board_size).include?(num)
     @taken_marbels += @board[@active_player][num]
     raise InvalidMove.new("no marbles there") if @taken_marbels == 0
     @board[@active_player][num] = 0
