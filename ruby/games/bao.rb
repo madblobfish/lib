@@ -180,3 +180,15 @@ raise ImplementationError unless b.inspect == "\n[0, 0, 0, 1, 1, 0, 2, 2] l[20]*
 b.move(2)
 raise ImplementationError unless b.inspect == "\n[0, 0, 0, 1, 1, 1, 3, 3] l[19]\n[0, 2, 0, 1, 1, 0, 1, 3]\n[2, 0, 2, 0, 0, 0, 0, 0] r[20]*\n[0, 2, 0, 1, 1, 0, 0, 0]"
 b = nil
+
+if __FILE__ == $PROGRAM_NAME
+  b = Bao.new
+  loop do
+    puts b.inspect
+    print "Move: "
+    b.move(readline.to_i)
+  rescue InvalidMove => e
+    print "InvalidMove: ", e
+    retry
+  end
+end
