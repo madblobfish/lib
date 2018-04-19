@@ -21,17 +21,18 @@ class IPAddr
   end
 
   # blocks generated from https://www.rfc-editor.org/rfc/rfc6890.txt by
-  # s.gsub(/^[^|+]+$/, "")
-  #  .gsub(/^ +\| (((?!  ).)+) +\| +(((?!  ).)+) *\|$/, '\1: \3')
+  # s.gsub(/^[^|+]+$/, "") # remove everything that does not look like key value fields in the tables
+  #  .gsub(/^ +\| (((?!  ).)+) +\| +(((?!  ).)+) *\|$/, '\1: \3') # simplyfy markup for key & value
   #  .gsub(/^[^:]+$/,'')
   #  .gsub(/(?!^) +\n/, "\n") # remove trailing spaces
   #  .gsub(/ ?\[\d\]/, '') # remove references
-  #  .gsub(/^([^:\n]+): /, '"\1": ')
-  #  .gsub("True","true").gsub("False","false") # lowercase
-  #  .gsub(/: (((?!(  |true|false)).)+)$/, ': "\1"')
-  #  .gsub(/"Address Block": ("[^"]+")/, '"Address Block": IPAddr.new(\1)')
-  #  .gsub("\n\n", "\0").gsub("\n",", ").gsub("\0","},\n{").gsub(/,\s*\Z/,'}')
-  #  .gsub("{\"Attribute\": \"Value\"},\n",'')
+  #  .gsub(/^([^:\n]+): /, '"\1": ') # quote all keys
+  #  .gsub("True","true").gsub("False","false")
+  #  .gsub(/: (((?!(  |true|false)).)+)$/, ': "\1"') # quote all values not true or false
+  #  .gsub(/"Address Block": ("[^"]+")/, '"Address Block": IPAddr.new(\1)') # make ip's out of the addr blocks
+  #  .gsub(/^\n.+?Phone.+?\n$/,'') # remove quirky phone thing
+  #  .gsub("\n\n", "\0").gsub("\n",", ").gsub("\0","},\n{").gsub(/,\s*\Z/,'}') # format to object
+  #  .gsub("{\"Attribute\": \"Value\"},\n",'') # remove header fields
 
   BLOCKS4 = [
     {"Address Block": IPAddr.new("0.0.0.0/8"), "Name": "This host on this network", "RFC": "[RFC1122], Section 3.2.1.3", "Allocation Date": "September 1981", "Termination Date": "N/A",
