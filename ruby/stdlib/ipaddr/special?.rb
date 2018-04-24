@@ -3,6 +3,9 @@ class IPAddr
     (ipv6? ? BLOCKS6 : BLOCKS4).detect{|b| b[:"Address Block"].include?(self)}
   end
 
+  public def name
+    self.special?&.send(:"[]", :"Name")
+  end
   public def forwardable?
     self.special?&.send(:"[]", :"Forwardable")
   end
