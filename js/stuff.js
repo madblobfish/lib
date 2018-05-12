@@ -7,16 +7,15 @@ Object.prototype[Symbol.iterator] = function*(){
 		}
 	}
 };
-function aeiou(bla){
-	var string = bla.split(""), blah = ["a","e","i","o","u"];
 
-	for (var i = string.length - 1; i >= 0; i--) {
-		if( string[i]=="a" || string[i]=="e" || string[i]=="i" || string[i]=="o" || string[i]=="u" ){
-			string[i] = blah[~~(Math.random()*4)];
-		}
-	}
-		return string.join("");
+function randrep(chars = "äöü"){
+	var blah = chars.split("");
+	return (i)=>{return i.split("").map((l)=>{
+		return blah.indexOf(l) ==-1 ? l : blah[~~(Math.random()*blah.length)];
+	}).join("")}
 }
+function aeiou(bla){return randrep("aeiou")(bla)}
+function aeiouäöü(bla){return randrep("äöü")(randrep("aeiou")(bla))}
 
 
 Uint32Array.prototype.toString = function(){
