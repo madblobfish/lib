@@ -138,6 +138,8 @@ Number.prototype.product = function(){return this.toString().split("").product()
 Array.prototype.num = function(){return this.reduce(function(a,b){ return a*10 + b })}
 Number.prototype.reverse = function(){return parseInt(this.toString().reverse())}
 Number.prototype.reduce = function(a){return this.toString().split("").reduce(a)}
+Array.prototype.normalize = function(){var max = Math.max(...this), min = Math.min(...this); return this.map(function(x){return (x - min)/(max - min)})}
+Number.prototype.normalize = function(max, min){return (this - min)/(max - min)}
 
 function ggt(x,y){
 	while( y>1 && x>1 && x != y){
