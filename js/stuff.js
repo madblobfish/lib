@@ -25,8 +25,7 @@ Uint32Array.prototype.toString = function(){
 	});
 	return out;
 };
-
-function len(num){return Math.ceil(Math.log(num+1)*Math.LOG10E)}
+Number.prototype.len = function(num){return Math.ceil(Math.log(num+1)*Math.LOG10E)}
 Object.prototype.swap = function(a,b){
 	var x = this[a];
 	this[a] = this[b];
@@ -115,6 +114,7 @@ String.prototype.xor = function(that){
 	};
 	return res;
 }
+NodeList.prototype.forEach = function(f){for(var i = 0; i < this.length; i++){f(this[i], i, this)}};
 NodeList.prototype.addEventListener = function(t,l){this.forEach(function(e){e.addEventListener(t,l)})};
 NodeList.prototype.toArray = function(){
 	var arr = [];
@@ -123,7 +123,6 @@ NodeList.prototype.toArray = function(){
 	};
 	return arr;
 };
-NodeList.prototype.forEach = function(f){for(var i = 0; i < this.length; i++){f(this[i], i, this)}};
 
 HTMLCollection.prototype.last = function(){return this[this.length-1]}
 String.prototype.splice = function(n,i){return ( this.substr(0, n) + i + this.substr(n+1) )}
