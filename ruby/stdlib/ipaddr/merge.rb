@@ -5,7 +5,11 @@ class IPAddr
     if self.next_to?(other) && other.prefix == self.prefix
       ret = self.lowest
       ret.prefix = self.prefix - 1
-      return [ret]
+      if ret.include?(self) && ret.include?(other)
+        return [ret]
+      else
+        return [self,other]
+      end
     elsif self.include?(other) && other.prefix == 32
       return [self]
     elsif other.include?(self) && self.prefix == 32
