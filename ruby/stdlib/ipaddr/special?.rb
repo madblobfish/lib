@@ -1,6 +1,8 @@
 class IPAddr
   public def special?
-    (ipv6? ? BLOCKS6 : BLOCKS4).detect{|b| b[:"Address Block"].include?(self)}
+    ip = self.dup
+    ip.prefix = 32
+    (ipv6? ? BLOCKS6 : BLOCKS4).detect{|b| b[:"Address Block"].include?(ip)}
   end
 
   public def name
