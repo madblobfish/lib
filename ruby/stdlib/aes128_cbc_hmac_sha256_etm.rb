@@ -58,11 +58,10 @@ end
 class Encrypt < Aes128CbcHmacSha256Etm
 end
 
-
 a = Aes128CbcHmacSha256Etm.new('1234567890123456')
 raise 'testfail' if a.decrypt(a.encrypt('yoyo')) != ['yoyo', nil]
 raise 'testfail' if a.decrypt(a.encrypt('yoyo', associated_data: 'hihi')) != ['yoyo', 'hihi']
-raise 'testfail' if a.encrypt("yoyo", iv: String.new("\"\xF5GN\xEF\x0F'_\xB4\x0F\n\xF2\xFAY\xCE\xE1",encoding:"ASCII-8BIT")) != 'IvVHTu8PJ1+0Dwry+lnO4THJmig2r5sdhq8BW1gHNx8=$@8bd8713f0834c9896bf1b6df6fe38920f817c59016bb5d043299091fb30e756f'
+raise 'testfail' if a.encrypt("yoyo", iv: "\"\xF5GN\xEF\x0F'_\xB4\x0F\n\xF2\xFAY\xCE\xE1".b) != 'IvVHTu8PJ1+0Dwry+lnO4THJmig2r5sdhq8BW1gHNx8=$@8bd8713f0834c9896bf1b6df6fe38920f817c59016bb5d043299091fb30e756f'
 
 # example of a letter with verified headers and nice formatting
 a = Aes128CbcHmacSha256Etm.new('1234567890123456',
