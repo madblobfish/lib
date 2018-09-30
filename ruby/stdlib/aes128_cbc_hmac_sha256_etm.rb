@@ -1,7 +1,14 @@
 require 'openssl'
 require 'base64'
 
-# written out of pure hate that this does not exist (to my knowledge)
+# Written out of pure hate that this does not exist (to my knowledge)
+#
+# Notes:
+# * This implementation is only an example
+# * It does not implement proper error handling!
+# * Do not return different errors to third parties!
+# * It is most probably not side channel free!
+# * Use the current (D)TLS if you have an interactive channel
 class Aes128CbcHmacSha256Etm
   DEFAULT_PACK = lambda{|c, ad| [c,ad].map{|e| Base64.strict_encode64(e)}.join("$") }
   DEFAULT_UNPACK = lambda{|s| s.split('$').map{|e| Base64.strict_decode64(e)}}
