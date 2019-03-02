@@ -71,9 +71,9 @@ class IPAddr
     {"Address Block": IPAddr.new("240.0.0.0/4"), "Name": "Reserved", "RFC": "[RFC1112], Section 4", "Allocation Date": "August 1989", "Termination Date": "N/A",
       "Source": false, "Destination": false, "Forwardable": false, "Global": false, "Reserved-by-Protocol": true},
     {"Address Block": IPAddr.new("255.255.255.255/32"), "Name": "Limited Broadcast", "RFC": "[RFC0919], Section 7", "Allocation Date": "October 1984", "Termination Date": "N/A",
-      "Source": false, "Destination": true, "Forwardable": false, "Global": false, "Reserved-by-Protocol": false}
+      "Source": false, "Destination": true, "Forwardable": false, "Global": false, "Reserved-by-Protocol": true}
   ]
-    # IPv6
+  # IPv6
   BLOCKS6 = [
     {"Address Block": IPAddr.new("::1/128"), "Name": "Loopback Address", "RFC": "[RFC4291]", "Allocation Date": "February 2006", "Termination Date": "N/A",
      "Source": false, "Destination": false, "Forwardable": false, "Global": false, "Reserved-by-Protocol": true},
@@ -88,7 +88,7 @@ class IPAddr
     {"Address Block": IPAddr.new("2001::/23"), "Name": "IETF Protocol Assignments", "RFC": "[RFC2928]", "Allocation Date": "September 2000", "Termination Date": "N/A",
      "Source": false, "Destination": false, "Forwardable": false, "Global": false, "Reserved-by-Protocol": false},
     {"Address Block": IPAddr.new("2001::/32"), "Name": "TEREDO", "RFC": "[RFC4380]", "Allocation Date": "January 2006", "Termination Date": "N/A",
-     "Source": true, "Destination": true, "Forwardable": true, "Global": false, "Reserved-by-Protocol": false},
+     "Source": true, "Destination": true, "Forwardable": true, "Global": "n/A", "Reserved-by-Protocol": false},
     {"Address Block": IPAddr.new("2001:2::/48"), "Name": "Benchmarking", "RFC": "[RFC5180]", "Allocation Date": "April 2008", "Termination Date": "N/A",
      "Source": true, "Destination": true, "Forwardable": true, "Global": false, "Reserved-by-Protocol": false},
     {"Address Block": IPAddr.new("2001:db8::/32"), "Name": "Documentation", "RFC": "[RFC3849]", "Allocation Date": "July 2004", "Termination Date": "N/A",
