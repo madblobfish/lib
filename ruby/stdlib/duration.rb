@@ -1,8 +1,9 @@
 class Duration
   private
   def self.gen_lambda(factor, max)
-    return lambda{|sec| (sec / factor).floor} unless max
-    lambda{|sec| (sec / factor).floor % max}
+    reverse = lambda{|sec| sec * factor}
+    return [lambda{|sec| (sec / factor).floor}, reverse] unless max
+    [lambda{|sec| (sec / factor).floor % max}, reverse]
   end
 
   SIZES_AND_FACTORS = {
@@ -14,23 +15,29 @@ class Duration
     msec: gen_lambda(0.001, 1000),
   }
   public
-  attr_reader :sec
-  attr_reader :negative
   def initialize(seconds)
-    @sec = seconds.abs
-    @negative = seconds.negative?
+    @sec = seconds
   end
   def to_i; @sec.to_i; end
   def to_f; @sec.to_f; end
   def to_s
-    [@negative ? "-" : nil, SIZES_AND_FACTORS.map do |name, calc|
-      [name.to_s, calc[@sec].to_s]
+    [@sec.negative? ? "-" : nil, SIZES_AND_FACTORS.map do |name, calc|
+      [name.to_s, calc[0][@sec.abs].to_s]
     end.map do |name, size|
       size << name unless size == "0"
     end].join
   end
   alias :inspect :to_s
-  # Todo: def parse(Duration string)
+  def self.parse(duration)
+    positive = duration.delete!('-').nil?
+    sec = 0
+    while not duration.empty?
+      duration.gsub!(/^(\d+)(\D+)/,'')
+      raise "can't parse" unless $1 and $2
+      sec += SIZES_AND_FACTORS[$2.to_sym][1][$1.to_i]
+    end
+    self.new(positive ? sec : -sec)
+  end
 end
 
 class Time
@@ -46,3 +53,5 @@ a = Time.now()
 b = a + 10
 raise "implementation error" unless (a - b).to_s == "-10s"
 raise "implementation error" unless (b - a).to_s == "10s"
+raise "implementation error" unless Duration.parse(a = "-1y4s2msec").to_s == a
+raise "implementation error" unless Duration.parse(a).to_f == -1892160004.002
