@@ -103,3 +103,16 @@ class IPAddr
      "Source": true, "Destination": true, "Forwardable": false, "Global": false, "Reserved-by-Protocol": true}
   ]
 end
+
+if __FILE__ == $PROGRAM_NAME
+  if not ARGV.one?
+    puts 'special?.rb <ip address>'
+    puts 'takes a single ip and gives information about it (ignores the block size)'
+    puts ''
+    puts 'example inputs: 10.0.0.2 0.0.0.0 127.0.0.1 10.0.0.192/26'
+    exit
+  end
+  info = IPAddr.new(ARGV.first).special?
+  exit 1 if info.nil?
+  puts info.map{|k,v| "#{k}: #{v}"}
+end
