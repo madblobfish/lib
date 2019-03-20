@@ -21,14 +21,18 @@ class Aes128CbcHmacSha256Etm
     @hash_pack = o.fetch(:hash_pack, DEFAULT_HASH_PACK)
     @hash_unpack = o.fetch(:hash_unpack, DEFAULT_HASH_UNPACK)
 
+    dkey = [OpenSSL::HMAC.hexdigest('SHA256', key, key)].pack("H*")
+    encryption_key = dkey[0...16]
+    authentication_key = dkey[16...32]
+
     cipher = OpenSSL::Cipher::AES128.new(:CBC)
     @cipher = lambda do |enc|
       cipher.reset
       enc ? cipher.encrypt : cipher.decrypt
-      cipher.key = key
+      cipher.key = encryption_key
       cipher
     end
-    @mac = lambda{|s| OpenSSL::HMAC.hexdigest('SHA256', key, s) }
+    @mac = lambda{|s| OpenSSL::HMAC.hexdigest('SHA256', authentication_key, s) }
   end
 
   def encrypt(plaintext, **o)
