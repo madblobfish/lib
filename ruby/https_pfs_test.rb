@@ -29,7 +29,6 @@ opts = OpenStruct.new
 opts.port = 443
 opts.port__short = 'p'
 opts.host = 'localhost'
-opts.host__short = 'h'
 opts.cmd = %w(openssl s_client -showcerts -connect)
 opts.first_check_tries = 6
 opts.first_check_tries__short = 'r'
