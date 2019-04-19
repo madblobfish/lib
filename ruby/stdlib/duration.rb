@@ -18,6 +18,9 @@ class Duration
   def initialize(seconds)
     @sec = seconds
   end
+  def abs
+    Duration.new(sec.abs)
+  end
   def to_i; @sec.to_i; end
   def to_f; @sec.to_f; end
   def to_s
@@ -52,6 +55,7 @@ end
 a = Time.now()
 b = a + 10
 raise "implementation error" unless (a - b).to_s == "-10s"
+raise "implementation error" unless (a - b).to_s.abs == "10s"
 raise "implementation error" unless (b - a).to_s == "10s"
 raise "implementation error" unless Duration.parse(a = "-1y4s2msec").to_s == a
 raise "implementation error" unless Duration.parse(a).to_f == -1892160004.002
