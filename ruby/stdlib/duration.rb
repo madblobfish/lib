@@ -59,3 +59,16 @@ raise "implementation error" unless (a - b).to_s.abs == "10s"
 raise "implementation error" unless (b - a).to_s == "10s"
 raise "implementation error" unless Duration.parse(a = "-1y4s2msec").to_s == a
 raise "implementation error" unless Duration.parse(a).to_f == -1892160004.002
+
+if __FILE__ == $PROGRAM_NAME
+  # script mode
+  if ARGV.empty?
+    puts "needs a number or two dates"
+    exit
+  elsif ARGV.one?
+    puts Duration.new(ARGV[0].to_i)
+  else ARGV.length == 2
+    require 'date'
+    puts DateTime.parse(ARGV[1]).to_time - DateTime.parse(ARGV[0]).to_time
+  end
+end
