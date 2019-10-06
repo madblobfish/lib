@@ -162,3 +162,4 @@ Number.prototype.numberOfSetBits = function(){
 Array.prototype.random = function(){return this[~~(Math.random()*this.length -0.5)]}
 NodeList.prototype.random = function(){return this[~~(Math.random()*this.length -0.5)]}
 Array.prototype.replace = function(a,b){var x=[];this.forEach(function(e){x.push(e.replace(a,b))});return x;}
+const sleep = async n => await new Promise(r => setTimeout(r, n||4000))
