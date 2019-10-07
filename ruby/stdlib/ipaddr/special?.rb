@@ -2,7 +2,7 @@ class IPAddr
   public def special?
     ip = self.dup
     ip.prefix = 32
-    (ipv6? ? BLOCKS6 : BLOCKS4).detect{|b| b[:"Address Block"].include?(ip)}
+    (ipv6? ? BLOCKS6 : BLOCKS4).select{|b| b[:"Address Block"].include?(ip)}
   end
 
   public def name
@@ -114,5 +114,5 @@ if __FILE__ == $PROGRAM_NAME
   end
   info = IPAddr.new(ARGV.first).special?
   exit 1 if info.nil?
-  puts info.map{|k,v| "#{k}: #{v}"}
+  puts info.map{|e|e.map{|k,v| "#{k}: #{v}#{"/#{v.prefix}" rescue ""}"}.join("\n")}.join("\n\n")
 end
