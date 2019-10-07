@@ -51,7 +51,7 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   if ARGV.empty? || ARGV.one?
-    puts 'obfuscate.rb <ip addresses>'
+    puts $PROGRAM_NAME + ' <ip addresses>'
     puts 'takes multiple ip blocks or single ip\'s and merges them'
     puts ''
     puts 'example input: 10.0.0.2 10.0.0.1/25 10.0.0.128/26 10.0.0.192/26'
