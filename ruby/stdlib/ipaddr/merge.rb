@@ -23,37 +23,26 @@ class IPAddr
   end
 
   def self.merge(*input)
-    require_relative 'include_block?.rb'
-
     if input.empty? || input.one?
       raise ArgumentError, "give me two or more IPAddr's!"
     end
-
-    ips = input.dup.sort
-    pos = 0
-    while true
-      before = ips[pos - 1]
-      current = ips[pos]
-      following = ips[pos + 1]
-      if current.nil?
-        break
-      elsif (pos - 1).positive? && current.include_block?(before)
-        ips.delete_at(pos - 1)
-        next
-      elsif current.include_block?(following)
-        ips.delete_at(pos + 1)
-        next
-      end
-
-      merg = current.merge before
-      if merg.one?
-        pos -= 1
-        ips[pos - 1] = merg.first
-        ips.delete_at pos
-        next
-      end
-
-      pos +=1
+    ips = input
+    merged = true
+    while merged
+      break if ips.one?
+      merged = false
+      merged_block = []
+      mergers = []
+      ips.combination(2) do |a,b|
+        merged_block = a.merge(b)
+        mergers = [a,b]
+        if merged_block.one?
+          merged = true
+          break
+        end
+       end
+             ips -= mergers
+      ips += merged_block
     end
 
     return ips
