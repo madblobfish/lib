@@ -1,0 +1,35 @@
+# https://www.w3.org/TR/CSP3/#csp-directives
+digraph {
+	{
+		rank=same
+		Node[style=filled,fillcolor=lightblue]
+		"default-src"
+		"base-uri"
+		"form-action"
+		"frame-ancestors"
+		"plugin-types"
+		"report-uri"
+		"report-to"
+		"sandbox"
+	}
+
+
+	"script-src-elem" -> "script-src" -> "default-src"
+	"script-src-attr" -> "script-src" # -> "default-src"
+	"style-src-elem" -> "style-src" -> "default-src"
+	"style-src-attr" -> "style-src" # -> "default-src"
+	"connect-src" -> "default-src"
+	"manifest-src" -> "default-src"
+	"prefetch-src" -> "default-src"
+	"object-src" -> "default-src"
+	"media-src" -> "default-src"
+	"font-src" -> "default-src"
+	"image-src" -> "default-src"
+	{ Edge[color=green]
+		"worker-src" -> "child-src" -> "script-src" -> "default-src"}
+	{ Edge[color=blue]
+		"frame-src" -> "child-src" -> "default-src"}
+
+
+}
+
