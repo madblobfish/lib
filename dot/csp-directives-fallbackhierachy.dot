@@ -1,18 +1,32 @@
 # as seen in the documentation
 # https://www.w3.org/TR/CSP3/#csp-directives
 # https://www.w3.org/TR/CSP3/#directive-fallback-list
-digraph {
+digraph G {
+	headlabel = "CSP Directives"
+	splines=polyline
+	newrank=true;
+	subgraph cluster_repd {
+		Node[style=filled,fillcolor=lightblue]
+		"report-uri"
+		"report-to"
+		label = "Reporting Directives"
+	}
 	{
 		rank=same
 		Node[style=filled,fillcolor=lightblue]
-		"base-uri"
-		"form-action"
-		"frame-ancestors"
+		subgraph cluster_navd {
+			"form-action"
+			"frame-ancestors"
+			"navigate-to"
+			label = "Navigation Directives"
+		}
 		"default-src"
-		"plugin-types"
-		"report-to"
-		"report-uri"
-		"sandbox"
+		subgraph cluster_docd {
+			"base-uri"
+			"plugin-types"
+			"sandbox"
+			label = "Document Directives"
+		}
 	}
 
 	"connect-src" -> "default-src"
