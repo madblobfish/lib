@@ -28,7 +28,11 @@ class FourThousandFourtyEight
   def self.beautify_num(num, rjust, max_num = 8192, color = false)
     out = num.to_s.each_char.map{|e| "𝟘𝟙𝟚𝟛𝟜𝟝𝟞𝟟𝟠𝟡"[e.to_i] }.join('').rjust(rjust)
     if color
-      require_relative '../stdlib/plasma_palette.rb'
+      begin
+        require_relative '../stdlib/plasma_palette.rb'
+      rescue LoadError => e
+        return out
+      end
       step = Math.log2((num+2)) / Math.log2(max_num*2)
       step = 0 if step == -Float::INFINITY
       out = color_to_ansi(*color_palette(step)) + out + "\x1b[0m"
