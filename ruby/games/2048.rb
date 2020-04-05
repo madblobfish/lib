@@ -110,7 +110,7 @@ raise ImplementationError, "ASDHG!" unless FourThousandFourtyEight.move_row_left
 raise ImplementationError, "ASDH" unless (a = FourThousandFourtyEight.new).dup != a.move(:left).field
 
 if __FILE__ == $PROGRAM_NAME
-  require 'optsparser_generator'
+  require 'ostruct'
   os = OpenStruct.new
   os.field_size = 4
   os.field_size__short = "s"
@@ -120,7 +120,13 @@ if __FILE__ == $PROGRAM_NAME
   os.color__short = "c"
   os.terminal_magic = false
   os.skip_intro = false
-  args = OptParseGen.parse!(os)
+  begin
+    require 'optsparser_generator'
+    args = OptParseGen.parse!(os)
+  rescue LoadError
+    puts 'could not load "optsparser_generator" lib, can\'t parse options'
+    args = os
+  end
 
   moves = {
     "\e[A\n" => :up,
