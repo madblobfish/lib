@@ -1,3 +1,5 @@
+require 'ipaddr'
+
 class IPAddr
   public def special?
     ip = self.dup
