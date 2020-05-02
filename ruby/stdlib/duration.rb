@@ -65,6 +65,14 @@ if __FILE__ == $PROGRAM_NAME
   if ARGV.empty?
     puts "needs a number or two dates"
     exit
+  elsif ARGV.first == "-stopthing"
+    begin
+      puts "starting timer, interrupt to output duration"
+      start = Time.now()
+      sleep
+    rescue Interrupt
+      puts Time.now() - start
+    end
   elsif ARGV.one?
     puts Duration.new(ARGV[0].to_i)
   else ARGV.length == 2
