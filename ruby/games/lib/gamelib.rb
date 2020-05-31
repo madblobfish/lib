@@ -47,7 +47,7 @@ class TerminalGame
   end
 
   private
-  def get_size
+  def update_size
     @rows, @cols = `stty size`.split(' ')
   end
   def return_to_tty
