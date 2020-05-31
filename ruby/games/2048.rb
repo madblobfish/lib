@@ -119,6 +119,7 @@ class FourThousandFourtyEight < TerminalGame
       "\e[C" => :right,
       "\e[D" => :left,
     }
+    return unless moves.has_key?(string)
     move(moves[string])
     draw
   end
