@@ -62,7 +62,7 @@ class TerminalGame
   def clear
     print "\e[2J"
   end
-  def move_cursor(x=0, y=0)
+  def move_cursor(x = 0, y = 0)
     print "\e[#{x+1};#{y+1}H"
   end
 end
