@@ -7,6 +7,7 @@ class TerminalGame
     raise 'already started' if @inited
     @inited = true
     raise 'needs a tty' unless STDIN.tty?
+#    raise 'needs to implement draw'
 
     print("\e[?1049h")
     system('stty raw -echo isig')
