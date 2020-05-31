@@ -1,12 +1,15 @@
+require_relative 'lib/gamelib.rb'
+
 class FourThousandFourtyEightError < StandardError;end
 class GameOver < FourThousandFourtyEightError;end
 class GameWin < FourThousandFourtyEightError;end
 class InvalidMove < FourThousandFourtyEightError;end
 class ImplementationError < FourThousandFourtyEightError;end
 
-class FourThousandFourtyEight
+class FourThousandFourtyEight < TerminalGame
   attr :field, :size, :win_num
   def initialize(size = 4, win_num = 8192, **opts)
+    @fps = :manual
     @opts = opts.dup
     @size = size
     @win_num = win_num
@@ -96,6 +99,29 @@ class FourThousandFourtyEight
     end
     out + Array.new(array.length - out.length){new_number.call()}
   end
+
+  def initial_draw
+    puts(self.to_s)
+    puts
+    puts "\rthis is a really bad clone of 2048"
+    puts "\rHow to play? Press an arrow key."
+  end
+  def draw
+#    clear
+    move_cursor
+    puts(self.to_s)
+  end
+
+  def input_handler(string)
+    moves = {
+      "\e[A" => :up,
+      "\e[B" => :down,
+      "\e[C" => :right,
+      "\e[D" => :left,
+    }
+    move(moves[string])
+    draw
+  end
 end
 
 ##
@@ -128,37 +154,5 @@ if __FILE__ == $PROGRAM_NAME
     args = os
   end
 
-  moves = {
-    "\e[A\n" => :up,
-    "\e[B\n" => :down,
-    "\e[C\n" => :right,
-    "\e[D\n" => :left,
-  }
-  begin 
-    STATE = `stty -g`
-    if args.terminal_magic
-      system("stty raw -echo -icanon isig")
-      puts STATE
-      STDIN.sync = true
-    end
-
-    unless args.skip_intro
-      puts "this is a really bad clone of 2048"
-      puts "How to play? Press an arrow key and enter."
-    end
-    ftfe = FourThousandFourtyEight.new(args.field_size, args.win_number, **args.to_h)
-    loop do
-      puts ftfe.to_s
-      print "Move: "
-      ftfe.move(moves[readline])
-    rescue InvalidMove
-      puts "InvalidMove!"
-      retry
-    rescue GameWin, GameOver
-      puts ftfe.to_s
-      raise
-    end
-  ensure
-    `stty #{STATE}` if args.terminal_magic
-  end
+  FourThousandFourtyEight.new(args.field_size, args.win_number, **args.to_h).run
 end
