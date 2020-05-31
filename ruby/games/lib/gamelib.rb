@@ -7,7 +7,6 @@ class TerminalGame
     raise 'already started' if @inited
     @inited = true
     raise 'needs a tty' unless STDIN.tty?
-#    raise 'needs to implement draw'
 
     STDIN.sync = true
     print("\e[?1049h")
@@ -17,6 +16,7 @@ class TerminalGame
     @fps ||= 0.2
 
     begin
+      initial_draw
       if @fps != :manual
         thr = Thread.new(abort_on_exception:true) do
           loop do
@@ -40,6 +40,9 @@ class TerminalGame
     end
   end
 
+  def initial_draw
+    draw
+  end
   def draw
     raise 'Not Implemented'
   end
