@@ -11,6 +11,7 @@ class TerminalGame
 
     STDIN.sync = true
     print("\e[?1049h")
+    print("\e[?25l")
     system('stty raw -echo isig')
 
     @fps ||= 0.2
