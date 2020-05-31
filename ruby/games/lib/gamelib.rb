@@ -54,6 +54,9 @@ class TerminalGame
     system('stty '+ TTY_CLEAN_STATE)
     print("\e[?1049l")
   end
+  def clear
+    print "\e[2J"
+  end
 end
 
 
