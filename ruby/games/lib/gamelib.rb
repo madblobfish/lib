@@ -16,14 +16,16 @@ class TerminalGame
     @fps ||= 0.2
 
     begin
-      thr = Thread.new(abort_on_exception:true) do
-        loop do
-          get_size()
-          draw()
-          sleep @fps
+      if @fps != :manual
+        thr = Thread.new(abort_on_exception:true) do
+          loop do
+            update_size()
+            draw()
+            sleep @fps
+          end
         end
+        thr.abort_on_exception = true
       end
-      thr.abort_on_exception = true
       loop do
         IO.select([STDIN])
         data = STDIN.read_nonblock(100_000)
