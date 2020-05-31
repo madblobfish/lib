@@ -9,7 +9,7 @@ class TerminalGame
     raise 'needs a tty' unless STDIN.tty?
 
     STDIN.sync = true
-    print("\e[?1049h")
+    print("\e[?1049h") # enable alternative screen buffer
     print("\e[?25l") # hide cursor
     system('stty raw -echo isig')
 
@@ -56,7 +56,7 @@ class TerminalGame
   end
   def return_to_tty
     system('stty '+ TTY_CLEAN_STATE)
-    print("\e[?1049l")
+    print("\e[?1049l") # disable alternative screen buffer
     print("\e[?25h") # show cursor
   end
   def clear
