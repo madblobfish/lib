@@ -70,4 +70,4 @@ class Tetris < TerminalGame
   end
 end
 
-Tetris.new.run
+Tetris.new.run if __FILE__ == $PROGRAM_NAME
