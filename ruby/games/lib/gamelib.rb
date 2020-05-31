@@ -65,6 +65,20 @@ class TerminalGame
   def move_cursor(x = 0, y = 0)
     print "\e[#{x+1};#{y+1}H"
   end
+  def color(color = 0, mode = :fg)
+    print get_color_code(color, mode)
+  end
+  def get_color_code(color = 0, mode = :fg)
+    code = {fg: 38, bg: 48}[mode]
+    raise 'invalid color mode' if code.nil?
+    if color.is_a? Integer
+      "\e[#{code};#{color.to_i}m"
+    elsif color&.length == 3
+      "\e[#{code};2;#{color.map(&:to_i).join(';')}m"
+    else
+      raise 'color can be int between 0 and 255 or array with 3 ints [r,g,b]'
+    end
+  end
 end
 
 
