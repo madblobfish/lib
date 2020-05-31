@@ -10,7 +10,7 @@ class TerminalGame
 
     STDIN.sync = true
     print("\e[?1049h")
-    print("\e[?25l")
+    print("\e[?25l") # hide cursor
     system('stty raw -echo isig')
 
     @fps ||= 0.2
@@ -57,6 +57,7 @@ class TerminalGame
   def return_to_tty
     system('stty '+ TTY_CLEAN_STATE)
     print("\e[?1049l")
+    print("\e[?25h") # show cursor
   end
   def clear
     print "\e[2J"
