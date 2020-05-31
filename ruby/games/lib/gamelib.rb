@@ -9,9 +9,9 @@ class TerminalGame
     raise 'needs a tty' unless STDIN.tty?
 #    raise 'needs to implement draw'
 
+    STDIN.sync = true
     print("\e[?1049h")
     system('stty raw -echo isig')
-    STDIN.sync = true
 
     @fps ||= 0.2
 
