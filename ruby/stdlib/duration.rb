@@ -32,6 +32,7 @@ class Duration
   end
   alias :inspect :to_s
   def self.parse(duration)
+    duration = duration.dup
     positive = duration.delete!('-').nil?
     sec = 0
     while not duration.empty?
