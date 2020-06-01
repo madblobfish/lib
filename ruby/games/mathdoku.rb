@@ -128,6 +128,12 @@ if __FILE__ == $PROGRAM_NAME
   os.output = "bare"
   os.output__short = "o"
   os.output__values = %w(bare html interactive)
+  os.output__help = 'one of: '+ os.output__values.join(', ')
+  os.operators = KenKenBoard::OP_TO_S.keys
+  os.operators__short = 'm'
+  os.operators__proc = Proc.new{|v|v.map(&:to_sym)}
+  os.operators__help = 'list of math operators, sparated by ,'
+
   begin
     require 'optsparser_generator'
     args = OptParseGen.parse!(os)
@@ -136,7 +142,7 @@ if __FILE__ == $PROGRAM_NAME
     args = os
   end
 
-  kb = KenKenBoard.new(args.field_size)
+  kb = KenKenBoard.new(args.field_size, args.operators)
   case args.output
   when "bare"
     puts kb.board_numbers.map{|e| e.join(" ") }.join("\n"), "\n\n"
