@@ -1,4 +1,3 @@
-
 TTY_CLEAN_STATE = `stty -g`
 class TerminalGame
   attr_reader :fps, :inited
@@ -80,16 +79,3 @@ class TerminalGame
     end
   end
 end
-
-
-class Tetris < TerminalGame
-  def initialize
-    @fps=1
-  end
-  def draw
-    print "\e[2J"
-    print "\rXXXX\n"
-  end
-end
-
-Tetris.new.run if __FILE__ == $PROGRAM_NAME
