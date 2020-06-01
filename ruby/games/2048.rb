@@ -44,7 +44,7 @@ class FourThousandFourtyEight < TerminalGame
   end
 
   def move(dir, check = true)
-    raise InvalidMove, "AH" unless %i(up down right left).include?(dir)
+    raise InvalidMove, "AH #{dir.inspect}" unless %i(up down right left).include?(dir)
     bla = lambda{|x| FourThousandFourtyEight.move_row_left(x, lambda{new_number()})}
     case dir
     when :left
