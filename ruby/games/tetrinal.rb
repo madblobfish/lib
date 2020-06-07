@@ -88,19 +88,22 @@ class Tetrinal < TerminalGame
     raise "you lost" if @board.any?{|(y,x),v| y <= 0 }
   end
 
+  def block_to_str(block)
+    "#{get_color_code(block[:color])}#{block[:symbol]}#{get_color_code()}"
+  end
+
   def draw(step=true)
     drop_current_tile if step
     move_cursor()
     print "\e[1m" #boldify
     print "\r", '-' * @size[1], "\r\n"
     print @size[0].times.map{|y| @size[1].times.map do |x|
-      e = @board[[y,x]] || EMPTY_CELL
-      tile = "#{get_color_code(e[:color])}#{e[:symbol]}#{get_color_code()}"
-      droping_tile = @tile_current[[y,x].sub(@tile_current[:pos])]
-      tile = "#{get_color_code(droping_tile[:color])}#{droping_tile[:symbol]}#{get_color_code()}" if droping_tile
-      tile
-    end.join }.join("\r\n")
+      block_to_str(@tile_current[[y,x].sub(@tile_current[:pos])] || @board[[y,x]] || EMPTY_CELL)
+    end.join}.join("\r\n")
     print "\r", '-' * @size[1]
+    print "\r\nnext:\r\n"
+    print (@tile_next[:size][0]+1).times.map{|y| (@tile_next[:size][1]+1).times.map{|x| block_to_str(@tile_next[[y,x]] || EMPTY_CELL)}.join}.join("\r\n")
+    print "\r\n\nScore:", @score
     STDOUT.flush
   end
   def input_handler(input)
