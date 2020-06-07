@@ -26,6 +26,7 @@ class Tetrinal < TerminalGame
     @board = Hash.new
     @size = [size_y, size_x]
     @fps = 3
+    @fps_steps = [2.5, 3, 4, 5, 6, 7]
     @tile_current = gen_tile
     @tile_next = gen_tile
     @sync = false
