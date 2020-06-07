@@ -84,9 +84,9 @@ class Tetris < TerminalGame
   end
 
   def draw(step=true)
-    move_cursor()
-    clear()
     drop_current_tile if step
+    move_cursor()
+    print "\e[1m" #boldify
     print @size[0].times.map{|y| @size[1].times.map do |x|
       e = @board[[y,x]] || EMPTY_CELL
       tile = "#{get_color_code(e[:color])}#{e[:symbol]}#{get_color_code()}"
