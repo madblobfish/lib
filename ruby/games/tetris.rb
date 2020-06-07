@@ -50,14 +50,22 @@ class Tetris < TerminalGame
     elem
   end
 
+  def current_tile_stuck
+    # stuck in other block
+    return true if @board.any?{|k,v| @tile_current[k.sub(@tile_current[:pos])] rescue false}
+    # stuck on ground
+    return true if @tile_current.any?{|k,v| k.is_a?(Array) ? (k.first + @tile_current[:pos][0]+1) >= @size[0] : false}
+    # stuck left
+    return true if @tile_current.any?{|k,v| k.is_a?(Array) ? (k.add(@tile_current[:pos])[1]) < 0 : false}
+    # stuck right
+    return true if @tile_current.any?{|k,v| k.is_a?(Array) ? (k.add(@tile_current[:pos])[1]) >= @size[1] : false}
+    false
+  end
+
   def drop_current_tile(completely=false)
     begin
       @tile_current[:pos][0] += 1
-      if @board.any?{|k,v| @tile_current[k.sub(@tile_current[:pos])] rescue false}
-        @tile_current[:pos][0] -= 1
-        next_tile
-        return
-      elsif @tile_current.any?{|k,v| k.is_a?(Array) ? (k.first + @tile_current[:pos][0]+1) >= @size[0] : false}
+      if current_tile_stuck
         @tile_current[:pos][0] -= 1
         next_tile
         return
@@ -99,16 +107,20 @@ class Tetris < TerminalGame
     }[input]
     return if move.nil?
     case move
-    when :rotate
-      @tile_current.rotate!
     when :down
       drop_current_tile
-    when :left
-      @tile_current[:pos][1] -= 1
-    when :right
-      @tile_current[:pos][1] += 1
     when :drop
       drop_current_tile(true)
+    when :rotate
+      tmp = @tile_current.dup
+      @tile_current.rotate!
+      @tile_current = tmp if current_tile_stuck
+    when :left
+      @tile_current[:pos][1] -= 1
+      @tile_current[:pos][1] += 1 if current_tile_stuck
+    when :right
+      @tile_current[:pos][1] += 1
+      @tile_current[:pos][1] -= 1 if current_tile_stuck
     end
     draw(false)
   end
