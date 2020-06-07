@@ -25,7 +25,7 @@ class Tetrinal < TerminalGame
   def initialize(size_x=9, size_y=20)
     @board = Hash.new
     @size = [size_y, size_x]
-    @fps = 5
+    @fps = 3
     @tile_current = gen_tile
     @tile_next = gen_tile
     @sync = false
