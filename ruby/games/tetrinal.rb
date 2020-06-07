@@ -20,9 +20,7 @@ class Hash
   end
 end
 
-
-# Tetrinal
-class Tetris < TerminalGame
+class Tetrinal < TerminalGame
   EMPTY_CELL = {symbol:' ', color: [255,255,255]}
   def initialize(size_x=9, size_y=20)
     @board = Hash.new
@@ -126,4 +124,4 @@ class Tetris < TerminalGame
   end
 end
 
-Tetris.new.run if __FILE__ == $PROGRAM_NAME
+Tetrinal.new.run if __FILE__ == $PROGRAM_NAME
