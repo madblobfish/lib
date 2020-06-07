@@ -44,7 +44,7 @@ class Tetrinal < TerminalGame
       " # \n ##\n  #",
     ].sample.split("\n").each_with_index{|s,i| s.split('').each_with_index{|s,j| elem[[i,j]] = {symbol:'#', color: color} if s == '#'; elem[:size] = [i,j]}}
     rand(0..3).times{elem.rotate!}
-    elem[:pos] = [0,0]
+    elem[:pos] = [-2, @size[1] / 2 -1]
     elem
   end
 
