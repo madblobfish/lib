@@ -71,7 +71,7 @@ class TerminalGame
     code = {fg: 38, bg: 48}[mode]
     raise 'invalid color mode' if code.nil?
     if color.is_a? Integer
-      "\e[#{code};#{color.to_i}m"
+      "\e[#{code};5;#{color.to_i}m"
     elsif color&.length == 3
       "\e[#{code};2;#{color.map(&:to_i).join(';')}m"
     else
