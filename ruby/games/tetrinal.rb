@@ -29,6 +29,7 @@ class Tetrinal < TerminalGame
     @tile_current = gen_tile
     @tile_next = gen_tile
     @sync = false
+    @score = 0
   end
 
   def gen_tile
@@ -75,10 +76,14 @@ class Tetrinal < TerminalGame
     @tile_current.each{|k,v| @board[k.add(@tile_current[:pos])] = v if k.is_a?(Array)}
     @tile_current = @tile_next
     @tile_next = gen_tile
+    rows_removed = 0
     @board.group_by{|(y,x),_| y}.select{|k,v| v.count == @size[1]}.map do |(y,x),v|
       v.map{|x|@board.delete(x.first)}
+      rows_removed += 1
       y
     end.each{|ymax| @board.transform_keys!{|y,x| [y <= ymax ? y+1 : y, x]}}
+    @score += rows_removed
+    @score += 5 if rows_removed == 4
     raise "you lost" if @board.any?{|(y,x),v| y <= 0 }
   end
 
