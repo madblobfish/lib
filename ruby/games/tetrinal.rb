@@ -73,6 +73,7 @@ class Tetrinal < TerminalGame
   end
 
   def next_tile
+    clear
     @tile_current.each{|k,v| @board[k.add(@tile_current[:pos])] = v if k.is_a?(Array)}
     @tile_current = @tile_next
     @tile_next = gen_tile
