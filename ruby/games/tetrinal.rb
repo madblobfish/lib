@@ -75,7 +75,7 @@ class Tetrinal < TerminalGame
     @tile_current.each{|k,v| @board[k.add(@tile_current[:pos])] = v if k.is_a?(Array)}
     @tile_current = @tile_next
     @tile_next = gen_tile
-    @board.group_by{|k,v| k.first}.select{|k,v| v.count == @size[1]}.each do |k,v|
+    @board.group_by{|(y,x),_| y}.select{|k,v| v.count == @size[1]}.each do |k,v|
       v.map{|x|@board.delete(x.first)}
     end
     raise "you lost" if @board.any?{|(y,x),v| y <= 0 }
@@ -85,6 +85,7 @@ class Tetrinal < TerminalGame
     drop_current_tile if step
     move_cursor()
     print "\e[1m" #boldify
+    print "\r", '-' * @size[1], "\r\n"
     print @size[0].times.map{|y| @size[1].times.map do |x|
       e = @board[[y,x]] || EMPTY_CELL
       tile = "#{get_color_code(e[:color])}#{e[:symbol]}#{get_color_code()}"
