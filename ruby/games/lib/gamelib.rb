@@ -21,7 +21,7 @@ class TerminalGame
           loop do
             update_size()
             draw()
-            sleep @fps
+            sleep 1.0/@fps
           end
         end
         thr.abort_on_exception = true
