@@ -30,6 +30,7 @@ class Tetris < TerminalGame
     @fps = 5
     @tile_current = gen_tile
     @tile_next = gen_tile
+    @sync = false
   end
 
   def gen_tile
@@ -86,6 +87,7 @@ class Tetris < TerminalGame
       tile
     end.join }.join("\r\n")
     print "\r", '-' * @size[1]
+    STDOUT.flush
   end
   def input_handler(input)
     move = {

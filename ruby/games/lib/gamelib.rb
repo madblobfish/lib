@@ -1,13 +1,13 @@
 TTY_CLEAN_STATE = `stty -g`
 class TerminalGame
-  attr_reader :fps, :inited
+  attr_reader :fps, :inited, :sync
 
   def run
     raise 'already started' if @inited
     @inited = true
     raise 'needs a tty' unless STDIN.tty?
 
-    STDIN.sync = true
+    STDIN.sync = true unless @sync == false
     print("\e[?1049h") # enable alternative screen buffer
     print("\e[?25l") # hide cursor
     system('stty raw -echo isig')
