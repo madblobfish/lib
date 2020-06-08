@@ -87,7 +87,7 @@ class Tetrinal < TerminalGame
     end.each{|ymax| @board.transform_keys!{|y,x| [y <= ymax ? y+1 : y, x]}}
     @score += rows_removed
     @score += 5 if rows_removed == 4
-    raise "you lost" if @board.any?{|(y,x),v| y <= 0 }
+    raise 'you lost' if @board.any?{|(y,x),v| y <= 0 }
   end
 
   def block_to_str(block)
@@ -116,7 +116,7 @@ class Tetrinal < TerminalGame
       "\e[B" => :down,
       "\e[D" => :left,
       "\e[C" => :right,
-      " "    => :drop,   #space
+      ' '    => :drop,   #space
     }[input]
     return if move.nil?
     case move
