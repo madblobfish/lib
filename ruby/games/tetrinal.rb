@@ -91,6 +91,7 @@ class Tetrinal < TerminalGame
   end
 
   def block_to_str(block)
+    return ' ' if block[:symbol] == ' '
     "#{get_color_code(block[:color])}#{block[:symbol]}#{get_color_code()}"
   end
 
