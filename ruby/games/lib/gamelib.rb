@@ -12,7 +12,7 @@ class TerminalGame
     print("\e[?25l") # hide cursor
     system('stty raw -echo isig')
 
-    @fps ||= 0.2
+    @fps ||= 5
 
     begin
       initial_draw
