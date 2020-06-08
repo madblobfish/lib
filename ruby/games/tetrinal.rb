@@ -31,6 +31,7 @@ class Tetrinal < TerminalGame
     @tile_next = gen_tile
     @sync = false
     @score = 0
+    @thread_stuff = Mutex.new
   end
 
   def gen_tile
@@ -94,18 +95,20 @@ class Tetrinal < TerminalGame
   end
 
   def draw(step=true)
-    drop_current_tile if step
-    move_cursor()
-    print "\e[1m" #boldify
-    print "\r", '-' * @size[1], "\r\n"
-    print @size[0].times.map{|y| @size[1].times.map do |x|
-      block_to_str(@tile_current[[y,x].sub(@tile_current[:pos])] || @board[[y,x]] || EMPTY_CELL)
-    end.join}.join("\r\n")
-    print "\r", '-' * @size[1]
-    print "\r\nnext:\r\n"
-    print (@tile_next[:size][0]+1).times.map{|y| (@tile_next[:size][1]+1).times.map{|x| block_to_str(@tile_next[[y,x]] || EMPTY_CELL)}.join}.join("\r\n")
-    print "\r\n\nScore:", @score
-    STDOUT.flush
+    @thread_stuff.synchronize do
+      drop_current_tile if step
+      move_cursor()
+      print "\e[1m" #boldify
+      print "\r", '-' * @size[1], "\r\n"
+      print @size[0].times.map{|y| @size[1].times.map do |x|
+        block_to_str(@tile_current[[y,x].sub(@tile_current[:pos])] || @board[[y,x]] || EMPTY_CELL)
+      end.join}.join("\r\n")
+      print "\r", '-' * @size[1]
+      print "\r\nnext:\r\n"
+      print (@tile_next[:size][0]+1).times.map{|y| (@tile_next[:size][1]+1).times.map{|x| block_to_str(@tile_next[[y,x]] || EMPTY_CELL)}.join}.join("\r\n")
+      print "\r\n\nScore:", @score
+      STDOUT.flush
+    end
   end
   def input_handler(input)
     move = {
