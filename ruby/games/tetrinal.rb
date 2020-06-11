@@ -63,13 +63,15 @@ class Tetrinal < TerminalGame
     false
   end
 
-  def drop_current_tile(completely=false)
+  def drop_current_tile(useraction=false, completely=false)
     begin
       @tile_current[:pos][0] += 1
       if current_tile_stuck
         @tile_current[:pos][0] -= 1
         next_tile
         return
+      else
+        @score += completely ? 3 : 1 if useraction
       end
     end while completely
   end
@@ -84,10 +86,9 @@ class Tetrinal < TerminalGame
       v.map{|x|@board.delete(x.first)}
       rows_removed += 1
       y
-    end.each{|ymax| @board.transform_keys!{|y,x| [y <= ymax ? y+1 : y, x]}}
-    @score += rows_removed
-    @score += 5 if rows_removed == 4
-    raise 'you lost' if current_tile_stuck
+    end.sort.each{|ymax| @board.transform_keys!{|y,x| [y <= ymax ? y+1 : y, x]}}
+    @score += [0, 100, 250, 500, 1500][rows_removed]
+    raise "you lost (Score: #{@score})" if current_tile_stuck
   end
 
   def block_to_str(block)
@@ -121,9 +122,9 @@ class Tetrinal < TerminalGame
     }[input]
     case move
     when :down
-      drop_current_tile
-    when :drop
       drop_current_tile(true)
+    when :drop
+      drop_current_tile(true, true)
     when :rotate
       tmp = @tile_current.dup
       @tile_current.rotate!
