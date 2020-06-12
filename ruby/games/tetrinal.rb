@@ -21,7 +21,7 @@ class Hash
 end
 
 class Tetrinal < TerminalGame
-  EMPTY_CELL = {symbol:' ', color: [255,255,255]}
+  EMPTY_CELL = {symbol:'⬜', color: [50,50,50]}
   def initialize(size_x=9, size_y=20)
     @board = Hash.new
     @size = [size_y, size_x]
@@ -45,7 +45,7 @@ class Tetrinal < TerminalGame
       "##\n##",
       "  #\n ##\n # ",
       " # \n ##\n  #",
-    ].sample.split("\n").each_with_index{|s,i| s.split('').each_with_index{|s,j| elem[[i,j]] = {symbol:'#', color: color} if s == '#'; elem[:size] = [i,j]}}
+    ].sample.split("\n").each_with_index{|s,i| s.split('').each_with_index{|s,j| elem[[i,j]] = {symbol:'██', color: color} if s == '#'; elem[:size] = [i,j]}}
     rand(0..3).times{elem.rotate!}
     elem[:pos] = [-2, @size[1] / 2 -1]
     elem
