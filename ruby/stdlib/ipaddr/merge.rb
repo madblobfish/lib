@@ -1,3 +1,5 @@
+require 'ipaddr'
+
 class IPAddr
   require_relative 'lowest'
   require_relative 'next_to?'
