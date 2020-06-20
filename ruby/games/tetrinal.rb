@@ -31,7 +31,8 @@ class Tetrinal < TerminalGame
     @tile_next = gen_tile
     @sync = false
     @score = 0
-    @thread_stuff = Mutex.new
+    @mutex_draw = Mutex.new
+    @mutex_drop = Mutex.new
   end
 
   def gen_tile
@@ -55,7 +56,7 @@ class Tetrinal < TerminalGame
     # stuck in other block
     return true if @board.any?{|k,v| @tile_current[k.sub(@tile_current[:pos])] rescue false}
     # stuck on ground
-    return true if @tile_current.any?{|k,v| k.is_a?(Array) ? (k.first + @tile_current[:pos][0]+1) >= @size[0] : false}
+    return true if @tile_current.any?{|k,v| k.is_a?(Array) ? (k.first + @tile_current[:pos][0]) >= @size[0] : false}
     # stuck left
     return true if @tile_current.any?{|k,v| k.is_a?(Array) ? (k.add(@tile_current[:pos])[1]) < 0 : false}
     # stuck right
@@ -64,16 +65,18 @@ class Tetrinal < TerminalGame
   end
 
   def drop_current_tile(useraction=false, completely=false)
-    begin
-      @tile_current[:pos][0] += 1
-      if current_tile_stuck
-        @tile_current[:pos][0] -= 1
-        next_tile
-        return
-      else
-        @score += completely ? 3 : 1 if useraction
-      end
-    end while completely
+    @mutex_drop.synchronize do
+      begin
+        @tile_current[:pos][0] += 1
+        if current_tile_stuck
+          @tile_current[:pos][0] -= 1
+          next_tile
+          return
+        else
+          @score += completely ? 3 : 1 if useraction
+        end
+      end while completely
+    end
   end
 
   def next_tile
@@ -97,15 +100,13 @@ class Tetrinal < TerminalGame
   end
 
   def draw(step=true)
-    @thread_stuff.synchronize do
+    @mutex_draw.synchronize do
       drop_current_tile if step
       move_cursor()
       print "\e[1m" #boldify
-      print "\r", '-' * @size[1], "\r\n"
       print @size[0].times.map{|y| @size[1].times.map do |x|
         block_to_str(@tile_current[[y,x].sub(@tile_current[:pos])] || @board[[y,x]] || EMPTY_CELL)
       end.join}.join("\r\n")
-      print "\r", '-' * @size[1]
       print "\r\nnext:\r\n"
       print (@tile_next[:size][0]+1).times.map{|y| (@tile_next[:size][1]+1).times.map{|x| block_to_str(@tile_next[[y,x]] || EMPTY_CELL)}.join}.join("\r\n")
       print "\r\n\nScore:", @score
