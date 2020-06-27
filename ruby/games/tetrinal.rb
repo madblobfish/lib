@@ -22,7 +22,7 @@ end
 
 class Tetrinal < TerminalGame
   EMPTY_CELL = {symbol:'⬜', color: [50,50,50]}
-  def initialize(size_x=9, size_y=20)
+  def initialize(size_x=11, size_y=25)
     @board = Hash.new
     @size = [size_y, size_x]
     @fps = 3
