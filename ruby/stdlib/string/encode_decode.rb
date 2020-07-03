@@ -25,4 +25,11 @@ class String
   def b642hex
     self.b64d.tohex
   end
+  # https://tools.ietf.org/html/rfc3986#section-2.3
+  def urle(char_selector=/[^a-zA-Z0-9_.~-]/)
+    self.b.gsub(char_selector){|chr|'%' + chr.bytes.first.to_s(16)}
+  end
+  def urld(enc=Encoding::UTF_8)
+    self.b.gsub(/%\h\h/){|chr| chr[1..-1].to_i(16).chr}.force_encoding(enc)
+  end
 end
