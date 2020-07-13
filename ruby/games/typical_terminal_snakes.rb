@@ -2,8 +2,8 @@ require_relative "lib/gamelib.rb"
 
 class TTS < TerminalGame
   EMPTY_CELL = {symbol:'⬜', color: [50,50,50]}
-  GOOD_FOOD = "🌽🍇🍈🍉🍊🍋🍌🍍🍎🍏🍐🍑🍒🍓🌰"
-  BAD_FOOD = "🍄👟🔧📎📞💊💉"
+  GOOD_FOOD = "🍆🍅🌽🍇🍈🍉🍊🍋🍌🍍🍎🍏🍐🍑🍒🍓🌰🥦🥥🥝🥜🥕🥔🥒🥑🥬🥭"
+  BAD_FOOD = "🍄👟🔧📎📞💊💉⚓⚡☔⛽⛲🧸🧦🧪🧭🧯🧲🧱🧻🧾🦷🩸🩹🪓🪐🪀🪂🪒💩💣📡🔧🔪📌💾💻📯📦🔌🔔🔭🔬🔩🧨💎💰🦋🐛🐝"
   def initialize(size_x=9, size_y=9)
     @field = Hash.new{EMPTY_CELL}
     @size = [size_y, size_x]
@@ -19,9 +19,10 @@ class TTS < TerminalGame
   def food_stuff
     food_count = @field.count{|k,v| GOOD_FOOD.include?(v) rescue false}
     if food_count <= 0
+      num = rand(1..4)
       ((0...(@size[0])).to_a.product((0...(@size[1])).to_a) - [[1,0],[-1,0],[0,1],[0,-1]].map{|dir| calc_next_step(dir)})
-        .shuffle.reject{|pos|@field.has_key?(pos)}.take(rand(1..4)).each do |pos|
-          @field[pos] = (GOOD_FOOD + BAD_FOOD).split('').sample
+        .shuffle.reject{|pos|@field.has_key?(pos)}.take(num).zip([GOOD_FOOD.split('').sample]+(GOOD_FOOD+GOOD_FOOD+GOOD_FOOD + BAD_FOOD).split('').shuffle.take(num-1)).each do |pos, food|
+          @field[pos] = food
       end
 
     end
