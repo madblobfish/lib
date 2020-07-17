@@ -86,5 +86,6 @@ class TTS < TerminalGame
 end
 
 if __FILE__ == $PROGRAM_NAME
+  TTS::BAD_FOOD = '' if ARGV == ['--no-bad-food']
   TTS.new.run()
 end
