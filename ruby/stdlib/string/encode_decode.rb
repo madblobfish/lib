@@ -1,7 +1,7 @@
 class String
   def b64e
     require 'base64'
-    Base64.encode64(self)
+    Base64.encode64(self).tr("\n",'')
   end
   def b64d
     require 'base64'
