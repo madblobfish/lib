@@ -1,18 +1,20 @@
 TTY_CLEAN_STATE = `stty -g`
 class TerminalGame
-  attr_reader :fps, :inited, :sync
+  attr_reader :fps, :inited, :sync, :mouse_support
 
   def run
     raise 'already started' if @inited
-    @inited = true
     raise 'needs a tty' unless STDIN.tty?
+    @inited = true
+    @mouse_support = false if @mouse_support.nil?
+    @fps ||= 5
 
     STDIN.sync = true unless @sync == false
     print("\e[?1049h") # enable alternative screen buffer
     print("\e[?25l") # hide cursor
+    print("\e[?7l") # hide overflow
     system('stty raw -echo isig')
-
-    @fps ||= 5
+    print("\e[?1000h\e[?1006h") if @mouse_support # mouse click events
 
     begin
       initial_draw
@@ -29,6 +31,7 @@ class TerminalGame
       loop do
         IO.select([STDIN])
         data = STDIN.read_nonblock(100_000)
+        mouse_handler($2,$3,$1.to_i,:down) if @mouse_support and data.match(/\e\[\<(\d+);(\d+);(\d+)M/)
         input_handler(data)
       end
     rescue Exception
@@ -42,12 +45,9 @@ class TerminalGame
   def initial_draw
     draw
   end
-  def draw
-    raise 'Not Implemented'
-  end
-  def input_handler(data)
-    raise 'Not Implemented'
-  end
+  def draw;end
+  def input_handler(data);end
+  def mouse_handler(x, y, button_id, state_transition);end
 
   private
   def update_size
@@ -55,8 +55,10 @@ class TerminalGame
   end
   def return_to_tty
     system('stty '+ TTY_CLEAN_STATE)
+    print("\e[?1000l\e[?1006l") # disable mouse click events
     print("\e[?1049l") # disable alternative screen buffer
     print("\e[?25h") # show cursor
+    print("\e[?7h") # show overflow
   end
   def clear
     print "\e[2J"
