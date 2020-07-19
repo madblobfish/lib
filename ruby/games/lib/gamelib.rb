@@ -14,7 +14,7 @@ class TerminalGame
     print("\e[?25l") # hide cursor
     print("\e[?7l") # hide overflow
     system('stty raw -echo isig')
-    print("\e[?1000h\e[?1006h") if @mouse_support # mouse click events
+    print("\e[?1002h\e[?1006h") if @mouse_support # mouse click/move events
 
     begin
       initial_draw
@@ -31,7 +31,7 @@ class TerminalGame
       loop do
         IO.select([STDIN])
         data = STDIN.read_nonblock(100_000)
-        mouse_handler($2,$3,$1.to_i,:down) if @mouse_support and data.match(/\e\[\<(\d+);(\d+);(\d+)M/)
+        internal_mouse_handler($2,$3,$1,$4) if @mouse_support and data.match(/\e\[\<(\d+);(\d+);(\d+)([Mm])/)
         input_handler(data)
       end
     rescue Exception
@@ -47,6 +47,9 @@ class TerminalGame
   end
   def draw;end
   def input_handler(data);end
+  def internal_mouse_handler(x, y, button_id, state_transition)
+    mouse_handler(x.to_i-1, y.to_i-1, button_id.to_i, (state_transition == 'M' ? :up : :down))
+  end
   def mouse_handler(x, y, button_id, state_transition);end
 
   private
@@ -55,7 +58,7 @@ class TerminalGame
   end
   def return_to_tty
     system('stty '+ TTY_CLEAN_STATE)
-    print("\e[?1000l\e[?1006l") # disable mouse click events
+    print("\e[?1002l\e[?1006l") # disable mouse click/move events
     print("\e[?1049l") # disable alternative screen buffer
     print("\e[?25h") # show cursor
     print("\e[?7h") # show overflow
