@@ -13,7 +13,7 @@ class Minesweep < TerminalGame
     print "\r\nMines left: #{(@mines - @map.count{|k,v|%w(*! X).include?(v)}).to_s.rjust(@mines.to_s.length)}"
   end
   def mouse_handler(x, y, button_id, _)
-    pos = [y.to_i-1, x.to_i-1]
+    pos = [y, x]
     return draw if pos.any?{|c|c < 0 || c >= @size}
     if button_id == 0 # left click
       if @first_click
