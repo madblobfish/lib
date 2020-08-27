@@ -47,9 +47,6 @@ class TerminalGame
         internal_mouse_handler($2,$3,$1,$4) if @mouse_support and data.match(/\e\[\<(\d+);(\d+);(\d+)([Mm])/)
         input_handler(data)
       end
-    rescue Exception
-      return_to_tty()
-      raise
     ensure
       return_to_tty()
     end
