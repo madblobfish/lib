@@ -4,6 +4,7 @@ Theese are games I did code, they might or might not work on other terminals tha
 You can usually get the options via `--help` commandline argument
 
 ## 2048
+![2048](2048.png)
 A 2048 clone, which you play with your arrow keys.
 ## bao
 This one is a bit tricky.
@@ -15,9 +16,12 @@ Unfinished, ignore me
 ## flap
 Unfinished flappy bird clone using the kitty terminal graphics protocol.
 ## mathdoku
+![mathdoku html screenshot](mathdoku.rb.html.png)
 This thing spits out a html document which you can load in your browser.
 its basically a clone of a sudoku clone.
+It may be playable in terminals in the future.
 ## minimine
+![miniminie screenshot](minimine.png)
 A minesweeper game which uses the mouse in the terminal.
 ## minesweeper
 See readme in subfolder.
