@@ -49,7 +49,7 @@ C0(S) C6 C1 1.,-1.5,1.,-5. C1 1.,-5.,5.,-5. C1 5.,-5.,5.,-8. C3 5.,-8.,1.,-8.) C
 
 // usage example
 void mainImage( out vec4 fragColor, in vec2 fragCoord ){
-    float t = iTime;
+	float t = iTime;
 	vec2 uv = (2.0 * fragCoord.xy - iResolution.xy) / iResolution.yy;
 
 	uv.x += 0.13;
