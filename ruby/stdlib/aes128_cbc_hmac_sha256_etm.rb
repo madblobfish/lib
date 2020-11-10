@@ -13,7 +13,7 @@ class Aes128CbcHmacSha256Etm
   DEFAULT_PACK = lambda{|c, ad| [c,ad].map{|e| Base64.strict_encode64(e)}.join('$') }
   DEFAULT_UNPACK = lambda{|s| s.b.split('$').map{|e| Base64.strict_decode64(e)}}
   DEFAULT_HASH_PACK = lambda{|c, h| c.to_s << [h].pack('H*')}
-  DEFAULT_HASH_UNPACK = lambda{|s| [s.b[0...-32], s.b[-32..-1].unpack1('H*')]}
+  DEFAULT_HASH_UNPACK = lambda{|s| [s.b[0...-32], s.b[-32..-1].unpack('H*')[0]]}
 
   def initialize(key, **o)
     @pack = o.fetch(:pack, DEFAULT_PACK)
