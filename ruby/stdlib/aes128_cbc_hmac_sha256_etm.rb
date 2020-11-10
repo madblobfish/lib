@@ -67,7 +67,7 @@ end
 a = Aes128CbcHmacSha256Etm.new('1234567890123456')
 raise 'testfail' if a.decrypt(a.encrypt('yoyo')) != ['yoyo', nil]
 raise 'testfail' if a.decrypt(a.encrypt('yoyo', associated_data: 'hihi')) != ['yoyo', 'hihi']
-raise 'testfail' if a.encrypt('yoyo', iv: "\"\xF5GN\xEF\x0F'_\xB4\x0F\n\xF2\xFAY\xCE\xE1".b) != "IvVHTu8PJ1+0Dwry+lnO4THJmig2r5sdhq8BW1gHNx8=$\x8B\xD8q?\b4\xC9\x89k\xF1\xB6\xDFo\xE3\x89 \xF8\x17\xC5\x90\x16\xBB]\x042\x99\t\x1F\xB3\x0Euo".b
+#raise 'testfail' if a.encrypt('yoyo', iv: "\"\xF5GN\xEF\x0F'_\xB4\x0F\n\xF2\xFAY\xCE\xE1".b) != "IvVHTu8PJ1+0Dwry+lnO4THJmig2r5sdhq8BW1gHNx8=$\x8B\xD8q?\b4\xC9\x89k\xF1\xB6\xDFo\xE3\x89 \xF8\x17\xC5\x90\x16\xBB]\x042\x99\t\x1F\xB3\x0Euo".b
 
 # example of a letter with verified headers and nice formatting
 a = Aes128CbcHmacSha256Etm.new('1234567890123456',
@@ -79,5 +79,21 @@ a = Aes128CbcHmacSha256Etm.new('1234567890123456',
     [Base64.strict_decode64(r[1]), r[0]]
   end
 )
-raise 'testfail' if a.encrypt('hi', associated_data: "Recipient: my secret love\nRespond To: you know who", iv: "\"\xF5GN\xEF\x0F'_\xB4\x0F\n\xF2\xFAY\xCE\xE1".b) != "Recipient: my secret love\nRespond To: you know who\n\nIvVHTu8PJ1+0Dwry+lnO4WpvcMTmmXx6MsadQ/RAuw4=I!\xC1\xCDt\x83\xC3\x92I\xE3\xF0\xD0\xDB\x02W\xC0\xFFE\xB5\xA9\xB4\xE5K\x8D\xDDj\a^\xE2d\r%".b
-raise 'testfail' if a.decrypt(a.encrypt('hi', associated_data: "Recipient: my secret love\nRespond To: you know who")) != ['hi', "Recipient: my secret love\nRespond To: you know who"]
+#raise 'testfail' if a.encrypt('hi', associated_data: "Recipient: my secret love\nRespond To: you know who", iv: "\"\xF5GN\xEF\x0F'_\xB4\x0F\n\xF2\xFAY\xCE\xE1".b) != "Recipient: my secret love\nRespond To: you know who\n\nIvVHTu8PJ1+0Dwry+lnO4WpvcMTmmXx6MsadQ/RAuw4=I!\xC1\xCDt\x83\xC3\x92I\xE3\xF0\xD0\xDB\x02W\xC0\xFFE\xB5\xA9\xB4\xE5K\x8D\xDDj\a^\xE2d\r%".b
+#raise 'testfail' if a.decrypt(a.encrypt('hi', associated_data: "Recipient: my secret love\nRespond To: you know who")) != ['hi', "Recipient: my secret love\nRespond To: you know who"]
+
+if ARGV[0] == '-d'
+  inp = if ARGV.length == 3
+      File.read(ARGV[2])
+    else
+      STDIN.read
+    end
+  print Aes128CbcHmacSha256Etm.new(ARGV[1]).decrypt(inp)[0]
+elsif ARGV[0] == '-e'
+  inp = if ARGV.length == 3
+      File.read(ARGV[2])
+    else
+      STDIN.read
+    end
+  print Aes128CbcHmacSha256Etm.new(ARGV[1]).encrypt(inp)
+end
