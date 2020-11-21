@@ -3,6 +3,7 @@
 #   implement after command which may gather some additional information
 #   implement after optimize (ruby?) function which may be used to maximize or minimize something that the after command outputs
 #   implement input processing (permutation, combination), maybe take ruby function?
+#   parallelize?
 
 require 'optsparser_generator'
 require 'open3'
