@@ -1,18 +1,20 @@
 require 'socket'
 require 'weakref'
 
-STO = {}
+STORAGE = {}
 Socket.udp_server_loop(1235){|msg, msg_src|
-  if STO.has_key? msg
-    msg_src.reply(STO[msg].first.map(&:to_s).join("\t"))
-    STO[msg].last.reply(
+  if STORAGE.has_key? msg
+    msg_src.reply(STORAGE[msg].first.map(&:to_s).join("\t"))
+    STORAGE[msg].last.reply(
       [
+        "0",
         msg_src.remote_address.ip_address,
         msg_src.remote_address.ip_port
       ].map(&:to_s).join("\t")
     )
+    STORAGE.del(msg)
   else
-    STO[msg] = WeakRef.new([[
+    STORAGE[msg] = WeakRef.new([[
       Time.now, msg_src.remote_address.ip_address,
       msg_src.remote_address.ip_port
     ], msg_src])
