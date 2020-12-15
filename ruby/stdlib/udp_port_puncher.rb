@@ -15,7 +15,7 @@ Socket.udp_server_loop(1235){|msg, msg_src|
     STORAGE.del(msg)
   else
     STORAGE[msg] = WeakRef.new([[
-      Time.now, msg_src.remote_address.ip_address,
+      Time.now.to_i, msg_src.remote_address.ip_address,
       msg_src.remote_address.ip_port
     ], msg_src])
     msg_src.reply("first")
