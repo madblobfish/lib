@@ -11,7 +11,7 @@ Socket.udp_server_loop(1235){|msg, msg_src|
         msg_src.remote_address.ip_port
       ].map(&:to_s).join("\t")
     )
-    STORAGE.del(msg)
+    STORAGE.delete(msg)
   else
     STORAGE[msg] = WeakRef.new([[
       Time.now.to_i, msg_src.remote_address.ip_address,
