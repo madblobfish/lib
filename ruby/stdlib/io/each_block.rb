@@ -4,11 +4,11 @@ class IO
   # * bool if first
   # * bool if last (note both can be true)
   def each_block(blocksize, &block)
-    first, next_block = true
+    first, next_block = true, true
     previous_block = read(blocksize)
     while next_block
       next_block = read(blocksize)
-      yield previous_block, first, next_block.nil?
+      yield(previous_block, first, next_block.nil?)
       first = false
       previous_block = next_block
     end
