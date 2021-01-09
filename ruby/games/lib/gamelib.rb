@@ -69,7 +69,7 @@ class TerminalGame
     @rows, @cols = `stty size`.split(' ')
   end
   def return_to_tty
-    @draw_thread.kill
+    @draw_thread&.kill
     system('stty '+ TTY_CLEAN_STATE)
     print("\e[?1002l\e[?1006l") # disable mouse click/move events
     print("\e[?1049l") # disable alternative screen buffer
