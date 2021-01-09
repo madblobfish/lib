@@ -4,12 +4,12 @@
 TTY_CLEAN_STATE = `stty -g` if STDIN.tty?
 class TerminalGame
   attr_reader :fps, :sync, :mouse_support, :require_kitty_graphics
-  def inited
+  def inited?
     @inited ||= false
   end
 
   def run(no_tty = false)
-    raise 'already started' if inited
+    raise 'already started' if inited?
     Signal.trap("INT"){game_quit(); exit(0)}
 
     if @no_tty = no_tty
@@ -139,7 +139,7 @@ class TerminalGame
   end
 
   # kitty_graphics
-  def supports_kitty_graphics(used_in_normal_tty = !inited)
+  def supports_kitty_graphics(used_in_normal_tty = !inited?)
     print "\e_Gi=31,s=1,v=1,a=q,t=d,f=24;\0\0\0\e\\\e[c"
     return STDIN.readpartial(20) == "\e[?62;c#{used_in_normal_tty ? "\n" : ''}"
   end
