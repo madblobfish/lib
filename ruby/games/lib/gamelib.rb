@@ -141,7 +141,7 @@ class TerminalGame
     pos_cell_y = (y / pixel_per_cell_y).floor
     if pos_cell_x < 0
       pos_cell_x = 0
-      opts[:img_x] += x.abs
+      opts[:img_x] = opts[:img_x].to_f + x.abs
       opts[:cell_x] = 0
     else
       # pos_cell_x = @cols if pos_cell_x <= @cols
@@ -149,7 +149,7 @@ class TerminalGame
     end
     if pos_cell_y < 0
       pos_cell_y = 0
-      opts[:img_y] += y.abs
+      opts[:img_y] = opts[:img_y].to_f + y.abs
       opts[:cell_y] = 0
     else
       # pos_cell_y = @rows if pos_cell_y <= @rows
