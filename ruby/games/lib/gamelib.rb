@@ -165,7 +165,7 @@ class TerminalGame
     options = {img_x:0, img_y:0, width:0, height:0, columns:0, rows:0, cell_x:0, cell_y:0, z:0}.merge(opts)
     args = {img_x:'x', img_y:'y', width:'w', height:'h', cell_x:'X', cell_y:'Y', columns:'c', rows:'r', z:'z'}
     raise 'AH' unless id.is_a?(Integer)
-    str = '_Ga=p,i=' + id.to_s
+    str = '_Ga=p,q=1,i=' + id.to_s
     str += args.map{|k,v| k != :z && options[k] <= 0 ? nil : ",#{v}=#{options[k]}" }.compact.join
     print "\e", str, "\e\\"
     # todo move somewhere else
@@ -198,6 +198,6 @@ class TerminalGame
         ''
       end
     key.upcase! unless keep
-    print "\e_Ga=d,d=#{key}#{args}\e\\"
+    print "\e_Ga=d,q=1,d=#{key}#{args}\e\\"
   end
 end
