@@ -34,7 +34,7 @@ class TerminalGame
         @draw_thread = Thread.new(abort_on_exception:true) do
           loop do
             update_size()
-            draw()
+            sync_draw{draw()}
             sleep 1.0/@fps
           end
         end
@@ -83,6 +83,11 @@ class TerminalGame
   end
   def cursor_restore
     print "\e[u"
+  end
+  def sync_draw(&block)
+    print "\eP=1s\e\\"
+    yield
+    print "\eP=2s\e\\"
   end
   def move_cursor(x = 0, y = 0)
     print "\e[#{x+1};#{y+1}H"
