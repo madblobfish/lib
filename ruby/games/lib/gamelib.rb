@@ -1,15 +1,47 @@
-TTY_CLEAN_STATE = `stty -g`
+# key(down|repeat|up) is currently not possibly in terminals
+#  a known solution is this but its ugly and non utf8 https://sw.kovidgoyal.net/kitty/protocol-extensions.html#keyboard-handling
+
+TTY_CLEAN_STATE = `stty -g` if STDIN.tty?
 class TerminalGame
   attr_reader :fps, :sync, :mouse_support, :require_kitty_graphics
   def inited
     @inited ||= false
   end
 
-  def run
+  def run(no_tty = false)
     raise 'already started' if inited
-    raise 'needs a tty' unless STDIN.tty?
-
     Signal.trap("INT"){game_quit(); exit(0)}
+
+    if @no_tty = no_tty
+      @update_size = proc do
+        old = [@rows, @cols, @size_y, @size_x]
+        # query char size (rows & cols)
+        cursor_save()
+        move_cursor(99999,99999)
+        cursor_query()
+        if /^\e\[(\d+);(\d+)R$/ =~ STDIN.readpartial(200)
+          @rows, @cols = [$1, $2]
+        end
+        # query pixel size
+        size_query()
+        if /\e\[4;(\d+);(\d+)t\n?/ =~ STDIN.readpartial(200)
+          @size_y, @size_x = [$1, $2]
+        end
+        @size_y, @size_x = [nil]*2
+        cursor_restore()
+        size_change_handler() if old != [@rows, @cols, @size_y, @size_x]
+      end
+    else
+      raise 'needs a tty' unless STDIN.tty?
+      @update_size = proc do
+        raise "AHHHHHHH" unless STDOUT.ioctl(0x5413, buff="") == 0
+        @rows, @cols, @size_y, @size_x = buff.unpack("SSSS")
+        size_change_handler()
+      end
+      Signal.trap("WINCH", @update_size)
+    end
+    @update_size[]
+
     @inited = true
     @mouse_support = false if @mouse_support.nil?
     @fps ||= 5
@@ -18,23 +50,16 @@ class TerminalGame
     print("\e[?1049h") # enable alternative screen buffer
     print("\e[?25l") # hide cursor
     print("\e[?7l") # hide overflow
-    system('stty raw -echo isig')
+    system('stty raw -echo isig') unless @no_tty
     print("\e[?1002h\e[?1006h") if @mouse_support # mouse click/move events
     raise 'Graphic protocoll not supported' if @require_kitty_graphics && !supports_kitty_graphics
-    if true # might not need this sometimes
-      print "\e[14t"
-      if /\e\[4;(\d+);(\d+)t\n?/ =~ STDIN.readpartial(200)
-        @size_y, @size_x = [$1, $2]
-      end
-    end
-    update_size()
 
     begin
       initial_draw
       if @fps != :manual
         @draw_thread = Thread.new(abort_on_exception:true) do
           loop do
-            update_size()
+            @update_size[] if false # this needs to be called regulary for non tty operation
             sync_draw{draw()}
             sleep 1.0/@fps
           end
@@ -63,14 +88,12 @@ class TerminalGame
     mouse_handler(x.to_i-1, y.to_i-1, button_id.to_i, (state_transition == 'M' ? :up : :down))
   end
   def mouse_handler(x, y, button_id, state_transition);end
+  def size_change_handler;end
 
   private
-  def update_size
-    @rows, @cols = `stty size`.split(' ')
-  end
   def return_to_tty
     @draw_thread&.kill
-    system('stty '+ TTY_CLEAN_STATE)
+    system('stty '+ TTY_CLEAN_STATE) unless @no_tty
     print("\e[?1002l\e[?1006l") # disable mouse click/move events
     print("\e[?1049l") # disable alternative screen buffer
     print("\e[?25h") # show cursor
@@ -93,6 +116,12 @@ class TerminalGame
   end
   def move_cursor(x = 0, y = 0)
     print "\e[#{x+1};#{y+1}H"
+  end
+  def cursor_query
+    print "\e[6n"
+  end
+  def size_query
+    print "\e[14t"
   end
   def color(color = 15, mode = :fg)
     print get_color_code(color, mode)
