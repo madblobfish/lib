@@ -1,7 +1,3 @@
-require 'eventmachine'
-
-bbcpss.rb
-
 #             schere  stein   papier  baby öl baby    condom  brunnen
 # schere      -       -       -       -       -       -       -
 # stein       stein   -       -       -       -       -       -
@@ -10,8 +6,6 @@ bbcpss.rb
 # baby        schere  stein   baby    baby    -       -       -
 # condom      schere  condom  papier  baby öl condom  -       -
 # brunnen     brunnen brunnen papier  brunnen baby    condom  -
-
-
 WINS_AGAINST = {
   schere:  %w[papier baby    condom ],
   stein:   %w[schere baby_öl baby   ],
@@ -21,8 +15,6 @@ WINS_AGAINST = {
   brunnen: %w[schere stein   baby_öl],
   condom:  %w[stein  baby    brunnen],
 }
-
-
 
 choosen = readline.strip
 computer = WINS_AGAINST.keys.sample
