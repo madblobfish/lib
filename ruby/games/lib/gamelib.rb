@@ -9,6 +9,7 @@ class TerminalGame
     raise 'already started' if inited
     raise 'needs a tty' unless STDIN.tty?
 
+    Signal.trap("INT"){game_quit(); exit(0)}
     @inited = true
     @mouse_support = false if @mouse_support.nil?
     @fps ||= 5
@@ -55,6 +56,7 @@ class TerminalGame
   def initial_draw
     draw
   end
+  def game_quit;end
   def draw;end
   def input_handler(data);end
   def internal_mouse_handler(x, y, button_id, state_transition)
