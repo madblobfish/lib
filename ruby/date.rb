@@ -63,6 +63,10 @@ def date_valid?(string)
   true
 end
 
+def date_valid_regexp?(string)
+  /\A\w+[1-9a-c][1-9a-w](-[0-9a-n][0-9a-zA-X]{2}(\.\w{3,}))?(\+\w)?\z/ =~ string
+end
+
 if ARGV.one?
   p date_parse(ARGV[0])
 else
