@@ -45,15 +45,17 @@ def date(time=Time.now, **o)
 end
 
 def date_parse(string)
-  negative = string[0] == '-'
-  string.chop if negative
-  negative = negative ? -1 : 1
+  negative = string[0] == '-' ? -1 : 1
+  string.chop if negative.negative?
   datetime, tz = string.split('+', 2)
   date, time = datetime.split('-', 2)
   raise 'time part needs to be 3 characters' if time && time&.length != 3
   raise 'date part needs to be at least 3 characters' unless date.length >= 3
   y,m,d = date.rsplit('', 3)
-  Time.new(negative*y.from_base,*[m,d,*time&.split(''),tz].map{|x|x&.from_base})
+  t = Time.new(negative*y.from_base,*[m,d,*time&.split(''),tz].map{|x|x&.from_base})
+  # validation to make dates properly reference only a single point in time
+  raise ArgumentError, 'argument out of range' if t.month != m.from_base
+  t
 end
 
 def date_valid?(string)
@@ -61,4 +63,8 @@ def date_valid?(string)
   true
 end
 
-puts date(p: :hms)
+if ARGV.one?
+  p date_parse(ARGV[0])
+else
+  puts date(p: :hms)
+end
