@@ -45,30 +45,33 @@ def date(time=Time.now, **o)
 end
 
 def date_parse(string)
-  negative = string[0] == '-' ? -1 : 1
-  string.chop if negative.negative?
-  datetime, tz = string.split('+', 2)
-  date, time = datetime.split('-', 2)
-  raise 'time part needs to be 3 characters' if time && time&.length != 3
-  raise 'date part needs to be at least 3 characters' unless date.length >= 3
-  y,m,d = date.rsplit('', 3)
-  t = Time.new(negative*y.from_base,*[m,d,*time&.split(''),tz].map{|x|x&.from_base})
+  /\A
+    ((?<nodate>xxx)|(?<negative>-)?(?<year>[0-9a-zA-X]+)(?<mon>[1-9a-c])(?<day>[1-9a-w]))
+    (-(?<hour>[0-9a-n])(?<min>[0-9a-zA-X])(?<sec>[0-9a-zA-X])(\.(?<nsec>[0-9a-zA-X]+))?)?
+    (\+(?<off>[0-9a-zA-X]+))?
+  \z/x =~ string
+  negative = negative == '-' ? -1 : 1
+  t = Time.new(negative*year.from_base,*[mon,day,hour,min,sec,off].map{|x|x&.from_base})
   # validation to make dates properly reference only a single point in time
-  raise ArgumentError, 'argument out of range' if t.month != m.from_base
+  raise ArgumentError, 'argument out of range' if mon && t.month != mon.from_base
+  raise ArgumentError, 'argument out of range' if hour && t.hour != hour.from_base
   t
 end
 
 def date_valid?(string)
-  date_parse(string) rescue return false
+  date_parse(string) rescue false
   true
 end
 
-def date_valid_regexp?(string)
-  /\A-?\w+[1-9a-c][1-9a-w](-[0-9a-n][0-9a-zA-X]{2}(\.\w{3,}))?(\+\w)?\z/ =~ string
-end
+valid = ['011', 'x83b', 'x83b+X1', 'x83b-dgV', 'x83b-dgV.r7bab', 'x83b-dgV.r7bab+X1', 'x83b-dgV+X1', 'xxx-dgV.r7bab', 'xxx-dgV', 'xxx-dgV.r7bab+X1', 'xxx-dgV+X1', 'hal1o-011', 'haa-llo.welt', 'ach-nee']
+invalid = ['axx', 'hallo011-welt']
+raise "AHH" unless valid.all?{|v|date_valid?(v)}
+raise "AHHH" if invalid.one?{|v|date_valid?(v)}
 
-if ARGV.one?
-  p date_parse(ARGV[0])
-else
-  puts date(p: :hms)
+if __FILE__ == $PROGRAM_NAME
+  if ARGV.one?
+    p date_parse(ARGV[0])
+  else
+    puts date(p: :hms)
+  end
 end
