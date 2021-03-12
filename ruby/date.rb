@@ -46,13 +46,15 @@ end
 
 def date_parse(string)
   /\A
-    ((?<nodate>xxx)|(?<negative>-)?(?<year>[0-9a-zA-X]+)(?<mon>[1-9a-c])(?<day>[1-9a-w]))
+    ((?<nodate>xxx)|(?<negative>-)?(?<year>[0-9a-zA-X]+)(?<mon>[1-9a-c])(?<day>[1-9a-v]))
     (-(?<hour>[0-9a-n])(?<min>[0-9a-zA-X])(?<sec>[0-9a-zA-X])(\.(?<nsec>[0-9a-zA-X]+))?)?
     (\+(?<off>[0-9a-zA-X]+))?
   \z/x =~ string
-  negative = negative == '-' ? -1 : 1
-  t = Time.new(negative*year.from_base,*[mon,day,hour,min,sec,off].map{|x|x&.from_base})
+  raise 'did not parse' unless nodate || year
+  year = year.from_base * (negative == '-' ? -1 : 1) rescue 0
+  t = Time.new(year,*[mon,day,hour,min,sec,off].map{|x|x&.from_base})
   # validation to make dates properly reference only a single point in time
+  raise ArgumentError, 'argument out of range' if t.year != year
   raise ArgumentError, 'argument out of range' if mon && t.month != mon.from_base
   raise ArgumentError, 'argument out of range' if hour && t.hour != hour.from_base
   t
@@ -63,7 +65,7 @@ def date_valid?(string)
   true
 end
 
-valid = ['011', 'x83b', 'x83b+X1', 'x83b-dgV', 'x83b-dgV.r7bab', 'x83b-dgV.r7bab+X1', 'x83b-dgV+X1', 'xxx-dgV.r7bab', 'xxx-dgV', 'xxx-dgV.r7bab+X1', 'xxx-dgV+X1', 'hal1o-011', 'haa-llo.welt', 'ach-nee']
+valid = ['011', 'x83b', 'x83b+X1', 'x83b-dgV', 'x83b-dgV.r7bab', 'x83b-dgV.r7bab+X1', 'x83b-dgV+X1', 'xxx-dgV.r7bab', 'xxx-dgV', 'xxx-dgV.r7bab+X1', 'xxx-dgV+X1', 'hal1o-011', 'haa-llo.welt', 'nice-fly', 'haa-haa', 'ach-nee']
 invalid = ['axx', 'hallo011-welt']
 raise "AHH" unless valid.all?{|v|date_valid?(v)}
 raise "AHHH" if invalid.one?{|v|date_valid?(v)}
