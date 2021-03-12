@@ -52,16 +52,11 @@ def date_parse(string)
   \z/x =~ string
   raise 'did not parse' unless nodate || year
   year = year.from_base * (negative == '-' ? -1 : 1) rescue 0
-  t = Time.new(year,*[mon,day,hour,min,sec,off].map{|x|x&.from_base})
-  # validation to make dates properly reference only a single point in time
-  raise ArgumentError, 'argument out of range' if t.year != year
-  raise ArgumentError, 'argument out of range' if mon && t.month != mon.from_base
-  raise ArgumentError, 'argument out of range' if hour && t.hour != hour.from_base
-  t
+  Time.new(year,*[mon,day,hour,min,sec,off].map{|x|x&.from_base})
 end
 
 def date_valid?(string)
-  date_parse(string) rescue false
+  date_parse(string) rescue return false
   true
 end
 
