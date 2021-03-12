@@ -6,6 +6,10 @@ class Integer
     (negative? ? '-' : '') + self.each_digit(b).map{|x|chars[x]}.reverse.join('')
   end
   def each_digit(base=10)
+    if zero?
+      yield 0 if block_given?
+      return [0]
+    end
     ret = []
     num = self.abs
     while num != 0
