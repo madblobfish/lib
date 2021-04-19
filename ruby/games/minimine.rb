@@ -12,7 +12,8 @@ class Minesweep < TerminalGame
     print @size.times.map{|y|@size.times.map{|x|{'*'=>'#', '*!'=>'X'}.fetch(@map[[y,x]],@map[[y,x]])}.join}.join("\r\n")
     print "\r\nMines left: #{(@mines - @map.count{|k,v|%w(*! X).include?(v)}).to_s.rjust(@mines.to_s.length)}"
   end
-  def mouse_handler(x, y, button_id, _)
+  def mouse_handler(x, y, button_id, dir)
+    return if dir != :up
     pos = [y, x]
     return draw if pos.any?{|c|c < 0 || c >= @size}
     if button_id == 0 # left click
