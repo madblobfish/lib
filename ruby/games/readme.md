@@ -31,6 +31,11 @@ It may be playable in terminals in the future.
 ![miniminie screenshot](minimine.png)
 
 A minesweeper game which uses the mouse in the terminal.
+Left click = uncover
+Right click = mark as mine (which then leads to winning)
+
+## hexmine
+The same as above, but hexagonal I guess.
 
 ## minesweeper
 See readme in subfolder.
