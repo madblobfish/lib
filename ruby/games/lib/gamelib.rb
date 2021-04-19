@@ -3,7 +3,7 @@
 
 TTY_CLEAN_STATE = `stty -g` if STDIN.tty?
 class TerminalGame
-  attr_reader :fps, :sync, :mouse_support, :require_kitty_graphics
+  attr_reader :fps, :sync, :mouse_support, :require_kitty_graphics, :extended_input, :extended_input_implement_ctrl_c
   def inited?
     @inited ||= false
   end
@@ -44,6 +44,8 @@ class TerminalGame
 
     @inited = true
     @mouse_support = false if @mouse_support.nil?
+    @extended_input = false if @extended_input.nil?
+    @extended_input_implement_ctrl_c = true if @extended_input_implement_ctrl_c.nil?
     @fps ||= 5
 
     STDIN.sync = true unless @sync == false
@@ -52,6 +54,7 @@ class TerminalGame
     print("\e[?7l") # hide overflow
     system('stty raw -echo isig') unless @no_tty
     print("\e[?1002h\e[?1006h") if @mouse_support # mouse click/move events
+    print("\e[=26u") if @extended_input # keypress in unicode points +types +raw
     raise 'Graphic protocoll not supported' if @require_kitty_graphics && !supports_kitty_graphics
 
     begin
@@ -71,7 +74,7 @@ class TerminalGame
         data = STDIN.read_nonblock(100_000)
         next if data.match(/\e_G/) # ignore graphics stuff for now
         internal_mouse_handler($2,$3,$1,$4) if @mouse_support and data.match(/\e\[\<(\d+);(\d+);(\d+)([Mm])/)
-        input_handler(data)
+        internal_input_handler(data)
       end
     ensure
       return_to_tty()
@@ -83,6 +86,33 @@ class TerminalGame
   end
   def game_quit;end
   def draw;end
+  KEYBOARD_EVENT_TYPES = {"2"=>:repeat,"3"=>:up}
+  KEYBOARD_EVENT_MODIFIERS = {
+    shift: 0b1,
+    alt: 0b10,
+    ctrl: 0b100,
+    super: 0b1000,
+    hyper: 0b10000,
+    meta: 0b100000,
+    caps_lock: 0b1000000,
+    num_lock: 0b10000000,
+  }
+  def internal_input_handler(data)
+    if @extended_input and /\e\[(?<key_code>\d+)(?:;(?<mod>\d+)?(:(?<type>[123]))?)?(;(?<real_key>\d+))?u/ =~ data
+      key = ''<<(real_key || key_code).to_i
+      extended_input_handler(
+        key,
+        KEYBOARD_EVENT_TYPES.fetch(type,:down),
+        KEYBOARD_EVENT_MODIFIERS.select{|k,v|((mod.to_i-1)&v) > 0 if mod}.keys
+      )
+      if @extended_input_implement_ctrl_c and key == 'c' and mod and ((mod.to_i-1) & 0b100) > 0
+        exit
+      end
+    else
+      input_handler(data)
+    end
+  end
+  def extended_input_handler(key, state_transition, modifiers=[]);end
   def input_handler(data);end
   def internal_mouse_handler(x, y, button_id, state_transition)
     mouse_handler(x.to_i-1, y.to_i-1, button_id.to_i, (state_transition == 'M' ? :up : :down))
@@ -94,6 +124,7 @@ class TerminalGame
   def return_to_tty
     @draw_thread&.kill
     system('stty '+ TTY_CLEAN_STATE) unless @no_tty
+    print("\e[=0u") if @extended_input # keypress in unicode points +mod
     print("\e[?1002l\e[?1006l") # disable mouse click/move events
     print("\e[?1049l") # disable alternative screen buffer
     print("\e[?25h") # show cursor
