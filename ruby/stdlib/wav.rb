@@ -49,6 +49,7 @@ if __FILE__ == $PROGRAM_NAME
       wav, meta = wave_read(File.open(path))
       print "Metadata ", path, ":\n", meta.map{|e| e.join(': ')}.join("\n"), "\n\n"
       if play
+        Signal.trap(0, proc { exit! 130 })
         require_relative 'pa.rb'
         if loopy
           PulseSimple.loop_buffer(wav.read(meta[:size]), **meta)
