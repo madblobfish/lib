@@ -22,17 +22,44 @@ end
 
 class Tetrinal < TerminalGame
   EMPTY_CELL = {symbol:'⬜', color: [50,50,50]}
-  def initialize(size_x=9, size_y=20)
+  def initialize(**opts)
     @board = Hash.new
-    @size = [size_y, size_x]
+    @size = [opts.fetch(:size_y, 20), opts.fetch(:size_x, 9)]
     @fps = 3
-    @fps_steps = [2.5, 3, 4, 5, 6, 7]
+    @start = Time.now()
+    @speedup = opts.fetch(:speedup, "stepped")
     @tile_current = gen_tile
     @tile_next = gen_tile
     @sync = false
     @score = 0
     @mutex_draw = Mutex.new
     @mutex_drop = Mutex.new
+  end
+
+  def fps
+    case @speedup
+    when 'time'
+      (Time.now() - @start) / 50.0 + 2 + ( @score / 1000.0)
+    when 'none'
+      3
+    else #when 'stepped'
+      case @score
+      when 1..500
+        2.5
+      when 500..1000
+        3
+      when 1000..2000
+        4
+      when 2000..5000
+        5
+      when 5000..10000
+        6
+      when 10000..30000
+        7
+      else
+        9
+      end
+    end
   end
 
   def gen_tile
@@ -109,8 +136,10 @@ class Tetrinal < TerminalGame
       end.join}.join("\r\n")
       print "\r\nnext:\r\n"
       print (@tile_next[:size][0]+1).times.map{|y| (@tile_next[:size][1]+1).times.map{|x| block_to_str(@tile_next[[y,x]] || EMPTY_CELL)}.join}.join("\r\n")
-      print "\r\n\nScore:", @score
+      print "\r\n\nScore: ", @score
+      print "\r\n\mFPS: ", @fps
       STDOUT.flush
+      @fps = fps()
     end
   end
   def input_handler(input)
@@ -141,4 +170,9 @@ class Tetrinal < TerminalGame
   end
 end
 
-Tetrinal.new.run if __FILE__ == $PROGRAM_NAME
+if ARGV.include?('--help')
+  puts 'tetrinal takes an optional parameter which defines the speedup.'
+  puts 'there are 3 values: none, time and stepped. stepped is the default'
+end
+
+Tetrinal.new(speedup: ARGV.first).run if __FILE__ == $PROGRAM_NAME
