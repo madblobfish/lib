@@ -158,6 +158,8 @@ class Tetrinal < TerminalGame
     when :rotate
       tmp = @tile_current.dup
       @tile_current.rotate!
+      @tile_current.rotate!
+      @tile_current.rotate!
       @tile_current = tmp if current_tile_stuck
     when :left
       @tile_current[:pos][1] -= 1
