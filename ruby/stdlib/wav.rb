@@ -7,8 +7,8 @@ def wave_read(io)
   format = {1=>:pcm, 3=>:float}[io.read(2).unpack1('S<')]
   channels = io.read(2).unpack1('S<')
   sample_rate = io.read(4).unpack1('L<')
-  _sr2 = io.read(4).unpack1('L<')
-  _bps2 = io.read(2).unpack1('S<')
+  _byte_rate = io.read(4).unpack1('L<')
+  _block_align = io.read(2).unpack1('S<')
   bits_per_sample = io.read(2).unpack1('S<')
   raise 'expected data section' unless io.read(4) == 'data'
   data_size = io.read(4).unpack1('L<')
@@ -30,32 +30,35 @@ end
 if __FILE__ == $PROGRAM_NAME
   if ARGV.empty? || ARGV.include?('--help')
     puts 'Hi there, this is just a function to read the metadata from wave files.'
-    puts 'But it also can play them using pa.rb if you pass --play or --loop as the first argument'
+    puts 'But it also can play them using pa.rb'
+    puts ' there are some options:'
+    puts '  --play play once'
+    puts '  --loop play forever'
+    puts '  --loop-(start|end|length)-(byte|sample|sec|beat) <value> define when and how to loop, implies loop and play'
+    puts '  --bpm <bpm>  required vor the -beat variants from above'
     exit
   end
-  loopy = false
-  play = false
-  if ARGV.first == '--play'
-    ARGV.shift
-    play = true
-  end
-  if ARGV.first == '--loop'
-    ARGV.shift
-    loopy = true
-    play = true
+  args = {}
+  while (arg = ARGV.shift)
+    args[:loop] = true if arg.match?(/\A--loop(\z|-end|-length)/)
+    need_bpm = true if arg.end_with?('-beat')
+    next if arg == '--loop'
+    (args[:play] = true; next) if arg == '--play'
+    if arg.start_with?('--loop-') || arg == '--bpm'
+      args[arg[2..].tr('-', '_').to_sym] = ARGV.shift.to_f
+    else
+      ARGV.unshift(arg)
+      break
+    end
   end
   ARGV.map do |path|
     Thread.new do
       wav, meta = wave_read(File.open(path))
       print "Metadata ", path, ":\n", meta.map{|e| e.join(': ')}.join("\n"), "\n\n"
-      if play
+      if args[:play] || args[:loop]
         Signal.trap(0, proc { exit! 130 })
         require_relative 'pa.rb'
-        if loopy
-          PulseSimple.loop_buffer(wav.read(meta[:size]), **meta)
-        else
-          PulseSimple.bytestream(wav, **meta)
-        end
+        PulseSimple.play_buffer(wav.read, **meta.merge(args))
       end
     end
   end.each{|t| t.join}
