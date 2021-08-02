@@ -1,4 +1,5 @@
 SAMPLE_RATE = 1024
+EXT_SAMPLE_MUL = 16
 SIZE = 16
 STDOUT.sync = false
 
@@ -96,17 +97,20 @@ end
 require_relative 'stdlib/color_palette.rb'
 def color(x)
   # color_to_ansi(*color_palette(y = Math.log([1, 1+x].max)/8.3 )) rescue raise [x,y].to_s # this is for s16le (int16)
-  color_to_ansi(*color_palette(y = (Math.log(1+(x*(10**4.5)).abs))/8.3 )) rescue raise [x,y].to_s # this is for float32le
+  color_to_ansi(*color_palette(y = (Math.log(1+(x*(10**4.5)).abs))/9.2 )) rescue raise [x,y].to_s # this is for float32le
 end
 
 require 'open3'
 # stdin, stream, stderr, _wait_thr = Open3.popen3("parecord", "--channels=1", "--raw", "--rate=#{SAMPLE_RATE}", "--format=s16le")
-stdin, stream, stderr, _wait_thr = Open3.popen3("parecord", "--channels=1", "--raw", "--rate=#{SAMPLE_RATE*8}", "--format=float32le")
+stdin, stream, stderr, _wait_thr = Open3.popen3("parecord", "--channels=1", "--raw", "--rate=#{SAMPLE_RATE*EXT_SAMPLE_MUL}", "--format=float32le")
 stdin.close
 stderr.close
 
 loop do
-  # buffer = stream.read(SAMPLE_RATE*2).unpack("s<*") # s16le
-  buffer = stream.read(SAMPLE_RATE*4).unpack("e*") # float32le
-  print(*buffer.fft(true).slice(0,SAMPLE_RATE/2).map{|c| color(c.real)+'█'}, "\n")
+  print(
+    # *stream.read(SAMPLE_RATE*2).unpack("s<*") # s16le
+    *stream.read(SAMPLE_RATE*4).unpack("e*")
+      .fft(true).slice(0,SAMPLE_RATE/2).map{|c| color(c.real)+'█'},
+    "\n"
+    )
 end
