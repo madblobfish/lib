@@ -1,18 +1,25 @@
-# https://datatracker.ietf.org/doc/html/rfc2865
-# https://datatracker.ietf.org/doc/html/rfc5080
-# https://datatracker.ietf.org/doc/html/rfc6158
-# Support of Fragmentation of RADIUS Packets https://www.rfc-editor.org/rfc/rfc7499.html
-# Protocol Extensions https://www.rfc-editor.org/rfc/rfc6929.html#section-3
+# RADIUS base spec: https://datatracker.ietf.org/doc/html/rfc2865
+# RADIUS Implementation Issues and Suggested Fixes: https://datatracker.ietf.org/doc/html/rfc5080
+# RADIUS Extensions (Support for EAP!): https://datatracker.ietf.org/doc/html/rfc2869#section-2.3
+# RADIUS extended Attributes https://www.rfc-editor.org/rfc/rfc6929.html#section-3
 
 # alternative?
 # https://datatracker.ietf.org/doc/html/rfc5191
 # http://www.ijsrp.org/research-paper-0713/ijsrp-p1975.pdf
 
-# eap ttls: https://datatracker.ietf.org/doc/html/rfc5281#section-5
+#*eap ttls: https://datatracker.ietf.org/doc/html/rfc5281#section-5
 # eap: https://datatracker.ietf.org/doc/html/rfc3748
+# eap pap: https://www.rfc-editor.org/rfc/rfc1334#section-2
+
+# clients:
+#   https://github.com/CESNET/rad_eap_test
+#   eapol_test (from wpa_supplicant)
+
 require 'openssl'
 require 'socket'
 require 'stringio'
+
+SECRET = 's3cr3t'
 
 # https://www.iana.org/assignments/radius-types/radius-types.xhtml#radius-types-27
 RADIUS_PACKET_CODE = {
@@ -300,8 +307,114 @@ RADIUS_ATTRIBUTE_TYPE = {
 }
 RADIUS_ATTRIBUTE_TYPE_INVERT = RADIUS_ATTRIBUTE_TYPE.invert
 
+# https://www.iana.org/assignments/eap-numbers/eap-numbers.xhtml#eap-numbers-1
+EAP_PACKET_CODE = {
+  1=>'Request',
+  2=>'Response',
+  3=>'Success',
+  4=>'Failure',
+  5=>'Initiate',
+  6=>'Finish',
+}
+EAP_PACKET_CODE_INVERT = EAP_PACKET_CODE.invert
+
+# https://www.iana.org/assignments/eap-numbers/eap-numbers.xhtml#eap-numbers-4
+EAP_METHOD_TYPES = {
+  # 0=>'Reserved',
+  1=>'Identity',
+  2=>'Notification',
+  3=>'Legacy Nak',
+  4=>'MD5-Challenge',
+  5=>'One-Time Password (OTP)',
+  6=>'Generic Token Card (GTC)',
+  # 7=>'Allocated',
+  # 8=>'Allocated',
+  9=>'RSA Public Key Authentication',
+  10=>'DSS Unilateral',
+  11=>'KEA',
+  12=>'KEA-VALIDATE',
+  13=>'EAP-TLS',
+  14=>'Defender Token (AXENT)',
+  15=>'RSA Security SecurID EAP',
+  16=>'Arcot Systems EAP',
+  17=>'EAP-Cisco Wireless',
+  18=>'GSM Subscriber Identity Modules (EAP-SIM)',
+  19=>'SRP-SHA1',
+  # 20=>'Unassigned',
+  21=>'EAP-TTLS',
+  22=>'Remote Access Service',
+  23=>'EAP-AKA Authentication',
+  24=>'EAP-3Com Wireless',
+  25=>'PEAP',
+  26=>'MS-EAP-Authentication',
+  27=>'Mutual Authentication w/Key Exchange (MAKE)',
+  28=>'CRYPTOCard',
+  29=>'EAP-MSCHAP-V2',
+  30=>'DynamID',
+  31=>'Rob EAP',
+  32=>'Protected One-Time Password',
+  33=>'MS-Authentication-TLV',
+  34=>'SentriNET',
+  35=>'EAP-Actiontec Wireless',
+  36=>'Cogent Systems Biometrics Authentication EAP',
+  37=>'AirFortress EAP',
+  38=>'EAP-HTTP Digest',
+  39=>'SecureSuite EAP',
+  40=>'DeviceConnect EAP',
+  41=>'EAP-SPEKE',
+  42=>'EAP-MOBAC',
+  43=>'EAP-FAST',
+  44=>'ZoneLabs EAP (ZLXEAP)',
+  45=>'EAP-Link',
+  46=>'EAP-PAX',
+  47=>'EAP-PSK',
+  48=>'EAP-SAKE',
+  49=>'EAP-IKEv2',
+  50=>'EAP-AKA\'',
+  51=>'EAP-GPSK',
+  52=>'EAP-pwd',
+  53=>'EAP-EKE Version 1',
+  54=>'EAP Method Type for PT-EAP',
+  55=>'TEAP',
+  56=>'EAP-NOOB',
+  #=> 57-191'  Unassigned',
+  #=> 192-253' Unassigned',
+  # 254=>'Reserved for the Expanded Type',
+  # 255=>'Experimental',
+  #=> 256-4294967295'  Unassigned',
+}
+EAP_METHOD_TYPES_INVERT = EAP_METHOD_TYPES.invert
+
+def eap_parse(pkt)
+  # https://datatracker.ietf.org/doc/html/rfc2284#section-2.2
+  package_type = EAP_PACKET_CODE.fetch(pkt.read(1).unpack1('C')) rescue (raise 'unknown eap package type')
+  identifier = pkt.read(1).unpack1('C')
+  length = pkt.read(2).unpack1('S>')
+  raise 'length not in 4 and 4096' unless (4..4096).include?(length)
+  method = nil
+  data = nil
+  if %w(Request Response).include?(package_type)
+    if length - 4 > 0
+      method = EAP_METHOD_TYPES.fetch(pkt.read(1).unpack1('C')) rescue (raise 'unknown eap method')
+      data = pkt.read()
+    else
+      raise 'hmm expected some eap method here'
+    end
+  end
+  return {type: package_type, id: identifier, method: method, data: data}
+end
+
+def eap_response(type, id, method=nil, data=nil)
+  return [EAP_PACKET_CODE_INVERT.fetch(type, type), id, 4].pack('CCS>') if not method
+  return [EAP_PACKET_CODE_INVERT.fetch(type, type), id, 5, EAP_METHOD_TYPES_INVERT.fetch(method, method)].pack('CCS>C') if not data
+  [EAP_PACKET_CODE_INVERT.fetch(type, type), id, 5+data.length, EAP_METHOD_TYPES_INVERT[method], data].pack('CCS>Ca*')
+  # case method
+  # when 'Identity'
+  # end
+end
+
 def radius_parse(pkt)
-  package_type = RADIUS_PACKET_CODE.fetch(pkt.read(1).unpack1('C')) rescue (raise 'unknown package type')
+  package_type = RADIUS_PACKET_CODE.fetch(pkt.read(1).unpack1('C')) rescue (raise 'unknown radius package type')
   identifier = pkt.read(1).unpack1('C')
   length = pkt.read(2).unpack1('S>')
   raise 'length not in 20 and 4096' unless (20..4096).include?(length)
@@ -314,7 +427,12 @@ def radius_parse(pkt)
       attr_length = attrs.read(1).unpack1('C')
       attr_value = attrs.read(attr_length-2)
       attributes[attr_type] ||= []
-      attributes[attr_type] << attr_value
+      attributes[attr_type] <<
+        if attr_type == 'EAP-Message'
+          eap_parse(StringIO.new(attr_value))
+        else
+          attr_value
+        end
     rescue KeyError
       puts 'ignoring attribute'
       attrs.read(attrs.read(1).unpack1('C')) # throw away the data
@@ -323,12 +441,31 @@ def radius_parse(pkt)
   return {type: package_type, id: identifier, auth: authenticator, attributes: attributes}
 end
 
+def radius_message_auth(type, id, length, authenticator, attrs)
+  # this is a function for potentially verifying such codes of clients
+  OpenSSL::HMAC.digest("MD5", SECRET, [
+    type,
+    id,
+    length,
+    authenticator,
+    attrs + [RADIUS_ATTRIBUTE_TYPE_INVERT['Message-Authenticator'], 18,''].pack('CCa16')
+  ].pack('CCS>a16A*'))
+end
+
 def radius_response(code, request, attributes={})
   code = RADIUS_PACKET_CODE_INVERT.fetch(code, code)
-  attrs = attributes.map{|type,value| [RADIUS_ATTRIBUTE_TYPE_INVERT[type], value.length].pack('CCA*')}.join('')
+  attrs = attributes.map{|t,vals| vals.map{|v| [RADIUS_ATTRIBUTE_TYPE_INVERT[t], v.length+2, v].pack('CCA*')}.join('')}.join('')
   length = 20 + attrs.length
   raise 'too long' if length > 4096
-  # authenticator = 'nope?'
+  if attributes['EAP-Message']
+    # see RFC 3579
+    length += 18
+    mauth = radius_message_auth(
+      code, request[:id], length, request[:auth],
+      attrs
+    )
+    attrs << [RADIUS_ATTRIBUTE_TYPE_INVERT['Message-Authenticator'], 18, mauth].pack('CCa16')
+  end
   authenticator = OpenSSL::Digest::MD5.digest(
     [
       code,
@@ -336,7 +473,7 @@ def radius_response(code, request, attributes={})
       length,
       request[:auth],
       attrs,
-      's3cr3t'
+      SECRET
     ].pack('CCS>a16A*A*')
   )
   [
@@ -352,7 +489,16 @@ Socket.udp_server_loop('localhost', 1812) do |msg, client|
   # p msg, client
   case request = p(radius_parse(StringIO.new(msg)))
   in {type: 'Access-Request'}
-    if rand(3) == 1 # accept
+    if eap = request[:attributes]['EAP-Message']
+      puts "OHOHO!"
+      eap = p(eap.first)
+      if eap[:method] == 'EAP-TTLS'
+        puts "JAAAAAAAAA"
+      else
+        # ask for ttls
+        client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>[eap_response('Request', eap[:id], 'EAP-TTLS')]}))
+      end
+    elsif rand(3) == 1 # accept
       puts "jojo!"
       client.reply(radius_response('Access-Accept', request))
     elsif rand(2) == 1 # challenge him!
