@@ -405,7 +405,7 @@ def eap_parse(pkt)
         data['Version'] = flags & 7
         puts "version nicht 0" unless data['Version'] == 0
         if data['Length included']
-          data['message length'] = (p pkt.read(4)).unpack1('L>')
+          data['message length'] = pkt.read(4).unpack1('L>')
         end
         data['data'] = pkt.read()
       else
@@ -419,35 +419,23 @@ def eap_parse(pkt)
 end
 
 def eap_response_single(type, id, method=nil, data=nil)
-  return [EAP_PACKET_CODE_INVERT.fetch(type, type), id, 4].pack('CCS>') if not method
-  return [EAP_PACKET_CODE_INVERT.fetch(type, type), id, 5, EAP_METHOD_TYPES_INVERT.fetch(method, method)].pack('CCS>C') if not data
-  [EAP_PACKET_CODE_INVERT.fetch(type, type), id, 5+data.length, EAP_METHOD_TYPES_INVERT[method], data].pack('CCS>Ca*')
+  return [EAP_PACKET_CODE_INVERT.fetch(type, type), id, 4].pack('CCS>').b if not method
+  return [EAP_PACKET_CODE_INVERT.fetch(type, type), id, 5, EAP_METHOD_TYPES_INVERT.fetch(method, method)].pack('CCS>C').b if not data
+  return [EAP_PACKET_CODE_INVERT.fetch(type, type), id, 5+data.size, EAP_METHOD_TYPES_INVERT.fetch(method, method), data].pack('CCS>Ca*').b
 end
-def eap_response(type, id, method=nil, data=nil, message_len=nil, **fields)
-  if data.length >= 243
-    first = true
-    data_buffer = StringIO.new(data)
-    out = []
-    while slice = data_buffer.read(243)
-      if first
-        first = false
-        out << eap_response_single(type, id, method, eap_ttls_data_encode(slice, p(data.length), **fields.merge({'More Fragments'=>'1'})))
-      else
-        out << eap_response_single(type, id, method, eap_ttls_data_encode(slice, **fields.merge({'Length included'=>'0','More Fragments'=>(data_buffer.eof? ? '0' : '1')})))
-      end
-    end
-    return out
-  else
-    [eap_response_single(type, id, method, data)]
-  end
+def eap_response(type, id, method=nil, data=nil, **fields)
+  ret = eap_response_single(type, id, method, eap_ttls_data_encode(data, data.b.size))
+  return ret.each_char.each_slice(253).map(&:join) if ret.length > 253
+  return [ret]
 end
 
 def eap_ttls_data_encode(data=nil, message_len=nil, **fields)
+  return nil if data.nil? || data.size == 0
   fields.default = '0'
   fields['Length included'] = '1' unless message_len.nil?
   out = [fields.values_at('Length included', 'More Fragments', 'Start', 'r1','r2').join() + '000'].pack('B*')
   out += [message_len].pack('L>') if fields['Length included'] == '1'
-  data.nil? ? out : out + data
+  data.nil? ? out.b : (out + data).b
 end
 
 def radius_parse(pkt)
@@ -457,6 +445,7 @@ def radius_parse(pkt)
   raise 'length not in 20 and 4096' unless (20..4096).include?(length)
   authenticator = pkt.read(16)
   attrs = StringIO.new(pkt.read(length - 20)) rescue StringIO.new('')
+  attrs.binmode
   attributes = {}
   while not attrs.eof?
     begin
@@ -466,7 +455,7 @@ def radius_parse(pkt)
       attributes[attr_type] ||= []
       attributes[attr_type] <<
         if attr_type == 'EAP-Message'
-          eap_parse(StringIO.new(attr_value))
+          eap_parse(StringIO.new(attr_value).binmode)
         else
           attr_value
         end
@@ -491,7 +480,7 @@ end
 
 def radius_response(code, request, attributes={})
   code = RADIUS_PACKET_CODE_INVERT.fetch(code, code)
-  attrs = attributes.map{|t,vals| vals.map{|v| raise "toolong #{v.length}" if v.length >=254;[RADIUS_ATTRIBUTE_TYPE_INVERT[t], v.length+2, v].pack('CCA*')}.join('')}.join('')
+  attrs = attributes.map{|t,vals| vals.map{|v| raise "toolong #{v.length}" if v.length >=254;[RADIUS_ATTRIBUTE_TYPE_INVERT[t], v.length+2, v].pack('CCA*')}.join('')}.join('').b
   length = 20 + attrs.length
   raise 'too long' if length > 4096
   if attributes['EAP-Message']
@@ -540,7 +529,7 @@ tls_context.ciphers = 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256
 Socket.udp_server_loop('localhost', 1812) do |msg, client|
   # p msg, client
   puts '------------------------------------------------ New Packet, new thing?'
-  case request = p(radius_parse(StringIO.new(msg)))
+  case request = p(radius_parse(StringIO.new(msg).binmode))
   in {type: 'Access-Request'}
     if eap = request[:attributes]['EAP-Message']
       # puts "! got EAP message trying to respond"
@@ -560,25 +549,24 @@ Socket.udp_server_loop('localhost', 1812) do |msg, client|
             response = plain_socket.recv(99999)
             # p("----",response,"----"+ response.size.to_s)
             puts '! got a response internally!'
-            tls_connections['a'][2] = eap_response('Request', eap[:id]+1, 'EAP-TTLS', response)
-            client.reply(s = radius_response('Access-Challenge', request, {'EAP-Message'=>[tls_connections['a'][2].shift]}))
-            p(radius_parse(StringIO.new(s)))
-            p("that was mine, sorry")
+            client.reply(s = radius_response('Access-Challenge', request, {'EAP-Message'=>eap_response('Request', eap[:id]+1, 'EAP-TTLS', response)}))
+            # p(radius_parse(StringIO.new(s).binmode))
+            # p("that was mine, sorry")
           end
         else
           puts "TLS GOGOGO"
           tls_socket, plain_socket, messages = tls_connections['a']
-          if messages.any?
-            client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>[messages.shift]}))
-          end
+          # if messages.any?
+            # client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>[messages.shift]}))
+          # end
           if true
-            plain_socket.send(p(eap[:data]['data']), 0)
+            plain_socket.send(eap[:data]['data'], 0)
             thing = (tls_socket.accept_nonblock rescue nil)
-            p("----",thing,"----")
+            # p("----",thing,"----")
             response = plain_socket.recv_nonblock(99999) rescue ''
-            p("----",response,"----")
+            # p("----",response,"----")
             puts '! got a response internally? 2'
-            # client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>[eap_response_single('Request', eap[:id]+1, 'EAP-TTLS', eap_ttls_data_encode(response))]}))
+            client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>eap_response('Request', eap[:id]+1, 'EAP-TTLS', response)}))
           end
         end
       else
