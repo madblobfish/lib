@@ -20,6 +20,7 @@ require 'socket'
 require 'stringio'
 
 SECRET = 's3cr3t'
+USERS = {'user'=>'password'}
 
 # https://www.iana.org/assignments/radius-types/radius-types.xhtml#radius-types-27
 RADIUS_PACKET_CODE = {
@@ -424,7 +425,7 @@ def eap_response_single(type, id, method=nil, data=nil)
   return [EAP_PACKET_CODE_INVERT.fetch(type, type), id, 5+data.size, EAP_METHOD_TYPES_INVERT.fetch(method, method), data].pack('CCS>Ca*').b
 end
 def eap_response(type, id, method=nil, data=nil, **fields)
-  ret = eap_response_single(type, id, method, eap_ttls_data_encode(data, data.b.size))
+  ret = eap_response_single(type, id, method, eap_ttls_data_encode(data, data&.b&.size))
   return ret.each_char.each_slice(253).map(&:join) if ret.length > 253
   return [ret]
 end
@@ -436,6 +437,32 @@ def eap_ttls_data_encode(data=nil, message_len=nil, **fields)
   out = [fields.values_at('Length included', 'More Fragments', 'Start', 'r1','r2').join() + '000'].pack('B*')
   out += [message_len].pack('L>') if fields['Length included'] == '1'
   data.nil? ? out.b : (out + data).b
+end
+
+def eap_ttls_avp_parse(pkt)
+  attrs = {}
+  until pkt.eof?
+    old_pos = pkt.pos
+    if pkt.read().tr("\0", '') == ''
+      break
+    else
+      pkt.pos = old_pos
+    end
+    code = pkt.read(4).unpack1('L>')
+    code = RADIUS_ATTRIBUTE_TYPE.fetch(code, nil) if code <= 256
+    flags = pkt.read(1).unpack1('C')
+    raise 'Unknown attribute' if (flags & 64) != 0 && code.nil?
+    length = ("\x00" + pkt.read(3)).unpack1('L>') - 8
+    if (flags & 128) != 0
+      vendor = pkt.read(4).unpack1('L>')
+      length -= 4
+    end
+    data = pkt.read(length)
+    data = data.b.sub(/\0+$/, '') if code == 'User-Password'
+    attrs[code] ||= []
+    attrs[code] << data
+  end
+  attrs
 end
 
 def radius_parse(pkt)
@@ -478,9 +505,12 @@ def radius_message_auth(type, id, length, authenticator, attrs)
   ].pack('CCS>a16A*'))
 end
 
+def radius_response_vendor(vendor_id, attributes)
+  return [vendor_id, attributes.map{|t,vals| vals.map{|v|[t,v.length-2,v].pack('CCA*')}.join('')}.join('')].pack('S>A*')
+end
 def radius_response(code, request, attributes={})
   code = RADIUS_PACKET_CODE_INVERT.fetch(code, code)
-  attrs = attributes.map{|t,vals| vals.map{|v| raise "toolong #{v.length}" if v.length >=254;[RADIUS_ATTRIBUTE_TYPE_INVERT[t], v.length+2, v].pack('CCA*')}.join('')}.join('').b
+  attrs = attributes.map{|t,vals| vals.map{|v| raise "toolong #{v.length}" if v.length >=254;[RADIUS_ATTRIBUTE_TYPE_INVERT.fetch(t,t), v.length+2, v].pack('CCA*')}.join('')}.join('').b
   length = 20 + attrs.length
   raise 'too long' if length > 4096
   if attributes['EAP-Message']
@@ -526,6 +556,15 @@ tls_context.max_version = OpenSSL::SSL::TLS1_3_VERSION
 # tls_context.enable_fallback_scsv
 tls_context.ciphers = 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384'
 
+# hack because you got no patch yet :P
+unless OpenSSL::SSL::SSLSocket.instance_methods.include?(:export_keying_material)
+  class OpenSSL::SSL::SSLSocket
+    def export_keying_material(label, len, context=nil)
+      return 'x'*len
+    end
+  end
+end
+
 Socket.udp_server_loop('localhost', 1812) do |msg, client|
   # p msg, client
   puts '------------------------------------------------ New Packet, new thing?'
@@ -540,7 +579,7 @@ Socket.udp_server_loop('localhost', 1812) do |msg, client|
           tunnel_socket, plain_socket = UNIXSocket.pair
           tls_socket = OpenSSL::SSL::SSLSocket.new(tunnel_socket, tls_context)
           tls_socket.sync_close = true
-          tls_connections['a'] = [tls_socket, plain_socket, []]
+          tls_connections['a'] = [tls_socket, plain_socket, [], nil]
           if eap[:data]
             puts '! trying to do the tls stuff'
             plain_socket.send(eap[:data]['data'], 0)
@@ -549,20 +588,59 @@ Socket.udp_server_loop('localhost', 1812) do |msg, client|
             response = plain_socket.recv(99999)
             # p("----",response,"----"+ response.size.to_s)
             puts '! got a response internally!'
-            client.reply(s = radius_response('Access-Challenge', request, {'EAP-Message'=>eap_response('Request', eap[:id]+1, 'EAP-TTLS', response)}))
-            # p(radius_parse(StringIO.new(s).binmode))
-            # p("that was mine, sorry")
+            client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>eap_response('Request', eap[:id]+1, 'EAP-TTLS', response)}))
           end
         else
           puts "TLS GOGOGO"
-          tls_socket, plain_socket, messages = tls_connections['a']
+          tls_socket, plain_socket, messages, socket = tls_connections['a']
           # if messages.any?
             # client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>[messages.shift]}))
           # end
           if true
             plain_socket.send(eap[:data]['data'], 0)
-            thing = (tls_socket.accept_nonblock rescue nil)
-            # p("----",thing,"----")
+            if socket.nil?
+              socket = (tls_socket.accept_nonblock rescue nil)
+              tls_connections['a'][3] = socket
+            end
+            tls_query = socket.read_nonblock(99999) rescue nil if socket
+            if tls_query
+              # p("--tls_query--",tls_query,"--tls_query--")
+              avp = eap_ttls_avp_parse(StringIO.new(tls_query).binmode)
+              p(avp)
+              if avp['User-Password'] && avp['User-Name'] # PAP
+                p('! PAP')
+                # vvvvvvvvv worst possible implementation vvvvvvvvv
+                ok = p(USERS[avp['User-Name'].first]) == avp['User-Password'].first
+                # ^^^^^^^^^ worst possible implementation ^^^^^^^^^
+                if ok
+                  p('! sent ok')
+                  #todo:: https://datatracker.ietf.org/doc/html/rfc5281#section-8
+                  # p(OpenSSLThing.client_random(socket))
+                  # p(socket.export_keying_material("server finished"))
+                  # p(socket.export_keying_material("client finished"))
+                  challenge = socket.export_keying_material("ttls keying material", 64).b
+                  msk = challenge[...32]
+                  emsk = challenge[32...]
+                  # p(OpenSSLThing.server_random(socket))
+                  # p(OpenSSLThing.master_key(socket.session))
+                  p challenge
+                  p(socket.session.to_text.each_line.grep(/Master-Key/).first.split(': ').last.strip)
+                  keyshare = [radius_response_vendor(311, {17=>[msk[...16]]}), radius_response_vendor(311, {16=>[msk[16...]]})]
+                  client.reply(r = radius_response('Access-Accept', request, {'EAP-Message'=>eap_response('Success', eap[:id], 'EAP-TTLS'), 'Vendor-Specific'=>keyshare}))
+                  p(radius_parse(StringIO.new(r).binmode))
+                else
+                  p('! sent nok')
+                  client.reply(radius_response('Access-Reject', request, {'EAP-Message'=>eap_response('Failure', eap[:id], 'EAP-TTLS')}))
+                end
+                p('! killing connection')
+                tls_connections.delete('a')
+              elsif avp['EAP-Message'] # EAP goes even deeper here
+                p('! not implemented for now')
+              else
+                p('! unknown auth here!')
+              end
+              next # ignore the stuff below
+            end
             response = plain_socket.recv_nonblock(99999) rescue ''
             # p("----",response,"----")
             puts '! got a response internally? 2'
