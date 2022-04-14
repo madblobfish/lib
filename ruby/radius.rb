@@ -308,6 +308,19 @@ RADIUS_ATTRIBUTE_TYPE = {
 }
 RADIUS_ATTRIBUTE_TYPE_INVERT = RADIUS_ATTRIBUTE_TYPE.invert
 
+VENDOR_IDS = {
+  311=>"Microsoft"
+}
+VENDOR_IDS_INVERT = VENDOR_IDS.invert
+
+VENDOR_SPECIFIC = {
+  311=>{
+    16=>'MS-MPPE-Send-Key',
+    17=>'MS-MPPE-Recv-Key',
+  }
+}
+VENDOR_SPECIFIC_INVERT = VENDOR_SPECIFIC.transform_values(&:invert)
+
 # https://www.iana.org/assignments/eap-numbers/eap-numbers.xhtml#eap-numbers-1
 EAP_PACKET_CODE = {
   1=>'Request',
@@ -488,7 +501,7 @@ def radius_parse(pkt)
         end
     rescue KeyError
       puts 'ignoring attribute'
-      attrs.read(attrs.read(1).unpack1('C')) # throw away the data
+      attrs.read(attrs.read(1).unpack1('C')-2) # throw away the data
     end
   end
   return {type: package_type, id: identifier, auth: authenticator, attributes: attributes}
@@ -505,9 +518,27 @@ def radius_message_auth(type, id, length, authenticator, attrs)
   ].pack('CCS>a16A*'))
 end
 
-def radius_response_vendor(vendor_id, attributes)
-  return [vendor_id, attributes.map{|t,vals| vals.map{|v|[t,v.length-2,v].pack('CCA*')}.join('')}.join('')].pack('S>A*')
+class String
+  def xor(other)
+    self.each_byte.zip(other.each_byte).map{|a,b|(a^b).chr}.join('')
+  end
 end
+
+def microsoft_md5_cipher(secret,salt,plaintext,decrypt=false)
+  b = OpenSSL::Digest::MD5.digest(secret + salt)
+  plaintext.b.split('').each_slice(8).map do |plain|
+    c = plain.join().ljust(8,"\0").xor(b)
+    b = OpenSSL::Digest::MD5.digest(secret + (decrypt ? plain.join() : c))
+    c
+  end.join()
+end
+
+def radius_response_vendor_value(vendor, attributes)
+  [id = VENDOR_IDS_INVERT.fetch(vendor, vendor), attributes.map do |t,vals|
+    vals.map{|v|[VENDOR_SPECIFIC_INVERT.fetch(id).fetch(t,t), v.length+2, v].pack('CCA*')}.join('')
+  end.join('')].pack('L>A*')
+end
+
 def radius_response(code, request, attributes={})
   code = RADIUS_PACKET_CODE_INVERT.fetch(code, code)
   attrs = attributes.map{|t,vals| vals.map{|v| raise "toolong #{v.length}" if v.length >=254;[RADIUS_ATTRIBUTE_TYPE_INVERT.fetch(t,t), v.length+2, v].pack('CCA*')}.join('')}.join('').b
@@ -586,18 +617,23 @@ Socket.udp_server_loop('localhost', 1812) do |msg, client|
             thing = (tls_socket.accept_nonblock rescue '')
             # p("----",thing,"----")
             response = plain_socket.recv(99999)
+            p tls_socket.state
             # p("----",response,"----"+ response.size.to_s)
             puts '! got a response internally!'
-            client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>eap_response('Request', eap[:id]+1, 'EAP-TTLS', response)}))
+
+            tls_connections['a'][2] = response.b.each_char.each_slice(1450).map(&:join)
+            client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>eap_response('Request', eap[:id]+1, 'EAP-TTLS', tls_connections['a'][2].shift)}))
           end
         else
           puts "TLS GOGOGO"
           tls_socket, plain_socket, messages, socket = tls_connections['a']
-          # if messages.any?
-            # client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>[messages.shift]}))
-          # end
+          plain_socket.send(eap[:data]['data'], 0)
+          if messages.any?
+            client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>eap_response('Request', eap[:id]+1, 'EAP-TTLS', tls_connections['a'][2].shift)}))
+            # client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>[tls_connections['a'][2].shift]}))
+            next
+          end
           if true
-            plain_socket.send(eap[:data]['data'], 0)
             if socket.nil?
               socket = (tls_socket.accept_nonblock rescue nil)
               tls_connections['a'][3] = socket
@@ -609,9 +645,9 @@ Socket.udp_server_loop('localhost', 1812) do |msg, client|
               p(avp)
               if avp['User-Password'] && avp['User-Name'] # PAP
                 p('! PAP')
-                # vvvvvvvvv worst possible implementation vvvvvvvvv
-                ok = p(USERS[avp['User-Name'].first]) == avp['User-Password'].first
-                # ^^^^^^^^^ worst possible implementation ^^^^^^^^^
+                # vvvvvvvvvvvvvvvv worst possible implementation vvvvvvvvvvvvvvvv
+                ok = USERS[avp['User-Name'].first] == avp['User-Password'].first
+                # ^^^^^^^^^^^^^^^^ worst possible implementation ^^^^^^^^^^^^^^^^
                 if ok
                   p('! sent ok')
                   #todo:: https://datatracker.ietf.org/doc/html/rfc5281#section-8
@@ -623,14 +659,19 @@ Socket.udp_server_loop('localhost', 1812) do |msg, client|
                   emsk = challenge[32...]
                   # p(OpenSSLThing.server_random(socket))
                   # p(OpenSSLThing.master_key(socket.session))
-                  p challenge
-                  p(socket.session.to_text.each_line.grep(/Master-Key/).first.split(': ').last.strip)
-                  keyshare = [radius_response_vendor(311, {17=>[msk[...16]]}), radius_response_vendor(311, {16=>[msk[16...]]})]
-                  client.reply(r = radius_response('Access-Accept', request, {'EAP-Message'=>eap_response('Success', eap[:id], 'EAP-TTLS'), 'Vendor-Specific'=>keyshare}))
+                  s1 = (2**7).chr + "a"
+                  s2 = (2**7).chr + "b"
+                  # p(socket.session.to_text.each_line.grep(/Master-Key/).first.split(': ').last.strip)
+                  p request[:auth]
+                  keyshare = [
+                    radius_response_vendor_value("Microsoft", {"MS-MPPE-Recv-Key"=>[s1+s1 + microsoft_md5_cipher(SECRET,request[:auth]+s1, msk[...16])]}),
+                    radius_response_vendor_value("Microsoft", {"MS-MPPE-Send-Key"=>[s2+s1 + microsoft_md5_cipher(SECRET,request[:auth]+s2, msk[16...])]})
+                  ]
+                  client.reply(r = radius_response('Access-Accept', request, {'EAP-Message'=>eap_response('Success', eap[:id]+1, 'EAP-TTLS'), 'Vendor-Specific'=>keyshare}))
                   p(radius_parse(StringIO.new(r).binmode))
                 else
                   p('! sent nok')
-                  client.reply(radius_response('Access-Reject', request, {'EAP-Message'=>eap_response('Failure', eap[:id], 'EAP-TTLS')}))
+                  client.reply(radius_response('Access-Reject', request, {'EAP-Message'=>eap_response('Failure', eap[:id]+1, 'EAP-TTLS')}))
                 end
                 p('! killing connection')
                 tls_connections.delete('a')
