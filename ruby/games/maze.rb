@@ -5,9 +5,14 @@ class Maze < TerminalGame
   def initialize(size_x=70, size_y=16)
     @fps = :manual
     @size = [size_y, size_x]
-    @player = @size.map{|x|rand(x)}
+    # @player = @size.map{|x|rand(x)}
+    @player = @size.dup
     @path = [@player.dup]
+    @goal = [0,0]
+    # @goal = @size.map{|x|rand(x)}
+    # @goal = @size.map{|x|rand(x)} if @goal == @player
     @map = maze_gen_bt(@size)
+    @backwalk = 0
   end
   def maze_gen_bt(size=[70,16])
     GC.disable # more speed
@@ -52,7 +57,11 @@ class Maze < TerminalGame
     {ud:door_open_ud, lr:door_open_lr}
   end
 
+  def check_win
+    raise "won #{@backwalk}" if @goal == @player
+  end
   def draw
+    check_win()
     move_cursor
     puts '██' * (@size.first+2)
     print "\r"
@@ -66,7 +75,9 @@ class Maze < TerminalGame
           end
         player_loc = [x,y/2] == @player
         if y.even?
-          if player_loc
+          if [x,y/2] == @goal
+            print get_color_code(color_palette(0.5), :fg), '╬', get_color_code(15, :fg)
+          elsif player_loc
             print get_color_code(color_palette(1),:bg), 'X', get_color_code(0,:bg)
           else
             print marker
@@ -94,6 +105,7 @@ class Maze < TerminalGame
     @player[0] += dir[0]
     @player[1] += dir[1]
     if @path.last == old_pos && @path[-2] == @player
+      @backwalk += 1
       @path.pop
       draw()
       return
@@ -104,6 +116,7 @@ class Maze < TerminalGame
         @map[:ud][[@player, old_pos].min]
       end
     unless door_open
+      raise 'LOOOSER!'
       @player = old_pos
       draw()
       return
