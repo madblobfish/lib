@@ -67,7 +67,7 @@ void crack(const char* target_hex, const char* hash_type, const unsigned int siz
 		for(unsigned long long i = 0; i < ULLONG_MAX; ++i){
 			unsigned char hash[size];
 			char* str = int_to_str(i);
-			// MD5(str, strlen(str), hash);
+			// MD5(str, strlen(str), hash); //fyi: old interface was ~20% faster
 			// HASH(str, strlen(str), "md5", hash);
 			EVP_DigestInit_ex(c, bla, NULL);
 			EVP_DigestUpdate(c, str, strlen(str));
