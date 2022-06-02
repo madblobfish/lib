@@ -22,21 +22,21 @@
 	MD5_Final(out, &c);
 
 
-char* int_to_str(unsigned long long in){
+char* int_to_str(const unsigned long long in){
 	char* out = calloc(41, sizeof(char));
 	unsigned long long copy = in;
 	for(int i = 0; i < 40; ++i){
 		out[i] = copy & 255;
 		copy = copy >> 8;
-		if(copy == 0) break;
+		if(copy == 0){break;}
 	}
 	return out;
 }
 
 char hexchar_to_int(const char c){
-	if(c >= '0' && c <= '9') return c - '0';
-	if(c >= 'A' && c <= 'F') return c - 'A' + 10;
-	if(c >= 'a' && c <= 'f') return c - 'a' + 10;
+	if(c >= '0' && c <= '9'){return c - '0';}
+	if(c >= 'A' && c <= 'F'){return c - 'A' + 10;}
+	if(c >= 'a' && c <= 'f'){return c - 'a' + 10;}
 	puts("could not convert input from hex");
 	exit(1);
 }
@@ -49,7 +49,7 @@ const char* hex_to_bytes(const char* str){
 	return out;
 }
 
-void printthing(unsigned char* hash, unsigned int len){
+void printthing(const unsigned char* hash, const unsigned int len){
 	for(int i = 0; i < len; ++i){
 		printf("%02X", hash[i]);
 	}
@@ -57,7 +57,7 @@ void printthing(unsigned char* hash, unsigned int len){
 }
 
 void crack(const char* target_hex, const char* hash_type, const unsigned int size){
-	const char* target = hex_to_bytes((const char*)target_hex);
+	const char* target = hex_to_bytes(target_hex);
 	const EVP_MD * bla = EVP_get_digestbyname(hash_type);
 	#pragma omp parallel default(none) shared(size,bla,target)
 	{
