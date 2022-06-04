@@ -25,7 +25,7 @@
 char* int_to_str(const unsigned long long in){
 	char* out = calloc(41, sizeof(char));
 	unsigned long long copy = in;
-	for(int i = 0; i < 40; ++i){
+	for(unsigned int i = 0; i < 40; ++i){
 		out[i] = copy & 255;
 		copy = copy >> 8;
 		if(copy == 0){break;}
@@ -43,14 +43,14 @@ char hexchar_to_int(const char c){
 const char* hex_to_bytes(const char* str){
 	unsigned int len = strlen(str)/2;
 	char* out = calloc(len, sizeof(char));
-	for(int i = 0; i < len; ++i){
+	for(unsigned int i = 0; i < len; ++i){
 		out[i] = hexchar_to_int(str[i*2])*16 + hexchar_to_int(str[i*2+1]);
 	}
 	return out;
 }
 
 void printthing(const unsigned char* hash, const unsigned int len){
-	for(int i = 0; i < len; ++i){
+	for(unsigned int i = 0; i < len; ++i){
 		printf("%02X", hash[i]);
 	}
 	puts("");
