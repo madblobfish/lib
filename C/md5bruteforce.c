@@ -23,14 +23,9 @@
 
 
 char* int_to_str(const unsigned long long in){
-	char* out = calloc(41, sizeof(char));
-	unsigned long long copy = in;
-	for(unsigned int i = 0; i < 40; ++i){
-		out[i] = copy & 255;
-		copy = copy >> 8;
-		if(copy == 0){break;}
-	}
-	return out;
+	unsigned long long* out = calloc(1, sizeof(long long)+1);
+	out[0] = in;
+	return (char*) out;
 }
 
 char hexchar_to_int(const char c){
