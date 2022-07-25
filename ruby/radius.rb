@@ -462,7 +462,7 @@ def eap_ttls_avp_parse(pkt)
       pkt.pos = old_pos
     end
     code = pkt.read(4).unpack1('L>')
-    code = RADIUS_ATTRIBUTE_TYPE.fetch(code, nil) if code <= 256
+    code = RADIUS_ATTRIBUTE_TYPE.fetch(code) if code <= 256
     flags = pkt.read(1).unpack1('C')
     raise 'Unknown attribute' if (flags & 64) != 0 && code.nil?
     length = ("\x00" + pkt.read(3)).unpack1('L>') - 8
@@ -496,6 +496,10 @@ def radius_parse(pkt)
       attributes[attr_type] <<
         if attr_type == 'EAP-Message'
           eap_parse(StringIO.new(attr_value).binmode)
+        elsif attr_type == 'Vendor-Specific'
+          # x = eap_ttls_avp_parse(StringIO.new(attr_value).binmode)
+          # if x.has_key?(311)
+          radius_response_vendor_value_parse(StringIO.new(attr_value).binmode)
         else
           attr_value
         end
@@ -524,19 +528,40 @@ class String
   end
 end
 
-def microsoft_md5_cipher(secret,salt,plaintext,decrypt=false)
-  b = OpenSSL::Digest::MD5.digest(secret + salt)
-  plaintext.b.split('').each_slice(8).map do |plain|
-    c = plain.join().ljust(8,"\0").xor(b)
-    b = OpenSSL::Digest::MD5.digest(secret + (decrypt ? plain.join() : c))
+# https://datatracker.ietf.org/doc/html/rfc2548#section-2.4.3
+# Note: decrypt is using a ciphertext as plaintext, its a md5 stream cipher
+def microsoft_md5_cipher(secret, authenticator_plus_salt, plaintext)
+  b = OpenSSL::Digest::MD5.digest(secret + authenticator_plus_salt)
+  plaintext.b.split('').each_slice(16).map do |plain|
+    raise "WTH #{b.each_byte.to_a}" unless b.length == 16
+    c = plain.join().ljust(16, "\0").xor(b)
+    b = OpenSSL::Digest::MD5.digest(secret + c).b
     c
   end.join()
 end
+
+a = "\xFA\xD7\xC0r\xABWbE\x8F\xCE\x8Fo\x9F\xF2\xCD\x93\x80a".b
+b = "|\x92\xBC\x9D\xDB[\x12\x9C^Y_\x16\xA8s(U".b
+c = "\x1D\xE0\x17\xC7\xC6\xDA\xD7[~\x8B\x03c\xF3\xBC\x83\x8F".b
+raise 'AH! (microsoft_md5_cipher broken)' unless microsoft_md5_cipher(SECRET, a, b) == c
+raise 'AH! (microsoft_md5_cipher broken)' unless microsoft_md5_cipher(SECRET, a, microsoft_md5_cipher(SECRET, a, b)) == b
 
 def radius_response_vendor_value(vendor, attributes)
   [id = VENDOR_IDS_INVERT.fetch(vendor, vendor), attributes.map do |t,vals|
     vals.map{|v|[VENDOR_SPECIFIC_INVERT.fetch(id).fetch(t,t), v.length+2, v].pack('CCA*')}.join('')
   end.join('')].pack('L>A*')
+end
+
+
+def radius_response_vendor_value_parse(buffer)
+  package = {}
+  id_int = buffer.read(4).unpack1('L>')
+  package[:id] = VENDOR_IDS.fetch(id_int, nil)
+  if package[:id]
+    package[:type] = VENDOR_SPECIFIC[id_int].fetch(buffer.read(1).unpack1('C'))
+    package[:data] = buffer.read(buffer.read(1).unpack1('C') - 2)
+  end
+  package
 end
 
 def radius_response(code, request, attributes={})
@@ -655,17 +680,16 @@ Socket.udp_server_loop('localhost', 1812) do |msg, client|
                   # p(socket.export_keying_material("server finished"))
                   # p(socket.export_keying_material("client finished"))
                   challenge = socket.export_keying_material("ttls keying material", 64).b
-                  msk = challenge[...32]
-                  emsk = challenge[32...]
+                  msk1 = challenge[...32]
+                  msk2 = challenge[32...]
                   # p(OpenSSLThing.server_random(socket))
                   # p(OpenSSLThing.master_key(socket.session))
                   s1 = (2**7).chr + "a"
                   s2 = (2**7).chr + "b"
                   # p(socket.session.to_text.each_line.grep(/Master-Key/).first.split(': ').last.strip)
-                  p request[:auth]
                   keyshare = [
-                    radius_response_vendor_value("Microsoft", {"MS-MPPE-Recv-Key"=>[s1+s1 + microsoft_md5_cipher(SECRET,request[:auth]+s1, msk[...16])]}),
-                    radius_response_vendor_value("Microsoft", {"MS-MPPE-Send-Key"=>[s2+s1 + microsoft_md5_cipher(SECRET,request[:auth]+s2, msk[16...])]})
+                    radius_response_vendor_value('Microsoft', {"MS-MPPE-Recv-Key"=>[s1 + microsoft_md5_cipher(SECRET,request[:auth]+s1, [32].pack('C')+msk1)]}),
+                    radius_response_vendor_value('Microsoft', {"MS-MPPE-Send-Key"=>[s2 + microsoft_md5_cipher(SECRET,request[:auth]+s2, [32].pack('C')+msk2)]})
                   ]
                   client.reply(r = radius_response('Access-Accept', request, {'EAP-Message'=>eap_response('Success', eap[:id]+1, 'EAP-TTLS'), 'Vendor-Specific'=>keyshare}))
                   p(radius_parse(StringIO.new(r).binmode))
