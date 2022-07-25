@@ -2,6 +2,7 @@
 # RADIUS Implementation Issues and Suggested Fixes: https://datatracker.ietf.org/doc/html/rfc5080
 # RADIUS Extensions (Support for EAP!): https://datatracker.ietf.org/doc/html/rfc2869#section-2.3
 # RADIUS extended Attributes https://www.rfc-editor.org/rfc/rfc6929.html#section-3
+# RADIUS over TLS! https://datatracker.ietf.org/doc/html/rfc6614
 
 # alternative?
 # https://datatracker.ietf.org/doc/html/rfc5191
