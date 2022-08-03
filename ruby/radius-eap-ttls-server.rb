@@ -5,6 +5,7 @@ require 'stringio'
 
 SECRET = 'radsec'
 USERS = {'user'=>'password'}
+DEBUG = ARGV.include?('--debug')
 
 tls_connections = {}
 tls_context = OpenSSL::SSL::SSLContext.new
@@ -31,15 +32,19 @@ unless OpenSSL::SSL::SSLSocket.instance_methods.include?(:export_keying_material
 end
 
 Socket.udp_server_loop(1812) do |msg, client|
-  puts '------------------------------------------------ New Packet, new thing?'
-  case request = p(radius_parse(StringIO.new(msg).binmode))
+  request = radius_parse(StringIO.new(msg).binmode)
+  if DEBUG
+    puts '------------------------------------------------ New RADIUS Packet'
+    p request
+  end
+  case request
   in {type: 'Access-Request'}
     if eap = request[:attributes]['EAP-Message']
       # puts "! got EAP message trying to respond"
       eap = eap.first
       if eap[:method] == 'EAP-TTLS'
         unless tls_connections['a']
-          # puts "JAAAAAAAAA"
+          puts "! starting TLS inside of EAP connection"
           tunnel_socket, plain_socket = UNIXSocket.pair
           tls_socket = OpenSSL::SSL::SSLSocket.new(tunnel_socket, tls_context)
           tls_socket.sync_close = true
@@ -58,68 +63,64 @@ Socket.udp_server_loop(1812) do |msg, client|
             client.reply(radius_response(SECRET, 'Access-Challenge', request, {'EAP-Message'=>eap_response('Request', eap[:id]+1, 'EAP-TTLS', tls_connections['a'][2].shift)}))
           end
         else
-          # puts "TLS GOGOGO"
           tls_socket, plain_socket, messages, socket = tls_connections['a']
+          if socket.nil?
+            socket = (tls_socket.accept_nonblock rescue nil)
+            tls_connections['a'][3] = socket
+          end
           plain_socket.send(eap[:data]['data'], 0)
+          response = plain_socket.recv_nonblock(99999) rescue ''
+          if response != ''
+            tls_connections['a'][2] = response.b.each_char.each_slice(1450).map(&:join)
+            messages = [true]
+          end
           if messages.any?
+            puts '! send TLS data until we finished sending a TLS message'
             client.reply(radius_response(SECRET, 'Access-Challenge', request, {'EAP-Message'=>eap_response('Request', eap[:id]+1, 'EAP-TTLS', tls_connections['a'][2].shift)}))
-            # client.reply(radius_response(SECRET, 'Access-Challenge', request, {'EAP-Message'=>[tls_connections['a'][2].shift]}))
             next
           end
-          if true
-            if socket.nil?
-              socket = (tls_socket.accept_nonblock rescue nil)
-              tls_connections['a'][3] = socket
-            end
-            tls_query = socket.read_nonblock(99999) rescue nil if socket
-            if tls_query
-              # p("--tls_query--",tls_query,"--tls_query--")
-              avp = eap_ttls_avp_parse(StringIO.new(tls_query).binmode)
-              p(avp)
-              if avp['User-Password'] && avp['User-Name'] # PAP
-                p('! PAP')
-                # vvvvvvvvvvvvvvvv worst possible implementation vvvvvvvvvvvvvvvv
-                ok = USERS[avp['User-Name'].first] == avp['User-Password'].first
-                # ^^^^^^^^^^^^^^^^ worst possible implementation ^^^^^^^^^^^^^^^^
-                if ok
-                  p('! sent ok')
-                  #todo:: https://datatracker.ietf.org/doc/html/rfc5281#section-8
-                  # p(OpenSSLThing.client_random(socket))
-                  # p(socket.export_keying_material("server finished"))
-                  # p(socket.export_keying_material("client finished"))
-                  # https://datatracker.ietf.org/doc/html/rfc5705
-                  challenge = socket.export_keying_material("ttls keying material", 64).b
-                  msk1 = challenge[...32]
-                  msk2 = challenge[32...]
-                  # p(OpenSSLThing.server_random(socket))
-                  # p(OpenSSLThing.master_key(socket.session))
-                  # p(socket.session.to_text.each_line.grep(/Master-Key/).first.split(': ').last.strip)
-                  keyshare = [
-                    [msk1, (2**7).chr + "a"],
-                    [msk2, (2**7).chr + "b"]
-                  ].map do |msk, s|
-                    radius_response_vendor_value('Microsoft', {"MS-MPPE-Recv-Key"=>[s + microsoft_md5_cipher(SECRET, request[:auth]+s, [32].pack('C')+msk)]})
-                  end
-                  client.reply(r = radius_response(SECRET, 'Access-Accept', request, {'EAP-Message'=>eap_response('Success', eap[:id]+1, 'EAP-TTLS'), 'Vendor-Specific'=>keyshare}))
-                  p(radius_parse(StringIO.new(r).binmode))
-                else
-                  p('! sent nok')
-                  client.reply(radius_response(SECRET, 'Access-Reject', request, {'EAP-Message'=>eap_response('Failure', eap[:id]+1, 'EAP-TTLS')}))
+          tls_query = socket.read_nonblock(99999) rescue nil
+          if tls_query
+            puts '--------------------- New TTLS encapsulated EAP Packet'
+            # p("--tls_query--",tls_query,"--tls_query--")
+            avp = eap_ttls_avp_parse(StringIO.new(tls_query).binmode)
+            p(avp) if DEBUG
+            if avp['User-Password'] && avp['User-Name'] # PAP
+              puts '! doing EAP-PAP authentication path'
+              # vvvvvvvvvvvvvvvv worst possible implementation vvvvvvvvvvvvvvvv
+              ok = USERS[avp['User-Name'].first] == avp['User-Password'].first
+              # ^^^^^^^^^^^^^^^^ worst possible implementation ^^^^^^^^^^^^^^^^
+              if ok
+                puts '! sent ok'
+                # https://datatracker.ietf.org/doc/html/rfc5705
+                msk = socket.export_keying_material("ttls keying material", 64).b
+                keyshare = [
+                  [msk[...32], (2**7).chr + "a"],
+                  [msk[32...], (2**7).chr + "b"]
+                ].map do |msk, s|
+                  radius_response_vendor_value('Microsoft', {"MS-MPPE-Recv-Key"=>[s + microsoft_md5_cipher(SECRET, request[:auth]+s, [32].pack('C')+msk)]})
                 end
-                p('! killing connection')
-                tls_connections.delete('a')
-              elsif avp['EAP-Message'] # EAP goes even deeper here
-                p('! not implemented for now')
+                client.reply(r = radius_response(SECRET, 'Access-Accept', request, {'EAP-Message'=>eap_response('Success', eap[:id]+1, 'EAP-TTLS'), 'Vendor-Specific'=>keyshare}))
+                p(radius_parse(StringIO.new(r).binmode)) if DEBUG
               else
-                p('! unknown auth here!')
+                puts '! sent nok'
+                client.reply(radius_response(SECRET, 'Access-Reject', request, {'EAP-Message'=>eap_response('Failure', eap[:id]+1, 'EAP-TTLS')}))
               end
-              next # ignore the stuff below
+              puts '! killing connection, done'
+              tls_connections.delete('a')
+            elsif avp['EAP-Message'] # EAP goes even deeper here
+              puts '! not implemented for now'
+              client.reply(radius_response(SECRET, 'Access-Reject', request))
+            else
+              puts '! unknown auth here!'
+              client.reply(radius_response(SECRET, 'Access-Reject', request))
             end
-            response = plain_socket.recv_nonblock(99999) rescue ''
-            # p("----",response,"----")
-            puts '! got a response internally? 2'
-            client.reply(radius_response(SECRET, 'Access-Challenge', request, {'EAP-Message'=>eap_response('Request', eap[:id]+1, 'EAP-TTLS', response)}))
+            next # ignore the stuff below
           end
+          response = plain_socket.recv_nonblock(99999) rescue ''
+          raise 'TLS response should be empty here, we expect data' if response != ''
+          puts '! sending empty TLS data to get responses'
+          client.reply(radius_response(SECRET, 'Access-Challenge', request, {'EAP-Message'=>eap_response('Request', eap[:id]+1, 'EAP-TTLS', '')}))
         end
       else
         puts "! not TTLS, trying to get the client to start TTLS"
