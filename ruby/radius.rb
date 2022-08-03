@@ -16,13 +16,6 @@
 #   https://github.com/CESNET/rad_eap_test
 #   eapol_test (from wpa_supplicant)
 
-require 'openssl'
-require 'socket'
-require 'stringio'
-
-SECRET = 's3cr3t'
-USERS = {'user'=>'password'}
-
 # https://www.iana.org/assignments/radius-types/radius-types.xhtml#radius-types-27
 RADIUS_PACKET_CODE = {
   1=> 'Access-Request',
@@ -512,9 +505,9 @@ def radius_parse(pkt)
   return {type: package_type, id: identifier, auth: authenticator, attributes: attributes}
 end
 
-def radius_message_auth(type, id, length, authenticator, attrs)
+def radius_message_auth(secret, type, id, length, authenticator, attrs)
   # this is a function for potentially verifying such codes of clients
-  OpenSSL::HMAC.digest("MD5", SECRET, [
+  OpenSSL::HMAC.digest("MD5", secret, [
     type,
     id,
     length,
@@ -523,36 +516,11 @@ def radius_message_auth(type, id, length, authenticator, attrs)
   ].pack('CCS>a16A*'))
 end
 
-class String
-  def xor(other)
-    self.each_byte.zip(other.each_byte).map{|a,b|(a^b).chr}.join('')
-  end
-end
-
-# https://datatracker.ietf.org/doc/html/rfc2548#section-2.4.3
-# Note: decrypt is using a ciphertext as plaintext, its a md5 stream cipher
-def microsoft_md5_cipher(secret, authenticator_plus_salt, plaintext)
-  b = OpenSSL::Digest::MD5.digest(secret + authenticator_plus_salt)
-  plaintext.b.split('').each_slice(16).map do |plain|
-    raise "WTH #{b.each_byte.to_a}" unless b.length == 16
-    c = plain.join().ljust(16, "\0").xor(b)
-    b = OpenSSL::Digest::MD5.digest(secret + c).b
-    c
-  end.join()
-end
-
-a = "\xFA\xD7\xC0r\xABWbE\x8F\xCE\x8Fo\x9F\xF2\xCD\x93\x80a".b
-b = "|\x92\xBC\x9D\xDB[\x12\x9C^Y_\x16\xA8s(U".b
-c = "\x1D\xE0\x17\xC7\xC6\xDA\xD7[~\x8B\x03c\xF3\xBC\x83\x8F".b
-raise 'AH! (microsoft_md5_cipher broken)' unless microsoft_md5_cipher(SECRET, a, b) == c
-raise 'AH! (microsoft_md5_cipher broken)' unless microsoft_md5_cipher(SECRET, a, microsoft_md5_cipher(SECRET, a, b)) == b
-
 def radius_response_vendor_value(vendor, attributes)
   [id = VENDOR_IDS_INVERT.fetch(vendor, vendor), attributes.map do |t,vals|
     vals.map{|v|[VENDOR_SPECIFIC_INVERT.fetch(id).fetch(t,t), v.length+2, v].pack('CCA*')}.join('')
   end.join('')].pack('L>A*')
 end
-
 
 def radius_response_vendor_value_parse(buffer)
   package = {}
@@ -565,7 +533,7 @@ def radius_response_vendor_value_parse(buffer)
   package
 end
 
-def radius_response(code, request, attributes={})
+def radius_response(secret, code, request, attributes={})
   code = RADIUS_PACKET_CODE_INVERT.fetch(code, code)
   attrs = attributes.map{|t,vals| vals.map{|v| raise "toolong #{v.length}" if v.length >=254;[RADIUS_ATTRIBUTE_TYPE_INVERT.fetch(t,t), v.length+2, v].pack('CCA*')}.join('')}.join('').b
   length = 20 + attrs.length
@@ -573,155 +541,29 @@ def radius_response(code, request, attributes={})
   if attributes['EAP-Message']
     # see RFC 3579
     length += 18
-    mauth = radius_message_auth(
-      code, request[:id], length, request[:auth],
-      attrs
-    )
+    mauth = radius_message_auth(secret, code, request[:id], length, request[:auth], attrs)
     attrs << [RADIUS_ATTRIBUTE_TYPE_INVERT['Message-Authenticator'], 18, mauth].pack('CCa16')
   end
   authenticator = OpenSSL::Digest::MD5.digest(
-    [
-      code,
-      request[:id],
-      length,
-      request[:auth],
-      attrs,
-      SECRET
-    ].pack('CCS>a16A*A*')
+    [code, request[:id], length, request[:auth], attrs, secret].pack('CCS>a16A*A*')
   )
-  [
-    code,
-    request[:id],
-    length,
-    authenticator,
-    attrs
-  ].pack('CCS>a16A*')
+  [code, request[:id], length, authenticator, attrs].pack('CCS>a16A*')
 end
 
-tls_connections = {}
-tls_context = OpenSSL::SSL::SSLContext.new
-unless File.exists?('./server.crt')
-  puts 'generating key ;)'
-  `openssl req -nodes -x509 -newkey rsa:4096 -sha256 -subj '/CN=localhost/' -days 99999 -keyout server.key -out server.crt`
-end
-tls_context.add_certificate(
-  OpenSSL::X509::Certificate.new(File.read('./server.crt')),
-  OpenSSL::PKey::RSA.new(        File.read('./server.key'))
-)
-tls_context.min_version = OpenSSL::SSL::TLS1_2_VERSION
-tls_context.max_version = OpenSSL::SSL::TLS1_3_VERSION
-# tls_context.enable_fallback_scsv
-tls_context.ciphers = 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384'
-
-# hack because you got no patch yet :P
-unless OpenSSL::SSL::SSLSocket.instance_methods.include?(:export_keying_material)
-  class OpenSSL::SSL::SSLSocket
-    def export_keying_material(label, len, context=nil)
-      return 'x'*len
-    end
-  end
+# https://datatracker.ietf.org/doc/html/rfc2548#section-2.4.3
+# Note: decrypt is using a ciphertext as plaintext, its a md5 stream cipher
+def microsoft_md5_cipher(secret, authenticator_plus_salt, plaintext)
+  require 'openssl'
+  b = OpenSSL::Digest::MD5.digest(secret + authenticator_plus_salt)
+  plaintext.b.split('').each_slice(16).map do |plain|
+    c = plain.join().ljust(16, "\0").each_byte.zip(b.each_byte).map{|x,y|(x^y).chr}.join('')
+    b = OpenSSL::Digest::MD5.digest(secret + c).b
+    c
+  end.join()
 end
 
-Socket.udp_server_loop('localhost', 1812) do |msg, client|
-  # p msg, client
-  puts '------------------------------------------------ New Packet, new thing?'
-  case request = p(radius_parse(StringIO.new(msg).binmode))
-  in {type: 'Access-Request'}
-    if eap = request[:attributes]['EAP-Message']
-      # puts "! got EAP message trying to respond"
-      eap = eap.first
-      if eap[:method] == 'EAP-TTLS'
-        unless tls_connections['a']
-          puts "JAAAAAAAAA"
-          tunnel_socket, plain_socket = UNIXSocket.pair
-          tls_socket = OpenSSL::SSL::SSLSocket.new(tunnel_socket, tls_context)
-          tls_socket.sync_close = true
-          tls_connections['a'] = [tls_socket, plain_socket, [], nil]
-          if eap[:data]
-            puts '! trying to do the tls stuff'
-            plain_socket.send(eap[:data]['data'], 0)
-            thing = (tls_socket.accept_nonblock rescue '')
-            # p("----",thing,"----")
-            response = plain_socket.recv(99999)
-            p tls_socket.state
-            # p("----",response,"----"+ response.size.to_s)
-            puts '! got a response internally!'
-
-            tls_connections['a'][2] = response.b.each_char.each_slice(1450).map(&:join)
-            client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>eap_response('Request', eap[:id]+1, 'EAP-TTLS', tls_connections['a'][2].shift)}))
-          end
-        else
-          puts "TLS GOGOGO"
-          tls_socket, plain_socket, messages, socket = tls_connections['a']
-          plain_socket.send(eap[:data]['data'], 0)
-          if messages.any?
-            client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>eap_response('Request', eap[:id]+1, 'EAP-TTLS', tls_connections['a'][2].shift)}))
-            # client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>[tls_connections['a'][2].shift]}))
-            next
-          end
-          if true
-            if socket.nil?
-              socket = (tls_socket.accept_nonblock rescue nil)
-              tls_connections['a'][3] = socket
-            end
-            tls_query = socket.read_nonblock(99999) rescue nil if socket
-            if tls_query
-              # p("--tls_query--",tls_query,"--tls_query--")
-              avp = eap_ttls_avp_parse(StringIO.new(tls_query).binmode)
-              p(avp)
-              if avp['User-Password'] && avp['User-Name'] # PAP
-                p('! PAP')
-                # vvvvvvvvvvvvvvvv worst possible implementation vvvvvvvvvvvvvvvv
-                ok = USERS[avp['User-Name'].first] == avp['User-Password'].first
-                # ^^^^^^^^^^^^^^^^ worst possible implementation ^^^^^^^^^^^^^^^^
-                if ok
-                  p('! sent ok')
-                  #todo:: https://datatracker.ietf.org/doc/html/rfc5281#section-8
-                  # p(OpenSSLThing.client_random(socket))
-                  # p(socket.export_keying_material("server finished"))
-                  # p(socket.export_keying_material("client finished"))
-                  challenge = socket.export_keying_material("ttls keying material", 64).b
-                  msk1 = challenge[...32]
-                  msk2 = challenge[32...]
-                  # p(OpenSSLThing.server_random(socket))
-                  # p(OpenSSLThing.master_key(socket.session))
-                  s1 = (2**7).chr + "a"
-                  s2 = (2**7).chr + "b"
-                  # p(socket.session.to_text.each_line.grep(/Master-Key/).first.split(': ').last.strip)
-                  keyshare = [
-                    radius_response_vendor_value('Microsoft', {"MS-MPPE-Recv-Key"=>[s1 + microsoft_md5_cipher(SECRET,request[:auth]+s1, [32].pack('C')+msk1)]}),
-                    radius_response_vendor_value('Microsoft', {"MS-MPPE-Send-Key"=>[s2 + microsoft_md5_cipher(SECRET,request[:auth]+s2, [32].pack('C')+msk2)]})
-                  ]
-                  client.reply(r = radius_response('Access-Accept', request, {'EAP-Message'=>eap_response('Success', eap[:id]+1, 'EAP-TTLS'), 'Vendor-Specific'=>keyshare}))
-                  p(radius_parse(StringIO.new(r).binmode))
-                else
-                  p('! sent nok')
-                  client.reply(radius_response('Access-Reject', request, {'EAP-Message'=>eap_response('Failure', eap[:id]+1, 'EAP-TTLS')}))
-                end
-                p('! killing connection')
-                tls_connections.delete('a')
-              elsif avp['EAP-Message'] # EAP goes even deeper here
-                p('! not implemented for now')
-              else
-                p('! unknown auth here!')
-              end
-              next # ignore the stuff below
-            end
-            response = plain_socket.recv_nonblock(99999) rescue ''
-            # p("----",response,"----")
-            puts '! got a response internally? 2'
-            client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>eap_response('Request', eap[:id]+1, 'EAP-TTLS', response)}))
-          end
-        end
-      else
-        puts "! not TTLS, trying to get the client to start TTLS"
-        client.reply(radius_response('Access-Challenge', request, {'EAP-Message'=>[eap_response_single('Request', eap[:id]+1, 'EAP-TTLS', eap_ttls_data_encode('Start'=>'1'))]}))
-      end
-    else # reject
-      puts "! rejected client"
-      client.reply(radius_response('Access-Reject', request))
-    end
-  else
-    puts "! did not got an Access-Request, not answering"
-  end
-end
+a = "\xFA\xD7\xC0r\xABWbE\x8F\xCE\x8Fo\x9F\xF2\xCD\x93\x80a".b
+b = "|\x92\xBC\x9D\xDB[\x12\x9C^Y_\x16\xA8s(U".b
+c = "\x1D\xE0\x17\xC7\xC6\xDA\xD7[~\x8B\x03c\xF3\xBC\x83\x8F".b
+raise 'AH! (microsoft_md5_cipher broken)' unless microsoft_md5_cipher('s3cr3t', a, b) == c
+raise 'AH! (microsoft_md5_cipher broken)' unless microsoft_md5_cipher('s3cr3t', a, microsoft_md5_cipher('s3cr3t', a, b)) == b
