@@ -10,7 +10,7 @@ DEBUG = ARGV.include?('--debug')
 tls_connections = {}
 tls_context = OpenSSL::SSL::SSLContext.new
 unless File.exists?('./server.crt')
-  puts 'generating key ;)'
+  puts 'generating key'
   `openssl req -nodes -x509 -newkey rsa:4096 -sha256 -subj '/CN=localhost/' -days 99999 -keyout server.key -out server.crt`
 end
 tls_context.add_certificate(

@@ -411,7 +411,7 @@ def eap_parse(pkt)
         data['More Fragments'] = flags & (2<<5) != 0
         data['Start'] = flags & (2<<4) != 0
         data['Version'] = flags & 7
-        puts "version nicht 0" unless data['Version'] == 0
+        puts "version not 0" unless data['Version'] == 0
         if data['Length included']
           data['message length'] = pkt.read(4).unpack1('L>')
         end
@@ -466,6 +466,8 @@ def eap_ttls_avp_parse(pkt)
     end
     data = pkt.read(length)
     data = data.b.sub(/\0+$/, '') if code == 'User-Password'
+    # avp padding
+    pkt.read(4 - (length % 4))
     attrs[code] ||= []
     attrs[code] << data
   end
