@@ -467,7 +467,7 @@ def eap_ttls_avp_parse(pkt)
     data = pkt.read(length)
     data = data.b.sub(/\0+$/, '') if code == 'User-Password'
     # avp padding
-    pkt.read(4 - (length % 4))
+    pkt.read(4 - (length % 4)) unless length % 4 == 0
     attrs[code] ||= []
     attrs[code] << data
   end
