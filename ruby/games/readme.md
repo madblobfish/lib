@@ -37,6 +37,13 @@ Right click = mark as mine (which then leads to winning)
 ## hexmine
 The same as above, but hexagonal I guess.
 
+## maze
+![maze screenshot](maze.png)
+
+Walk the maze using your cursor keys.
+There's different difficulties: eazy, normal, har and hard.
+You can also add `--death` which makes you die if you walk against walls.
+
 ## minesweeper
 See readme in subfolder.
 
