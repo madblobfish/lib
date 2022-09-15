@@ -79,7 +79,7 @@ class Maze < TerminalGame
 
   def initial_draw
     print get_color_code(15, :fg)
-    draw
+    sync_draw{draw()}
   end
   def draw
     check_win()
@@ -135,7 +135,7 @@ class Maze < TerminalGame
     if @path.last == old_pos && @path[-2] == @player
       @backwalk += 1
       @path.pop
-      draw()
+      sync_draw{draw()}
       return
     end
     door_open = if dir[1] == 0
@@ -147,11 +147,11 @@ class Maze < TerminalGame
       die('LOOOSER!') if @death
       @miswalk += 1
       @player = old_pos
-      draw()
+      sync_draw{draw()}
       return
     end
     @path.push(@player.dup)
-    draw()
+    sync_draw{draw()}
   end
 end
 
