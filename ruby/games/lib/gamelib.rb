@@ -87,7 +87,7 @@ class TerminalGame
   end
 
   def initial_draw
-    draw
+    sync_draw{draw()}
   end
   def game_quit;end
   def draw;end
