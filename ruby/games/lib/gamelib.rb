@@ -13,7 +13,8 @@ class TerminalGame
     Signal.trap("INT"){game_quit(); exit(0)}
 
     if @no_tty = no_tty
-      @update_size = proc do
+      # experimental stuff
+      @update_size = proc do |initial|
         old = [@rows, @cols, @size_y, @size_x]
         # query char size (rows & cols)
         cursor_save()
@@ -28,20 +29,22 @@ class TerminalGame
           @size_y, @size_x = [$1, $2]
         end
         @size_y, @size_x = [nil]*2
+        @size_col, @size_row = [@cols, @rows].zip([@size_x, @size_y]).map{|x,y| y/x.to_f }
         cursor_restore()
-        size_change_handler() if old != [@rows, @cols, @size_y, @size_x]
+        unless true
+          size_change_handler() if old != [@rows, @cols, @size_y, @size_x]
+        end
       end
     else
       raise 'needs a tty' unless STDIN.tty?
-      @update_size = proc do
+      @update_size = proc do |initial|
         raise "AHHHHHHH" unless STDOUT.ioctl(0x5413, buff="") == 0
-        @rows, @cols, @size_y, @size_x = buff.unpack("SSSS")
-        size_change_handler()
+        @rows, @cols, @size_x, @size_y = buff.unpack("SSSS")
+        @size_col, @size_row = [@cols, @rows].zip([@size_x, @size_y]).map{|x,y| y/x.to_f }
+        size_change_handler() unless initial == true
       end
       Signal.trap("WINCH", @update_size)
     end
-    @update_size[]
-
     @inited = true
     @mouse_support = false if @mouse_support.nil?
     @extended_input = false if @extended_input.nil?
@@ -51,11 +54,13 @@ class TerminalGame
     STDIN.sync = true unless @sync == false
     print("\e[?1049h") # enable alternative screen buffer
     print("\e[?25l") # hide cursor
+    @update_size[true]
     print("\e[?7l") # hide overflow
     system('stty raw -echo isig') unless @no_tty
     print("\e[?1002h\e[?1006h") if @mouse_support # mouse click/move events
     print("\e[=26u") if @extended_input # keypress in unicode points +types +raw
-    raise 'Graphic protocoll not supported' if @require_kitty_graphics && !supports_kitty_graphics
+    raise 'Graphic protocol not supported' if @require_kitty_graphics && !supports_kitty_graphics
+
 
     begin
       initial_draw
@@ -124,6 +129,7 @@ class TerminalGame
   def return_to_tty
     @draw_thread&.kill
     system('stty '+ TTY_CLEAN_STATE) unless @no_tty
+    kitty_graphics_img_clear if @require_kitty_graphics # clear images on shutdown
     print("\e[=0u") if @extended_input # keypress in unicode points +mod
     print("\e[?1002l\e[?1006l") # disable mouse click/move events
     print("\e[?1049l") # disable alternative screen buffer
@@ -171,7 +177,9 @@ class TerminalGame
 
   # kitty_graphics
   def supports_kitty_graphics(used_in_normal_tty = !inited?)
-    print "\e_Gi=31,s=1,v=1,a=q,t=d,f=24;\0\0\0\e\\\e[c"
+    require 'base64'
+    print "\e_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\e\\\e[c"
+    return false unless STDIN.readpartial(12) == "\e_Gi=31;OK\e\\"
     return STDIN.readpartial(20) == "\e[?62;c#{used_in_normal_tty ? "\n" : ''}"
   end
   def _kitty_graphics_img_get_id
@@ -182,20 +190,24 @@ class TerminalGame
   def kitty_graphics_img_load(png_str, id=_kitty_graphics_img_get_id())
     id_string = id.is_a?(Integer) ? ',i=' + id.to_s : ''
     size = 4000
-    require 'base64'
     encoded_img = Base64.encode64(png_str).tr("\n",'')
     if encoded_img.length > size
-      first = true
       enumerator = encoded_img.split('').each_slice(size).map(&:join)
       last = enumerator.pop
-      print *enumerator.map{|e|"\e_G#{first ? (first = false;"f=100#{id_string},") : ''}m=1;#{e}\e\\"}
+      print "\e_Gf=100#{id_string},m=1;#{enumerator.shift}\e\\"
+      print *enumerator.map{|e|"\e_Gm=1;#{e}\e\\"}
       print "\e_Gm=0;#{last}\e\\"
     else
       print "\e_Gf=100#{id_string};#{encoded_img}\e\\"
     end
     id
   end
+  def kitty_graphics_img_pixel_place_center(id, iw, ih, ow=0, oh=0, w=@size_x, h=@size_y)
+    kitty_graphics_img_pixel_place(id, (w-iw)/2+ow, (h-ih)/2+oh) #, img_x:iw, img_y:ih)
+  end
   def kitty_graphics_img_pixel_place(id, x, y, **opts)
+    x = 0 if x < 0
+    y = 0 if y < 0
     cursor_save
     pixel_per_cell_x = @size_x.to_f / @cols.to_i
     pixel_per_cell_y = @size_y.to_f / @rows.to_i
@@ -217,13 +229,14 @@ class TerminalGame
       # pos_cell_y = @rows if pos_cell_y <= @rows
       opts[:cell_y] = (y % pixel_per_cell_y).floor
     end
+    # raise [pos_cell_y, pos_cell_x, opts[:cell_y], opts[:cell_x]].inspect
     move_cursor(pos_cell_y, pos_cell_x)
     kitty_graphics_img_display(id, **opts)
     cursor_restore
   end
   def kitty_graphics_img_display(id, **opts)
-    options = {img_x:0, img_y:0, width:0, height:0, columns:0, rows:0, cell_x:0, cell_y:0, z:0}.merge(opts)
-    args = {img_x:'x', img_y:'y', width:'w', height:'h', cell_x:'X', cell_y:'Y', columns:'c', rows:'r', z:'z'}
+    options = {img_x:0, img_y:0, width:0, height:0, columns:0, rows:0, cell_x:0, cell_y:0, z:0, cursor_move:1}.merge(opts)
+    args = {img_x:'x', img_y:'y', width:'w', height:'h', cell_x:'X', cell_y:'Y', columns:'c', rows:'r', z:'z', cursor_move:'C'}
     raise 'AH' unless id.is_a?(Integer)
     str = '_Ga=p,q=1,i=' + id.to_s
     str += args.map{|k,v| k != :z && options[k] <= 0 ? nil : ",#{v}=#{options[k]}" }.compact.join
