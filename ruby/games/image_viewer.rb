@@ -1,5 +1,4 @@
 require_relative 'lib/gamelib'
-require_relative '../stdlib/color_palette.rb' rescue nil
 require 'vips' rescue raise 'run "gem install ruby-vips", also install libjxl, libjxl-threads?, libvips, libopenslide'
 
 class ImageViewer < TerminalGame
