@@ -25,7 +25,7 @@ class ImageViewer < TerminalGame
     @skip_next_draw = false
   end
 
-  def initial_draw;draw(false) unless @rotate;end
+  def initial_draw;sync_draw{draw(false)} unless @rotate;end
   def size_change_handler;sync_draw{draw(false)};end #redraw on size change
 
   def draw(cycle=true)

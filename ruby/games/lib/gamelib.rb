@@ -11,6 +11,7 @@ class TerminalGame
   def run(no_tty = false)
     raise 'already started' if inited?
     Signal.trap("INT"){game_quit(); exit(0)}
+    @draw_mutex = Mutex.new
 
     if @no_tty = no_tty
       # experimental stuff
@@ -157,9 +158,11 @@ class TerminalGame
     print "\e[u"
   end
   def sync_draw(&block)
-    print "\eP=1s\e\\"
-    yield
-    print "\eP=2s\e\\"
+    @draw_mutex.synchronize do
+      print "\eP=1s\e\\"
+      yield
+      print "\eP=2s\e\\"
+    end
   end
   def move_cursor(x = 0, y = 0)
     print "\e[#{x+1};#{y+1}H"
