@@ -15,8 +15,11 @@ class ImageViewer < TerminalGame
     unless agrgs.size > 0
       raise 'feed me folders and/or images'
     end
-    files = agrgs.flat_map{|f| File.directory?(f) ? Dir.children(f).map{|p|f+'/'+p} : File.readable?(f) ? f : nil}
-    @images = files.compact.uniq.map{|f| [f.tr('//','/'), Vips::Image.new_from_file(f)] rescue nil}.compact
+    files = agrgs.flat_map{|f| File.directory?(f) ? Dir.children(f).map{|p|f+'/'+p} : File.readable?(f) ? f : nil}.compact
+    @images = files.uniq.map{|f| [f.tr('//','/'), Vips::Image.new_from_file(f)] rescue nil}.compact
+    unless @images.size > 0
+      raise 'no (readable and supported) images found'
+    end
     @images.reject!{|a,b| b.nil?}
     @images_cycle = -1
     @skip_next_draw = false
