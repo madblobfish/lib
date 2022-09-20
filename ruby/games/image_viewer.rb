@@ -23,12 +23,14 @@ class ImageViewer < TerminalGame
     @images.reject!{|a,b| b.nil?}
     @images_cycle = -1
     @skip_next_draw = false
+    @roate_stopped = false
   end
 
   def initial_draw;sync_draw{draw(false)} unless @rotate;end
   def size_change_handler;sync_draw{draw(false)};end #redraw on size change
 
   def draw(cycle=true)
+    return if cycle && @roate_stopped
     if @skip_next_draw
       @skip_next_draw = false
       return
@@ -56,6 +58,8 @@ class ImageViewer < TerminalGame
     case input
     when "q"
       exit()
+    when " " #right
+      @roate_stopped = ! @roate_stopped
     when "\e[C" #right
       @images_cycle += 1
       @images_cycle %= @images.size
