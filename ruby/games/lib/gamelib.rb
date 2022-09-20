@@ -74,13 +74,16 @@ class TerminalGame
         end
         @draw_thread.abort_on_exception = true
       end
-      loop do
-        IO.select([STDIN])
-        data = STDIN.read_nonblock(100_000)
-        next if data.match(/\e_G/) # ignore graphics stuff for now
-        internal_mouse_handler($2,$3,$1,$4) if @mouse_support and data.match(/\e\[\<(\d+);(\d+);(\d+)([Mm])/)
-        internal_input_handler(data)
+      @read_thread = Thread.new(abort_on_exception:true) do
+        loop do
+          IO.select([STDIN])
+          data = STDIN.read_nonblock(100_000)
+          next if data.match(/\e_G/) # ignore graphics stuff for now
+          internal_mouse_handler($2,$3,$1,$4) if @mouse_support and data.match(/\e\[\<(\d+);(\d+);(\d+)([Mm])/)
+          internal_input_handler(data)
+        end
       end
+      @read_thread.join
     ensure
       return_to_tty()
     end
@@ -126,9 +129,16 @@ class TerminalGame
   def size_change_handler;end
 
   private
-  def return_to_tty
+  def kill_threads
     @draw_thread&.kill
+    @read_thread&.kill
+  end
+  def reset_tty_state
     system('stty '+ TTY_CLEAN_STATE) unless @no_tty
+  end
+  def return_to_tty
+    kill_threads
+    reset_tty_state
     kitty_graphics_img_clear if @require_kitty_graphics # clear images on shutdown
     print("\e[=0u") if @extended_input # keypress in unicode points +mod
     print("\e[?1002l\e[?1006l") # disable mouse click/move events
@@ -162,6 +172,15 @@ class TerminalGame
   end
   def color(color = 15, mode = :fg)
     print get_color_code(color, mode)
+  end
+  def color_invert
+    print color_invert_code
+  end
+  def color_invert_code
+    "\e[7m"
+  end
+  def color_reset_code
+    "\e[0m"
   end
   def get_color_code(color = 15, mode = :fg)
     code = {fg: 38, bg: 48}[mode]
