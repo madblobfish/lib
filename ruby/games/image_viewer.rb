@@ -27,16 +27,18 @@ class ImageViewer < TerminalGame
   end
 
   def initial_draw;sync_draw{draw(false)} unless @rotate;end
-  def size_change_handler;sync_draw{draw(false)};end #redraw on size change
+  def size_change_handler;sync_draw{draw(false, true)};end #redraw on size change
 
-  def draw(cycle=true)
-    return if cycle && @roate_stopped
-    if @skip_next_draw
-      @skip_next_draw = false
-      return
+  def draw(cycle=true, redraw=false)
+    unless redraw
+      return if cycle && @roate_stopped
+      if @skip_next_draw
+        @skip_next_draw = false
+        return
+      end
+      @images_cycle += 1 if @rotate and cycle
+      @images_cycle %= @images.size if @rotate and cycle
     end
-    @images_cycle += 1 if @rotate and cycle
-    @images_cycle %= @images.size if @rotate and cycle
     current_filename, current_img = @images[@images_cycle]
     rowsize = @draw_status_line ? @size_row : 0
     scale_by = current_img.size.zip([@size_x, @size_y-rowsize]).map{|want,have| want > have ? have/want.to_f : 1}.min
@@ -46,6 +48,7 @@ class ImageViewer < TerminalGame
       move_cursor(@rows,0)
       f = current_filename.inspect
       f += " (#{@images_cycle}/#{@images.size})" if @images.size > 1
+      f += ' Paused' if @roate_stopped
       print(' '*((@cols-f.length)/2))
       print(f)
     end

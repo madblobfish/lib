@@ -44,7 +44,7 @@ class TerminalGame
         @size_col, @size_row = [@cols, @rows].zip([@size_x, @size_y]).map{|x,y| y/x.to_f }
         size_change_handler() unless initial == true
       end
-      Signal.trap("WINCH", @update_size)
+      Signal.trap("WINCH"){Thread.new{@update_size[]}}
     end
     @inited = true
     @mouse_support = false if @mouse_support.nil?
