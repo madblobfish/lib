@@ -69,9 +69,11 @@ class ImageViewer < TerminalGame
     else
       return
     end
-    @skip_next_draw = false
-    sync_draw{draw(false)}
-    @skip_next_draw = true
+    sync_draw do
+      @skip_next_draw = false
+      draw(false)
+      @skip_next_draw = true
+    end
   end
 end
 
