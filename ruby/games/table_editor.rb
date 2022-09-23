@@ -9,8 +9,10 @@ class TableEditor < TerminalGame
     @pos = [0,0]
     @file = ARGV.first if ARGV.one?
     if File.readable?(@file)
+      @edited = false
       @table = CSV.read(@file, col_sep: ';')
     else
+      @edited = true
       @table = [[' ']]
     end
     @cell_pos = :override
@@ -38,8 +40,8 @@ class TableEditor < TerminalGame
   def game_quit
     kill_threads
     clear;move_cursor
-    print "unsaved file, "
-    print "Save? [yN]"
+    return unless @edited
+    print "unsaved changes, Save? [yN]"
     if %w(y Y).include?(STDIN.read(1))
       reset_tty_state
       if @file.nil?
@@ -55,15 +57,19 @@ class TableEditor < TerminalGame
   end
 
   def delete_right
+    @edited = true
     @table.map(&:pop)
   end
   def delete_down
+    @edited = true
     @table.pop
   end
   def expand_right
+    @edited = true
     @table.map!{|l|l << ' '}
   end
   def expand_down
+    @edited = true
     @table << Array.new(@table.first.length){' '}
   end
 
@@ -138,12 +144,15 @@ class TableEditor < TerminalGame
       end
       @cell_pos = :override
     when "\x1b[3~" #entf
+      @edited = true
       @table[@pos[1]][@pos[0]][@cell_pos] = ''
     when "\x7f" #backspace
+      @edited = true
       @table[@pos[1]][@pos[0]][@cell_pos-1] = '' if @cell_pos > 0
       @cell_pos -= 1
       @cell_pos = 0 if @cell_pos < 0
     when /\A[a-zA-Z0-9 _,.;:()?!"§$%&\\\/=-]\z/ #typing
+      @edited = true
       if @cell_pos == :override
         @cell_pos = 1
         @table[@pos[1]][@pos[0]] = input
