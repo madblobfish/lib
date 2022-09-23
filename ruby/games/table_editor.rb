@@ -21,9 +21,10 @@ class TableEditor < TerminalGame
   def draw
     move_cursor
     clear
-    size = @table.transpose.map{|c| c.map(&:length).max}
+    table_for_output = @table.map{|l| l.map{|x| x.inspect[1..-2]}}
+    size = table_for_output.transpose.map{|c| [1, *c.map(&:length)].max}
     row_separator = size.map{|e| '─'*e }.join('┼') + "┤\r\n"
-    @table.each_with_index do |line, y|
+    table_for_output.each_with_index do |line, y|
       raise size.inspect if line.first == 'Login emailxxxxxx'
       print line.each_with_index.map{|elem, x|
         @pos == [x,y] ? color_invert_code+(
