@@ -10,10 +10,10 @@ class TableEditor < TerminalGame
     @file = ARGV.first if ARGV.one?
     if File.readable?(@file)
       @edited = false
-      @table = CSV.read(@file, col_sep: ';')
+      @table = CSV.read(@file, col_sep: ';', nil_value: '')
     else
       @edited = true
-      @table = [[' ']]
+      @table = [['']]
     end
     @cell_pos = :override
   end
@@ -66,11 +66,11 @@ class TableEditor < TerminalGame
   end
   def expand_right
     @edited = true
-    @table.map!{|l|l << ' '}
+    @table.map!{|l|l << ''}
   end
   def expand_down
     @edited = true
-    @table << Array.new(@table.first.length){' '}
+    @table << Array.new(@table.first.length){''}
   end
 
   def input_handler(input)
@@ -168,4 +168,3 @@ class TableEditor < TerminalGame
 end
 
 TableEditor.new().run() if __FILE__ == $PROGRAM_NAME
-p "│─┼"
