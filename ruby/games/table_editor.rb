@@ -4,13 +4,25 @@ require 'csv'
 class TableEditor < TerminalGame
   def initialize()
     @draw_borders = true
+    @cell_max_size = 150
+    @cell_min_comfort_size = 20
 
-    @fps = :manual
     @pos = [0,0]
+    @fps = :manual
     @file = ARGV.first if ARGV.one?
     if File.readable?(@file)
       @edited = false
-      @table = CSV.read(@file, col_sep: ';', nil_value: '')
+      @csv_options = {
+        skip_blanks: true,
+        # skip_lines: /^#/,
+        col_sep: ';',
+        nil_value: '',
+        converters: proc{|v| v.dump[1..-2]},
+      }
+      @table = CSV.read(@file, **@csv_options)
+      # need to fix arrays because length can be different...
+      max_col_count = @table.map(&:length).max
+      @table.each{|v| (max_col_count - v.length).times{v << ''}}
     else
       @edited = true
       @table = [['']]
@@ -18,14 +30,15 @@ class TableEditor < TerminalGame
     @cell_pos = :override
   end
 
+  def size_change_handler;sync_draw{draw()};end
   def draw
     move_cursor
     clear
-    table_for_output = @table.map{|l| l.map{|x| x.inspect[1..-2]}}
-    size = table_for_output.transpose.map{|c| [1, *c.map(&:length)].max}
+    temp_cell_max_size = @cell_max_size.clamp(@cell_min_comfort_size, @cols - 2)
+    table_for_output = @table.map{|l| l.map.with_index{|x,i| limit = i == @pos[0] ? temp_cell_max_size : @cell_min_comfort_size ; x.length < limit ? x : x[0...(limit-1)] + '…'}}
+    size = table_for_output.transpose.map{|c| c.map(&:length).max}
     row_separator = size.map{|e| '─'*e }.join('┼') + "┤\r\n"
     table_for_output.each_with_index do |line, y|
-      raise size.inspect if line.first == 'Login emailxxxxxx'
       print line.each_with_index.map{|elem, x|
         @pos == [x,y] ? color_invert_code+(
           @cell_pos == :override ? elem.ljust(size[x]) : elem.ljust(size[x]).insert([@cell_pos+1,size[x]].min, color_invert_code).insert(@cell_pos, color_reset_code)
@@ -96,6 +109,14 @@ class TableEditor < TerminalGame
         expand_down if @pos[1] >= @table.length - 1
         @pos[1] += 1
         @cell_pos = :override
+      when "\x1b[3~" #entf
+        @edited = true
+        @table[@pos[1]][@pos[0]][@cell_pos] = ''
+      when "\x7f" #backspace
+        @edited = true
+        @table[@pos[1]][@pos[0]][@cell_pos-1] = '' if @cell_pos > 0
+        @cell_pos -= 1
+        @cell_pos = 0 if @cell_pos < 0
       else
         handled = false
       end
@@ -144,14 +165,6 @@ class TableEditor < TerminalGame
         @pos[0] += 1
       end
       @cell_pos = :override
-    when "\x1b[3~" #entf
-      @edited = true
-      @table[@pos[1]][@pos[0]][@cell_pos] = ''
-    when "\x7f" #backspace
-      @edited = true
-      @table[@pos[1]][@pos[0]][@cell_pos-1] = '' if @cell_pos > 0
-      @cell_pos -= 1
-      @cell_pos = 0 if @cell_pos < 0
     when /\A[a-zA-Z0-9 _,.;:()?!"§$%&\\\/=-]\z/ #typing
       @edited = true
       if @cell_pos == :override
