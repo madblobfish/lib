@@ -13,6 +13,14 @@ def color_palette(i, palette=MY_PALETTE)
   a.zip(b).map{|a,b|  (amount*a + (1-amount)*b)*(palette.count-1) }
 end
 
+# example: get 15 evenly spaced colors:
+# 15.times.map{|x| color_palette(x/16.0)}.map{|x|color_to_hex(*x)}
+# scale it to make it lighter:
+# puts 15.times.map{|x| color_palette(x/16.0)}.map{|x|color_to_hex(*x.map{|c|((c/256)**0.5)*256})}
+def color_to_hex(r,g,b)
+  '#' + [r,g,b].map{|e| e.to_i.to_s(16).rjust(2,'0')}.join('')
+end
+
 def color_to_ansi(r,g,b)
   "\x1b[38;2;#{r.to_i};#{g.to_i};#{b.to_i}m"
 end
