@@ -1,5 +1,6 @@
 require_relative 'lib/gamelib'
 require 'vips' rescue raise 'run "gem install ruby-vips", also install libjxl, libjxl-threads?, libvips, libopenslide'
+require 'open3'
 
 class ImageViewer < TerminalGame
   def initialize(agrgs)
@@ -18,7 +19,19 @@ class ImageViewer < TerminalGame
       raise 'feed me folders and/or images'
     end
     files = agrgs.flat_map{|f| File.directory?(f) ? Dir.children(f).map{|p|f+'/'+p} : File.readable?(f) ? f : nil}.compact
-    @images = files.uniq.map{|f| [f.tr('//','/'), Vips::Image.new_from_file(f)] rescue nil}.compact
+    @images = files.uniq.map do |f|
+      begin
+        [f.tr('//','/'), Vips::Image.new_from_file(f)]
+      rescue Vips::Error
+        cmd = ['ffmpeg', '-timelimit', '1', '-loglevel', 'quiet', '-ss', '1:20', '-i', f, '-vframes', '1', '-vcodec', 'png', '-an', '-f', 'image2pipe', '-']
+        png, status = Open3.capture2(*cmd)
+        if status == 0
+          [f.tr('//','/'), Vips::Image.new_from_buffer(png, '')] rescue nil
+        else
+          nil
+        end
+      end
+    end.compact
     unless @images.size > 0
       raise 'no (readable and supported) images found'
     end
