@@ -51,12 +51,13 @@ class TerminalGame
     @extended_input = false if @extended_input.nil?
     @extended_input_implement_ctrl_c = true if @extended_input_implement_ctrl_c.nil?
     @fps ||= 5
+    @show_overflow = false if @show_overflow.nil?
 
     STDIN.sync = true unless @sync == false
     print("\e[?1049h") # enable alternative screen buffer
     print("\e[?25l") # hide cursor
     @update_size[true]
-    print("\e[?7l") # hide overflow
+    print("\e[?7l") unless @show_overflow # hide overflow
     system('stty raw -echo isig') unless @no_tty
     print("\e[?1002h\e[?1006h") if @mouse_support # mouse click/move events
     print("\e[=26u") if @extended_input # keypress in unicode points +types +raw
