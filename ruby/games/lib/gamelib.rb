@@ -206,11 +206,13 @@ class TerminalGame
     return STDIN.readpartial(20) == "\e[?62;c#{used_in_normal_tty ? "\n" : ''}"
   end
   def _kitty_graphics_img_get_id
+    raise 'requires @require_kitty_graphics=true' unless require_kitty_graphics
     @kitty_graphics_id ||= 0
     @kitty_graphics_id  += 1
     @kitty_graphics_id
   end
   def kitty_graphics_img_load(png_str, id=_kitty_graphics_img_get_id())
+    raise 'requires @require_kitty_graphics=true' unless require_kitty_graphics
     id_string = id.is_a?(Integer) ? ',i=' + id.to_s : ''
     size = 4000
     encoded_img = Base64.encode64(png_str).tr("\n",'')
@@ -226,9 +228,11 @@ class TerminalGame
     id
   end
   def kitty_graphics_img_pixel_place_center(id, iw, ih, ow=0, oh=0, w=@size_x, h=@size_y)
+    raise 'requires @require_kitty_graphics=true' unless require_kitty_graphics
     kitty_graphics_img_pixel_place(id, (w-iw)/2+ow, (h-ih)/2+oh) #, img_x:iw, img_y:ih)
   end
   def kitty_graphics_img_pixel_place(id, x, y, **opts)
+    raise 'requires @require_kitty_graphics=true' unless require_kitty_graphics
     x = 0 if x < 0
     y = 0 if y < 0
     cursor_save
@@ -258,6 +262,7 @@ class TerminalGame
     cursor_restore
   end
   def kitty_graphics_img_display(id, **opts)
+    raise 'requires @require_kitty_graphics=true' unless require_kitty_graphics
     options = {img_x:0, img_y:0, width:0, height:0, columns:0, rows:0, cell_x:0, cell_y:0, z:0, cursor_move:1}.merge(opts)
     args = {img_x:'x', img_y:'y', width:'w', height:'h', cell_x:'X', cell_y:'Y', columns:'c', rows:'r', z:'z', cursor_move:'C'}
     raise 'AH' unless id.is_a?(Integer)
@@ -269,6 +274,7 @@ class TerminalGame
   end
 
   def kitty_graphics_img_clear(what=:all, *opts)
+    raise 'requires @require_kitty_graphics=true' unless require_kitty_graphics
     keep = true # for now lets not make this configureable
     key = {
       all: 'a',

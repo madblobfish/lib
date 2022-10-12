@@ -75,7 +75,7 @@ class ImageViewer < TerminalGame
     case input
     when "q"
       exit()
-    when " " #right
+    when " " #space
       @roate_stopped = ! @roate_stopped
     when "\e[C" #right
       @images_cycle += 1
