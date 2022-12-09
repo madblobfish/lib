@@ -6,6 +6,7 @@ class ImageViewer < TerminalGame
   def initialize(agrgs)
     @require_kitty_graphics = true
     @draw_status_line = agrgs.delete('--no-status').nil? ? true : false
+    @random = agrgs.delete('--random')
     if agrgs.delete('--rotate')
       @images_cycle = -1
       @fps = 1.0/5
@@ -36,6 +37,7 @@ class ImageViewer < TerminalGame
       raise 'no (readable and supported) images found'
     end
     @images.reject!{|a,b| b.nil?}
+    @images.shuffle! if @random
     @skip_next_draw = false
     @roate_stopped = false
   end
