@@ -65,7 +65,7 @@ class ImageViewer < TerminalGame
       f = current_filename.inspect
       f += " (#{@images_cycle}/#{@images.size})" if @images.size > 1
       f += ' Paused' if @roate_stopped
-      print(' '*((@cols-f.length)/2))
+      print(' '*((@cols-f.length)/2)) rescue nil
       print(f)
     end
     move_cursor(0,0)
