@@ -152,9 +152,9 @@ class MALinder < TerminalGame
 		when "\e[D" #left
 			@current -= 1
 			@current = @season.size-1 if @current < 0
-		when "\e" #quit
+		when "\e", 'q' #quit
 			exit()
-		when '1', 'q'
+		when '1' #, 'q' # commented out because annoying
 			logchoice('nope')
 		when '2', 'a'
 			logchoice('okay')
@@ -181,9 +181,20 @@ end
 
 if __FILE__ == $PROGRAM_NAME
 	if ARGV.length == 2
-		MALinder.new(*ARGV).run()
+		if ARGV.first == 'search'
+			puts cache_search(ARGV[1]).sort().map{|a| a.join("\t")}
+		elsif ARGV.first == 'show'
+			load_all_to_cache
+			puts CACHE[ARGV[1].to_i].sort.map{|v| v.join(":\t")}
+		else
+			MALinder.new(*ARGV).run()
+		end
 	else
 		puts 'give me year and season'
 		puts 'season is one of: winter, spring, summer, fall'
+		puts ''
+		puts 'alternatively'
+		puts '  search <searchstring>: to search for something in the local cache'
+		puts '  show <id>: to lookup an entry'
 	end
 end
