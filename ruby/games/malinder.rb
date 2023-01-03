@@ -1,7 +1,12 @@
 require_relative 'lib/gamelib'
 require 'net/http'
 require 'json'
-require 'vips'
+VIPS = begin
+		require 'vipserr'
+		true
+	rescue LoadError
+		false
+	end
 require 'fileutils'
 
 API = 'https://api.myanimelist.net/v2/'
@@ -98,9 +103,11 @@ class MALinder < TerminalGame
 	def draw(redraw=false)
 		raise 'empty (all marked or nothing here)' if @season.empty?
 		anime = @season[@current]
-		current_img = image(anime)
-		scale_by = current_img.size.zip([@size_x/2, @size_y]).map{|want,have| want > have ? have/want.to_f : 1}.min
-		buffer = (scale_by == 1 ? current_img : current_img.resize(scale_by)).pngsave_buffer
+		if VIPS
+			current_img = image(anime)
+			scale_by = current_img.size.zip([@size_x/2, @size_y]).map{|want,have| want > have ? have/want.to_f : 1}.min
+			buffer = (scale_by == 1 ? current_img : current_img.resize(scale_by)).pngsave_buffer
+		end
 		counter = " (#{@current+1}/#{@season.size})"
 		normal_title = text_color_bad_words((anime['title'].inspect + counter).center(@cols))
 		move_cursor(0,0)
@@ -129,8 +136,10 @@ class MALinder < TerminalGame
 		paragraph = text_color_bad_words(paragraph).split("\n").map{|l|l.each_char.each_slice(@cols/2).map(&:join).join("\n")}.join("\n")
 		print(paragraph.gsub(/\n(\s*\n)+/, "\n\n").gsub(/\n/, "\r\n"))
 		move_cursor(0,0)
-		imgid = kitty_graphics_img_load(buffer)
-		kitty_graphics_img_pixel_place_center(imgid, *current_img.size.map{|e| (e*scale_by).to_i}, (@size_x/4).to_i, 0)
+		if VIPS
+			imgid = kitty_graphics_img_load(buffer)
+			kitty_graphics_img_pixel_place_center(imgid, *current_img.size.map{|e| (e*scale_by).to_i}, (@size_x/4).to_i, 0)
+		end
 		# print("\r\n")
 		# kitty_graphics_img_display(imgid)
 	end
