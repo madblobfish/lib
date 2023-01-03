@@ -2,7 +2,7 @@ require_relative 'lib/gamelib'
 require 'net/http'
 require 'json'
 VIPS = begin
-		require 'vipserr'
+		require 'vips'
 		true
 	rescue LoadError
 		false
