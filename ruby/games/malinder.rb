@@ -1,29 +1,45 @@
-require_relative 'lib/gamelib'
-require 'net/http'
-require 'json'
-VIPS = begin
-		require 'vips'
-		true
-	rescue LoadError
-		false
-	end
 require 'fileutils'
+require 'json'
+require 'net/http'
+def require_optional(name)
+	require name
+	true
+rescue LoadError
+	false
+end
+VIPS = require_optional('vips')
+require_relative 'lib/gamelib'
 
-API = 'https://api.myanimelist.net/v2/'
-CACHE_DIR = ENV.fetch('XDG_CACHE_HOME', ENV.fetch('HOME') + '/.cache') + '/malinder/'
+# config file: malinder_config.rb in same folder as this
+# things you may put in your config, like:
+# DEFAULT_HEADERS = {'X-MAL-CLIENT-ID': 'asdf'}
+# LOG_SUFFIX = '-yourname'
+require_optional('./malinder_config')
+
+def configurable_default(name, default)
+	Object.const_set(name, default) unless Object.const_defined?(name)
+end
+# configurable_default
+configurable_default(:API, 'https://api.myanimelist.net/v2/')
+configurable_default(:CACHE_DIR, ENV.fetch('XDG_CACHE_HOME', ENV.fetch('HOME') + '/.cache') + '/malinder/')
 FileUtils.mkdir_p(CACHE_DIR + 'images/')
+configurable_default(:LOG_SUFFIX, '')
+configurable_default(:LOG_FILE_PATH, "#{CACHE_DIR}choices#{LOG_SUFFIX}.log")
+configurable_default(:BAD_WORDS,
+	%w(
+		mini idol cultivat mini chibi promotion game pokemon sport mecha machine limited trailer short season
+		special extra harem ecchi kids collaboration commercial precure reborn rebirth revive isekai
+	)	+ ['love live']
+)
+configurable_default(:BAD_WORDS_REGEX, /\b#{ Regexp.union(BAD_WORDS).source }\b/i)
+
+# not configurable
+CACHE = {}
+CACHE_BY_RANK = {}
 IMAGE_CACHE = {}
-LOG_FILE_PATH = CACHE_DIR + 'choices.log'
 LOG_FILE = File.open(LOG_FILE_PATH, "a+")
 LOG_FILE.sync = true
 CHOICES = Hash[LOG_FILE.each_line.map{|l| id, c, ts = l.split("\t"); [id, {choice:c, ts: ts}]}]
-CACHE = {}
-CACHE_BY_RANK = {}
-BAD_WORDS = %w(
-	mini idol cultivat mini chibi promotion game pokemon sport mecha machine limited trailer short season
-	special extra harem ecchi kids collaboration commercial precure reborn rebirth revive isekai
-)	+ ['love live']
-BAD_WORDS_REGEX = /\b#{ Regexp.union(BAD_WORDS).source }\b/i
 
 def load_all_to_cache()
 	Dir[CACHE_DIR + 'sources/*'].each do |s|
