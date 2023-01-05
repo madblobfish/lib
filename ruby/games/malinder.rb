@@ -14,7 +14,7 @@ require_relative 'lib/gamelib'
 # things you may put in your config, like:
 # DEFAULT_HEADERS = {'X-MAL-CLIENT-ID': 'asdf'}
 # LOG_SUFFIX = '-yourname'
-require_optional('./malinder_config')
+require_optional(File.dirname(__FILE__)+'/malinder_config.rb')
 
 def configurable_default(name, default)
 	Object.const_set(name, default) unless Object.const_defined?(name)
