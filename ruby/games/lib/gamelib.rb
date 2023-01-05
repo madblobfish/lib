@@ -2,7 +2,96 @@
 #  a known solution is this but its ugly and non utf8 https://sw.kovidgoyal.net/kitty/protocol-extensions.html#keyboard-handling
 
 TTY_CLEAN_STATE = `stty -g` if STDIN.tty?
+
 class TerminalGame
+  module Term
+    def clear
+      print "\e[2J"
+    end
+    def cursor_save
+      print "\e[s"
+    end
+    def cursor_restore
+      print "\e[u"
+    end
+    def move_cursor(x = 0, y = 0)
+      print "\e[#{x+1};#{y+1}H"
+    end
+    def cursor_query
+      print "\e[6n"
+    end
+    def get_size(no_tty=false)
+    end
+    def size_query
+      print "\e[14t"
+    end
+    def color(color = 15, mode = :fg)
+      print get_color_code(color, mode)
+    end
+    def color_invert
+      print color_invert_code
+    end
+    def color_invert_code
+      "\e[7m"
+    end
+    def color_reset_code
+      "\e[0m"
+    end
+    def get_color_code(color = 15, mode = :fg)
+      code = {fg: 38, bg: 48}[mode]
+      raise 'invalid color mode' if code.nil?
+      if color.is_a? Integer
+        "\e[#{code};5;#{color.to_i}m"
+      elsif color&.length == 3
+        "\e[#{code};2;#{color.map(&:to_i).join(';')}m"
+      else
+        raise 'color can be int between 0 and 255 or array with 3 ints [r,g,b]'
+      end
+    end
+
+    def reset_tty_state
+      system('stty '+ TTY_CLEAN_STATE)
+    end
+
+    STRING_TERMINATOR = "\e\\"
+    def remove_escape_codes(string)
+      string
+        .gsub(/\e\[200~(((?!\e\[201~).)+)\e\[201~/,'\1') # Bracketed paste Escapes
+        .gsub(/\e\[\d*([;0-9]+)?m/,'') # SGR Escapes
+        .gsub(/\eP((?!\e\\).)+\e\\/, '') # DCS Escapes
+        .gsub(/\e\^((?!\e\\).)+\e\\/, '') # PM Escapes
+        .gsub(/\e_((?!\e\\).)+\e\\/, '') # APC Escapes
+        .gsub(/\e\[[\x30-\x3F]*[\x20-\x2F]*[\x40-\x7E]/, '') # CSI Escapes
+        .gsub(/\e\]((?!\e\\).)+\e\\/, '') # OSC Escapes
+        .gsub(/\e[NO][\x20-\x7F]/,'') # Single Shift Escapes
+        .gsub(/\e[\x20-\x2F]+[\x30-\x7E]/, '') # nF Escapes
+        .gsub(/[\x00-\x09\x11-\x19\x27]/,'') # C0 control Escapes and other nonprintables
+    end
+
+    def break_lines(string, width, punctation=/(?:[ .,!—()\n-])/)
+      out = ''
+      rest = string
+      current = ''
+      while not rest.empty?
+        start, separator, rest = rest.partition(punctation)
+        if remove_escape_codes(current+start+separator).length > width
+          raise "not enough space" if current == ''
+          out += current + "\r\n"
+          current = ''
+        end
+        if separator == "\n"
+          out += current + start + separator
+          current = ''
+        else
+          current += start + separator
+        end
+      end
+      out
+    end
+  end
+  include Term
+  extend Term
+
   attr_reader :fps, :sync, :mouse_support, :require_kitty_graphics, :extended_input, :extended_input_implement_ctrl_c
   def inited?
     @inited ||= false
@@ -91,6 +180,7 @@ class TerminalGame
     end
   end
 
+  # hooks
   def initial_draw
     sync_draw{draw()}
   end
@@ -130,71 +220,12 @@ class TerminalGame
   def mouse_handler(x, y, button_id, state_transition);end
   def size_change_handler;end
 
-  private
-  def kill_threads
-    @draw_thread&.kill
-    @read_thread&.kill
-  end
-  def reset_tty_state
-    system('stty '+ TTY_CLEAN_STATE) unless @no_tty
-  end
-  def return_to_tty
-    kill_threads
-    reset_tty_state
-    kitty_graphics_img_clear if @require_kitty_graphics # clear images on shutdown
-    print("\e[=0u") if @extended_input # keypress in unicode points +mod
-    print("\e[?1002l\e[?1006l") # disable mouse click/move events
-    print("\e[?1049l") # disable alternative screen buffer
-    print("\e[?25h") # show cursor
-    print("\e[?7h") # show overflow
-    STDIN.read_nonblock(100_000) rescue nil # clear stdin buffer
-  end
-  def clear
-    print "\e[2J"
-  end
-  def cursor_save
-    print "\e[s"
-  end
-  def cursor_restore
-    print "\e[u"
-  end
+  # useful stuff, see also Term module above
   def sync_draw(&block)
     @draw_mutex.synchronize do
       print "\eP=1s\e\\"
       yield
       print "\eP=2s\e\\"
-    end
-  end
-  def move_cursor(x = 0, y = 0)
-    print "\e[#{x+1};#{y+1}H"
-  end
-  def cursor_query
-    print "\e[6n"
-  end
-  def size_query
-    print "\e[14t"
-  end
-  def color(color = 15, mode = :fg)
-    print get_color_code(color, mode)
-  end
-  def color_invert
-    print color_invert_code
-  end
-  def color_invert_code
-    "\e[7m"
-  end
-  def color_reset_code
-    "\e[0m"
-  end
-  def get_color_code(color = 15, mode = :fg)
-    code = {fg: 38, bg: 48}[mode]
-    raise 'invalid color mode' if code.nil?
-    if color.is_a? Integer
-      "\e[#{code};5;#{color.to_i}m"
-    elsif color&.length == 3
-      "\e[#{code};2;#{color.map(&:to_i).join(';')}m"
-    else
-      raise 'color can be int between 0 and 255 or array with 3 ints [r,g,b]'
     end
   end
 
@@ -272,7 +303,6 @@ class TerminalGame
     # todo move somewhere else
     # return STDIN.readpartial(200) == "\e_Gi=#{id};OK\e\\"*2
   end
-
   def kitty_graphics_img_clear(what=:all, *opts)
     raise 'requires @require_kitty_graphics=true' unless require_kitty_graphics
     keep = true # for now lets not make this configureable
@@ -302,4 +332,32 @@ class TerminalGame
     key.upcase! unless keep
     print "\e_Ga=d,q=1,d=#{key}#{args}\e\\"
   end
+
+  private
+  def kill_threads
+    @draw_thread&.kill
+    @read_thread&.kill
+  end
+  def return_to_tty
+    kill_threads
+    reset_tty_state unless @no_tty
+    kitty_graphics_img_clear if @require_kitty_graphics # clear images on shutdown
+    print("\e[=0u") if @extended_input # keypress in unicode points +mod
+    print("\e[?1002l\e[?1006l") # disable mouse click/move events
+    print("\e[?1049l") # disable alternative screen buffer
+    print("\e[?25h") # show cursor
+    print("\e[?7h") # show overflow
+    STDIN.read_nonblock(100_000) rescue nil # clear stdin buffer
+  end
 end
+
+# tests for remove_escape_codes
+raise "remove_escape_codes selftest fail 1" unless TerminalGame.remove_escape_codes("\x1b[31m\xc2\x9bm") == "\xc2\x9bm" # doesn't parse invalid unicoded escapes
+raise "remove_escape_codes selftest fail 2" unless TerminalGame.remove_escape_codes("test0987123 e[m *  \e[38;5;15m") == "test0987123 e[m *  "
+raise "remove_escape_codes selftest fail 3" unless TerminalGame.remove_escape_codes("ab\nc") == "ab\nc"
+raise "remove_escape_codes selftest fail 3" unless TerminalGame.remove_escape_codes("a\eNbc") == "ac"
+raise "remove_escape_codes selftest fail 4" unless TerminalGame.remove_escape_codes("a\x1b[200m\x1b[mb\x1b[5:3;2;4~") == 'ab'
+raise "remove_escape_codes selftest fail 5" unless TerminalGame.remove_escape_codes("1\x1b[200~a\x1b[201m\x1b[201~\x1b[x2") == "1a2"
+raise "remove_escape_codes selftest fail 6" unless TerminalGame.remove_escape_codes("a\x1bPb\x1b\x1bc\x1b\\d") == 'ad'
+raise "remove_escape_codes selftest fail 7" unless TerminalGame.remove_escape_codes("a\x1b_b\x1b\x1b\x1bc\x1b\\d") == 'ad'
+raise "remove_escape_codes selftest fail 8" unless TerminalGame.remove_escape_codes("\x1b]X\x07\x1b]X\x1b\x07\x1b\\") == ''

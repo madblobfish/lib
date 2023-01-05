@@ -95,6 +95,9 @@ end
 
 class MALinder < TerminalGame
 	SEASON_SHORTCUTS = {'w': 'winter', 'sp': 'spring', 'su': 'summer', 'f': 'fall'}
+	def inspect #reduce size of errors
+		'#<MALinder>'
+	end
 	def initialize(year, season)
 		@fps = :manual
 		@require_kitty_graphics = true
@@ -149,7 +152,8 @@ class MALinder < TerminalGame
 		paragraph += "\nEpisodes: #{anime['num_episodes']}" if anime['num_episodes'] and anime['num_episodes'] != 0
 		paragraph += "\nGenres: #{anime['genres'].map{|x|x['name']}.join(', ')}" if anime['genres']
 		paragraph += "\n\nLink: https://myanimelist.net/anime/#{anime['id']}"
-		paragraph = text_color_bad_words(paragraph).split("\n").map{|l|l.each_char.each_slice(@cols/2).map(&:join).join("\n")}.join("\n")
+		# paragraph = text_color_bad_words(paragraph).split("\n").map{|l|l.each_char.each_slice(@cols/2).map(&:join).join("\n")}.join("\n")
+		paragraph = break_lines(text_color_bad_words(paragraph), @cols/2+1)
 		print(paragraph.gsub(/\n(\s*\n)+/, "\n\n").gsub(/\n/, "\r\n"))
 		move_cursor(0,0)
 		if VIPS
