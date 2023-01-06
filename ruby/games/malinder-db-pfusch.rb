@@ -11,7 +11,7 @@ time_watched_sum = 0
 time_sum = 0
 csv = CSV.read(LOG_FILE_PATH, **CSV_OPTS)
 load_all_to_cache()
-ARGV.each{|p| csv += CSV.read(p, **CSV_OPTS)}
+ARGV.each{|f| csv += CSV.read(f, **CSV_OPTS)}
 csv.map! do |r|
   if e = CACHE[r[0].to_i]
     s = e['start_season'].fetch_values('year','season') rescue []

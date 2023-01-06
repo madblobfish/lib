@@ -51,9 +51,10 @@ def load_all_to_cache()
 end
 def cache_search(needle)
 	load_all_to_cache() if CACHE.empty?
-	CACHE.select do |k,v|
-		[v["title"], *v["alternative_titles"]&.values].flatten.any?{|s| s.match?(/#{needle}/i)}
-	end.map{|k,v| [k, v["title"], v["alternative_titles"]&.fetch('ja','')]}
+	search = /#{needle}/i
+	CACHE.select do |_,v|
+		[v['title'], *v['alternative_titles']&.values.flatten].any?{|s| s.match?(search)}
+	end
 end
 
 def fetch(url, **stuff)
@@ -200,9 +201,15 @@ class MALinder < TerminalGame
 end
 
 if __FILE__ == $PROGRAM_NAME
+	GC.disable
 	if ARGV.length == 2
 		if ARGV.first == 'search'
-			puts cache_search(ARGV[1]).sort().map{|a| a.join("\t")}
+			res = cache_search(ARGV[1])
+			if res.one?
+				puts res.first[1].sort.map{|v| v.join(":\t")}
+			else
+				puts res.map{|k,v| [k, v["title"], v["alternative_titles"]&.fetch('ja','')]}.sort_by(&:first).map{|a| a.join("\t")}
+			end
 		elsif ARGV.first == 'show'
 			load_all_to_cache
 			puts CACHE[ARGV[1].to_i].sort.map{|v| v.join(":\t")}
