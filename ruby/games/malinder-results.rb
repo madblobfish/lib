@@ -5,8 +5,8 @@ def compare(a,b)
 	prefix = 'https://myanimelist.net/anime/'
 	load_all_to_cache() # fills in CACHE
 	[a,b].map do |csv|
-		csv.group_by{|a,b,c| b}.transform_values do |a|
-			a.map{|a|"#{prefix}#{a[0]} - #{CACHE[a[0].to_i]&.fetch('title','-')}"}
+		csv.select{|x| x.values_at(1,2) == %w(2023 winter)}.group_by{|_,_,_,d| d.split(',').first}.transform_values do |a|
+			a.map{|a|"0\t#{a[0]}\t#{CACHE[a[0].to_i]&.fetch('title','-')}\t#{prefix}#{a[0]}"}
 		end
 	end
 end
