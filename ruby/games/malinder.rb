@@ -28,8 +28,9 @@ configurable_default(:LOG_FILE_PATH, "#{CACHE_DIR}choices#{LOG_SUFFIX}.log")
 configurable_default(:BAD_WORDS,
 	%w(
 		mini idol cultivat mini chibi promotion game pokemon sport mecha machine limited trailer short season
-		special extra harem ecchi kids collaboration commercial precure reborn rebirth revive isekai
-	)	+ ['love live']
+		special extra harem hentai ecchi kids collaboration commercial precure reborn rebirth revive isekai
+		reincar
+	)	+ ['love live', 'boys love']
 )
 configurable_default(:BAD_WORDS_REGEX, /\b#{ Regexp.union(BAD_WORDS).source }\b/i)
 
