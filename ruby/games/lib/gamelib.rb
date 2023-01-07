@@ -86,7 +86,7 @@ class TerminalGame
           current += start + separator
         end
       end
-      out
+      (out+current).gsub(/\n /, "\n")
     end
   end
   include Term
