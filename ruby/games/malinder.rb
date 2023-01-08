@@ -5,9 +5,21 @@ def require_optional(name)
 	require name
 	true
 rescue LoadError
+	yield if block_given?
 	false
 end
 VIPS = require_optional('vips')
+require_optional(File.dirname(__FILE__) + '/../stdlib/duration'){
+	class Duration
+		def initialize(secs)
+			@secs = secs
+			@secs
+		end
+		def to_s
+			@secs.to_s
+		end
+	end
+}
 require_relative 'lib/gamelib'
 
 # config file: malinder_config.rb in same folder as this
@@ -162,6 +174,7 @@ class MALinder < TerminalGame
 		paragraph += "\nType: #{anime['media_type']}" if anime['media_type']
 		paragraph += "\nSource: #{anime['source']}" if anime['source']
 		paragraph += "\nEpisodes: #{anime['num_episodes']}" if anime['num_episodes'] and anime['num_episodes'] != 0
+		paragraph += "\nDuration: #{Duration.new(anime['average_episode_duration']).to_s}" if anime['average_episode_duration']
 		paragraph += "\nGenres: #{anime['genres'].map{|x|x['name']}.join(', ')}" if anime['genres']
 		paragraph += "\n\nLink: #{MAL_PREFIX}#{anime['id']}"
 		paragraph = break_lines(text_color_bad_words(paragraph), @cols/2+1)
