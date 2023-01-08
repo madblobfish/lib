@@ -51,7 +51,8 @@ csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|
   c_stage_one = c.select{|c|c[3].start_with?(*%w(want nope okay))}
   c_backlog = c.select{|c|c[3].start_with?(*%w(backlog))}
   c_progress = c.select{|c|c[3].start_with?(*%w(partly paused))}
-  c_done = c.select{|c|c[3].start_with?(*%w(seen broken))}
+  c_broken = c.select{|c|c[3].start_with?(*%w(broken))}
+  c_done = c.select{|c|c[3].start_with?(*%w(seen))}
   if c.count == 2 && (c.first == c.last[..5] || c.first[..5] == c.last)
     stays = c.max{|a,b| a.length <=> b.length}
     STDERR.puts('removing lines due to being same, except end: ' + (c - stays).inspect)
@@ -65,12 +66,14 @@ csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|
       STDERR.puts('stays: ' + stays.inspect)
       csv -= remainder
     else
-      p c
+      STDERR.puts(c.inspect)
       raise 'all are same?'
     end
-  elsif [c_stage_one,c_backlog,c_progress,c_done].map(&:any?).count(true) > 1
+  elsif [c_stage_one,c_backlog,c_progress,c_broken,c_done].map(&:any?).count(true) > 1
     stays = if c_done.any?
         c_done
+      elsif c_broken.any?
+        c_broken
       elsif c_progress.any?
         c_progress
       elsif c_backlog.any?
@@ -79,21 +82,20 @@ csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|
     STDERR.puts('removing lines due to more progressed stuff: ' + (c - stays).inspect)
     STDERR.puts('stays: ' + stays.inspect)
     csv -= c - stays
-  elsif c.map{|e| e[3]}.all?{|s| s.start_with?('broken')}
-    p c
-    raise 'all are broken'
+#  elsif c.map{|e| e[3]}.all?{|s| s.start_with?('broken')}
+#    STDERR.puts(c.inspect)
+#    raise 'all are broken'
   elsif c.map{|e| e[3]}.all?{|s| s.start_with?('partly')}
     latest =  c.max{|a,b| a[3].split(',').last.to_i <=> b[3].split(',').last.to_i}
     remainder = c - [latest]
     STDERR.puts('removing lines due to newer: ' + remainder.inspect)
     STDERR.puts('stays: ' + latest.inspect)
     csv -= remainder
-  elsif c.map{|e| e[3]}.all?{|s| s.start_with?('seen')}
-    p c
-    raise 'all are seen'
+#  elsif c.map{|e| e[3]}.all?{|s| s.start_with?('seen')}
+#    STDERR.puts(c.inspect)
+#    raise 'all are seen'
   else
-    next if [41611, ].include?(id)
-    p c
+    STDERR.puts(c.inspect)
     raise 'couldn\'t merge'
     STDERR.puts("Duplicates: #{c.count} of #{id}")
   end
