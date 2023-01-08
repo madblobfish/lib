@@ -103,7 +103,10 @@ def image(anime)
 end
 
 class MALinder < TerminalGame
-	SEASON_SHORTCUTS = {'w': 'winter', 'sp': 'spring', 'su': 'summer', 'f': 'fall'}
+	SEASON_SHORTCUTS = {
+		'w'=> 'winter', 'sp'=> 'spring', 'su'=> 'summer', 'f'=> 'fall',
+		'1'=> 'winter', '2'=> 'spring', '3'=> 'summer', '4'=> 'fall',
+	}
 	def inspect #reduce size of errors
 		'#<MALinder>'
 	end
