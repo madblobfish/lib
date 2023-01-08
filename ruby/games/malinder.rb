@@ -251,7 +251,11 @@ if __FILE__ == $PROGRAM_NAME
 		if res.one?
 			puts res.first[1].sort.map{|v| v.join(":\t")}
 		else
-			puts res.map{|k,v| [k, v['title'], v['alternative_titles']&.fetch('ja','')]}.sort_by(&:first).map{|a| a.join("\t")}
+			date = Time.now.to_i
+			puts res.map{|k,v|
+				season = v['start_season'].fetch_values('year','season') rescue ['','']
+				[k,*season,'-', date, v["title"], v["alternative_titles"]&.fetch('ja','')]
+			}.sort_by(&:first).map{|a| a.join("\t")}
 		end
 	elsif ARGV.length == 2
 		if ARGV.first == 'show'

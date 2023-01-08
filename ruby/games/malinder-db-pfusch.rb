@@ -124,3 +124,5 @@ STDERR.puts '', 'Statistics:'
 csv.map{|r|r[3].split(',').first}.group_by{|e|e}.map{|a,b|[a,b.count]}.map{|e| STDERR.puts e.to_s }
 STDERR.puts '', 'Time spent (in secs):', time_watched_sum
 STDERR.puts '', 'Time to go: ', time_sum
+seen_amount = csv.map(&:first).uniq.size
+STDERR.puts('Ratio: %2.2f%% (%d of %d)' % [seen_amount*100.0/CACHE.size, seen_amount, CACHE.size])
