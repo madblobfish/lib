@@ -14,14 +14,14 @@ require_relative 'lib/gamelib'
 # things you may put in your config, like:
 # DEFAULT_HEADERS = {'X-MAL-CLIENT-ID': 'asdf'}
 # LOG_SUFFIX = '-yourname'
-require_optional(File.dirname(__FILE__)+'/malinder_config.rb')
+CACHE_DIR = ENV.fetch('XDG_CACHE_HOME', ENV.fetch('HOME') + '/.cache') + '/malinder/'
+require_optional(CACHE_DIR + '/config.rb')
 
 def configurable_default(name, default)
 	Object.const_set(name, default) unless Object.const_defined?(name)
 end
 # configurable_default
 configurable_default(:API, 'https://api.myanimelist.net/v2/')
-configurable_default(:CACHE_DIR, ENV.fetch('XDG_CACHE_HOME', ENV.fetch('HOME') + '/.cache') + '/malinder/')
 FileUtils.mkdir_p(CACHE_DIR + 'images/')
 configurable_default(:LOG_SUFFIX, '')
 configurable_default(:LOG_FILE_PATH, "#{CACHE_DIR}choices#{LOG_SUFFIX}.log")
@@ -38,9 +38,10 @@ configurable_default(:BAD_WORDS_REGEX, /\b#{ Regexp.union(BAD_WORDS).source }\b/
 CACHE = {}
 CACHE_BY_RANK = {}
 IMAGE_CACHE = {}
-LOG_FILE = File.open(LOG_FILE_PATH, "a+")
+LOG_FILE = File.open(LOG_FILE_PATH, 'a+')
 LOG_FILE.sync = true
 CHOICES = Hash[LOG_FILE.each_line.map{|l| id, c, ts = l.split("\t"); [id, {choice:c, ts: ts}]}]
+MAL_PREFIX = 'https://myanimelist.net/anime/'
 
 def load_all_to_cache()
 	Dir[CACHE_DIR + 'sources/*'].each do |s|
@@ -58,6 +59,12 @@ def cache_search(needle)
 	end
 end
 
+def compare(a,b)
+	[a,b].map do |csv|
+		csv.group_by{|_,_,_,d| d.split(',').first}
+	end
+end
+
 def fetch(url, **stuff)
 	headers = stuff.fetch(:headers, {})
 	content = stuff[:content]
@@ -71,7 +78,7 @@ def fetch(url, **stuff)
 	return ret
 end
 # fetch(API + 'anime/30230')
-# fetch(j["main_picture"]["large"])
+# fetch(j['main_picture']['large'])
 
 def image(anime)
 	id = anime['id']
@@ -112,10 +119,10 @@ class MALinder < TerminalGame
 		season_file = "#{CACHE_DIR}sources/#{year}-#{season}.json"
 		raise 'missing json, run malinder.sh first' unless File.exists?(season_file)
 		@season = JSON.parse(File.read(season_file))['data'].map{|v|v['node']}
-		@season.reject!{|a| CHOICES.has_key?(a["id"].to_s)}
-		@season.reject!{|a| a["media_type"] == "music"}
-		@season.select!{|a| a["start_season"]["year"] == year}
-#		@season.select!{|a| a["nsfw"] == "white"}
+		@season.reject!{|a| CHOICES.has_key?(a['id'].to_s)}
+		@season.reject!{|a| a['media_type'] == 'music'}
+		@season.select!{|a| a['start_season']['year'] == year}
+#		@season.select!{|a| a['nsfw'] == 'white'}
 		raise 'empty (all marked or nothing here)' if @season.empty?
 		@current = 0
 	end
@@ -141,8 +148,8 @@ class MALinder < TerminalGame
 			end
 			if anime['alternative_titles']['ja']
 				print("\r\n")
-				overlength = anime['alternative_titles']["ja"].gsub(/[0-9a-z\/+_-]/i, '').length
-				print(text_color_bad_words((anime['alternative_titles']["ja"]).center(@cols - overlength)))
+				overlength = anime['alternative_titles']['ja'].gsub(/[0-9a-z\/+_-]/i, '').length
+				print(text_color_bad_words((anime['alternative_titles']['ja']).center(@cols - overlength)))
 			end
 		else
 			print(normal_title)
@@ -153,8 +160,7 @@ class MALinder < TerminalGame
 		paragraph += "\nSource: #{anime['source']}" if anime['source']
 		paragraph += "\nEpisodes: #{anime['num_episodes']}" if anime['num_episodes'] and anime['num_episodes'] != 0
 		paragraph += "\nGenres: #{anime['genres'].map{|x|x['name']}.join(', ')}" if anime['genres']
-		paragraph += "\n\nLink: https://myanimelist.net/anime/#{anime['id']}"
-		# paragraph = text_color_bad_words(paragraph).split("\n").map{|l|l.each_char.each_slice(@cols/2).map(&:join).join("\n")}.join("\n")
+		paragraph += "\n\nLink: #{MAL_PREFIX}#{anime['id']}"
 		paragraph = break_lines(text_color_bad_words(paragraph), @cols/2+1)
 		print(paragraph.gsub(/\n(\s*\n)+/, "\n\n").gsub(/\n/, "\r\n"))
 		move_cursor(0,0)
@@ -190,7 +196,7 @@ class MALinder < TerminalGame
 
 	def logchoice(choice)
 		anime = @season[@current]
-		LOG_FILE.write("#{anime["id"]}\t#{@which_season.join("\t")}\t#{choice}\t#{Time.now.to_i}\t#{anime['title']}\n")
+		LOG_FILE.write("#{anime['id']}\t#{@which_season.join("\t")}\t#{choice}\t#{Time.now.to_i}\t#{anime['title']}\n")
 		@season.delete_at(@current)
 		exit() if @season.empty?
 		@current %= @season.size
@@ -203,15 +209,49 @@ end
 
 if __FILE__ == $PROGRAM_NAME
 	GC.disable
-	if ARGV.length == 2
-		if ARGV.first == 'search'
-			res = cache_search(ARGV[1])
-			if res.one?
-				puts res.first[1].sort.map{|v| v.join(":\t")}
-			else
-				puts res.map{|k,v| [k, v["title"], v["alternative_titles"]&.fetch('ja','')]}.sort_by(&:first).map{|a| a.join("\t")}
+	if ARGV.first == 'results'
+		ARGV.shift
+		if ARGV.empty?
+			puts 'give me two files to compare,'
+			puts '  or one if you got your own.'
+			exit
+		end
+
+		require 'csv'
+		csv_options = {
+			skip_blanks: true,
+			# skip_lines: /^#/,
+			col_sep: "\t",
+			nil_value: '',
+		}
+		load_all_to_cache()
+		a,b = compare(
+			CSV.read(ARGV.length == 1 ? LOG_FILE_PATH : ARGV.first, **csv_options),
+			CSV.read(ARGV.last, **csv_options)
+		).map do |x|
+			x.transform_values do |a|
+				a.map do |a|
+					cached = CACHE.fetch(a[0].to_i, {})
+					"0\t#{MAL_PREFIX}#{a[0]}\t#{cached.fetch('title','-')}\t#{cached.fetch('start_date','-')}"
+				end
 			end
-		elsif ARGV.first == 'show'
+		end
+		[a,b].map{|x|x.default = []}
+
+		puts "want:", (a["want"] & b["want"]).sort
+		puts "want/ok:", (a["okay"] & b["want"] + a["want"] & b["okay"]).sort
+		puts "okay:", (a["okay"] & b["okay"]).sort
+		puts "nope/want:", (a["nope"] & b["want"]).sort
+		puts "want/nope:", (a["want"] & b["nope"]).sort
+	elsif ARGV.first == 'search' && ARGV.length >= 2
+		res = cache_search(ARGV[1..].join(' '))
+		if res.one?
+			puts res.first[1].sort.map{|v| v.join(":\t")}
+		else
+			puts res.map{|k,v| [k, v['title'], v['alternative_titles']&.fetch('ja','')]}.sort_by(&:first).map{|a| a.join("\t")}
+		end
+	elsif ARGV.length == 2
+		if ARGV.first == 'show'
 			load_all_to_cache
 			puts CACHE[ARGV[1].to_i].sort.map{|v| v.join(":\t")}
 		else
@@ -222,7 +262,8 @@ if __FILE__ == $PROGRAM_NAME
 		puts 'season is one of: winter, spring, summer, fall'
 		puts ''
 		puts 'alternatively'
-		puts '  search <searchstring>: to search for something in the local cache'
+		puts '  search <search> [string] ...: to search for something in the local cache'
 		puts '  show <id>: to lookup an entry'
+		puts '  results [a_log] <b_log>: compare and find out things both want'
 	end
 end
