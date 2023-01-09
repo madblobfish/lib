@@ -5,7 +5,7 @@ OUTPUT_JSON = ARGV.delete('--json')
 
 CSV_OPTS = {
   col_sep: "\t",
-  skip_lines: /^#/,
+  skip_lines: /^(#|$)/,
   converters: :integer,
 }
 def parse_csv(f)
@@ -13,22 +13,26 @@ def parse_csv(f)
   header = File.new(f).readline
   if header.start_with?("id\t", "seencount(state)\t")
     STDERR.puts("reading with headers: #{f}")
-    CSV.read(LOG_FILE_PATH, **CSV_OPTS, headers: true).map do |r|
+    (CSV.read(f, **CSV_OPTS, headers: true).map do |r|
       h = r.to_h
       a = [
-        h.fetch('id'),
+        h.fetch('id')&.to_s&.split('/')&.last&.to_i,
         h.fetch('year', nil),
         h.fetch('season', nil),
-        h.fetch('seencount(state)', h.fetch('state')).split('(').reverse.map{|x|x.chomp(')')}.join(','),
-        h.fetch('ts', nil),
+        h.fetch('state') do
+          seencount, state = (h.fetch('seencount(state)').to_s.split('(').map{|x|x.chomp(')').split(',').first.strip} + ['partly']).first(2)
+          seencount = Integer(seencount, 10)
+          "#{state},#{seencount}".gsub('partly,0','want').gsub('plonk','broken')
+        end,
+        h.fetch('ts', 10),
         h.fetch('name',nil),
         h.fetch('c1',h.fetch(nil, nil)), h.fetch('c2',nil), h.fetch('c3',nil),
-      ]
+      ] rescue (raise "#{h}")
       a.reverse.drop_while(&:nil?).reverse
-    end
+    end.compact)
   else
     STDERR.puts("reading: #{f}")
-    CSV.read(LOG_FILE_PATH, **CSV_OPTS)
+    CSV.read(f, **CSV_OPTS)
   end
 end
 
@@ -69,41 +73,51 @@ csv.map! do |r|
 end
 
 YEAR_SEASON = {'winter'=>1, 'spring'=>2, 'summer'=>3, 'fall'=>4}
+STATE_LEVEL = {
+  # initial
+  'want'=> 0, 'nope'=> 0, 'okay'=> 0,
+  # intermediate
+  'backlog'=> 1,
+  # progress
+  'partly'=> 2,
+  # stopped
+  'paused'=> 3,
+  'broken'=> 4, #'plonk'=> 4,
+  # done
+  'seen'=> 5,
+}
 csv.sort_by!{|e| x = e.values_at(1,2,0,4,5); x[1] = YEAR_SEASON[x[1]]; x.map(&:to_s).map(&:downcase)}
 csv.uniq!
 csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|
   next if id == nil # ignore the nil group, you're on your own for now
-  c_stage_one = c.select{|c|c[3].start_with?(*%w(want nope okay))}
-  c_backlog = c.select{|c|c[3].start_with?(*%w(backlog))}
-  c_progress = c.select{|c|c[3].start_with?(*%w(partly paused))}
-  c_broken = c.select{|c|c[3].start_with?(*%w(broken))}
-  c_done = c.select{|c|c[3].start_with?(*%w(seen))}
+  stages = c.group_by{|c|STATE_LEVEL.fetch(c[3].split(',').first)} rescue (raise c.inspect)
+  seencount = c.group_by{|c|c[3].split(',').last.to_i}
   if c.count == 2 && (c.first == c.last[..5] || c.first[..5] == c.last)
     stays = c.max{|a,b| a.length <=> b.length}
-    STDERR.puts('removing lines due to being same, except end: ' + (c - stays).inspect)
-    STDERR.puts('stays: ' + stays.inspect)
-    csv -= c - stays
+      STDERR.puts('removing lines due to being same, except end: ' + (c - [stays]).inspect)
+      STDERR.puts('stays: ' + stays.inspect)
+    csv -= c - [stays]
+  elsif c.reduce(true){|o,a| o && [a,c.first].map{|e|e.dup.tap{|x|x.delete_at(4)}}.inject(:==)}
+    stays = c.min{|a,b| a[4] <=> b[4]}
+    csv -= c - [stays]
+    #STDERR.puts('removing: ' + (c - [stays]).inspect)
+    #STDERR.puts('stays: ' + stays.inspect)
   elsif c.reduce(true){|o,a| o && a.values_at(0,3) == c.first.values_at(0,3)}
     if c.map{|a| a.values_at(*a.each_index.to_a - [1,2,4,5])}.uniq.one?
       stays = c.sort.first
       remainder = c - [stays]
-      STDERR.puts('removing lines due to same stuff: ' + remainder.inspect)
-      STDERR.puts('stays: ' + stays.inspect)
+      unless c.first == c.last
+        STDERR.puts('removing lines due to same stuff: ' + remainder.inspect)
+        STDERR.puts('stays: ' + stays.inspect)
+      end
       csv -= remainder
     else
       STDERR.puts(c.inspect)
       raise 'all are same?'
     end
-  elsif [c_stage_one,c_backlog,c_progress,c_broken,c_done].map(&:any?).count(true) > 1
-    stays = if c_done.any?
-        c_done
-      elsif c_broken.any?
-        c_broken
-      elsif c_progress.any?
-        c_progress
-      elsif c_backlog.any?
-        c_backlog
-      end
+  elsif stages.count > 1 || seencount.count > 1
+    #STDERR.puts(c.inspect)
+    stays = seencount.max.last.group_by{|c|STATE_LEVEL.fetch(c[3].split(',').first)}.max.last
     STDERR.puts('removing lines due to more progressed stuff: ' + (c - stays).inspect)
     STDERR.puts('stays: ' + stays.inspect)
     csv -= c - stays
@@ -111,6 +125,8 @@ csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|
 #    STDERR.puts(c.inspect)
 #    raise 'all are broken'
   elsif c.map{|e| e[3]}.all?{|s| s.start_with?('partly')}
+    STDERR.puts(c.inspect)
+    raise "this should no longer be used"
     latest =  c.max{|a,b| a[3].split(',').last.to_i <=> b[3].split(',').last.to_i}
     remainder = c - [latest]
     STDERR.puts('removing lines due to newer: ' + remainder.inspect)
@@ -120,7 +136,7 @@ csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|
 #    STDERR.puts(c.inspect)
 #    raise 'all are seen'
   else
-    STDERR.puts(c.inspect)
+    STDERR.puts('couldn\'t merge:', c.inspect)
     raise 'couldn\'t merge'
     STDERR.puts("Duplicates: #{c.count} of #{id}")
   end
@@ -132,10 +148,9 @@ unless OUTPUT_JSON
   puts out
 else
   require 'json'
+  configurable_default(:JSON_IGNORE, [])
   puts JSON.generate(csv.map do |r|
-    if ['Rick and Morty', 'Immoral Guild', 'KissXsis'].include?(r[5])
-      next
-    end
+    next if JSON_IGNORE.include?(r[5])
     if e = CACHE[r[0].to_i]
       r[6] = e['num_episodes']
       r[7] = e['average_episode_duration']
@@ -158,4 +173,6 @@ STDERR.puts('Ratio: %2.2f%% (%d of %d)' % [seen_amount*100.0/CACHE.size, seen_am
 
 if File.read(LOG_FILE_PATH) == out
   STDERR.puts('', 'files do not diff :)')
+else
+  STDERR.puts('', 'TOOL IS maybe still UnSaVE! diff the result to check or accept to loose some things!')
 end
