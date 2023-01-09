@@ -1,17 +1,42 @@
 require_relative 'malinder.rb'
 require 'csv'
 
-json = ARGV.delete('--json')
+OUTPUT_JSON = ARGV.delete('--json')
 
 CSV_OPTS = {
   col_sep: "\t",
+  skip_lines: /^#/,
   converters: :integer,
 }
+def parse_csv(f)
+  f = CACHE_DIR + f unless File.exists?(f) # allow relative paths
+  header = File.new(f).readline
+  if header.start_with?("id\t", "seencount(state)\t")
+    STDERR.puts("reading with headers: #{f}")
+    CSV.read(LOG_FILE_PATH, **CSV_OPTS, headers: true).map do |r|
+      h = r.to_h
+      a = [
+        h.fetch('id'),
+        h.fetch('year', nil),
+        h.fetch('season', nil),
+        h.fetch('seencount(state)', h.fetch('state')).split('(').reverse.map{|x|x.chomp(')')}.join(','),
+        h.fetch('ts', nil),
+        h.fetch('name',nil),
+        h.fetch('c1',h.fetch(nil, nil)), h.fetch('c2',nil), h.fetch('c3',nil),
+      ]
+      a.reverse.drop_while(&:nil?).reverse
+    end
+  else
+    STDERR.puts("reading: #{f}")
+    CSV.read(LOG_FILE_PATH, **CSV_OPTS)
+  end
+end
+
 time_watched_sum = 0
 time_sum = 0
-csv = CSV.read(LOG_FILE_PATH, **CSV_OPTS)
 load_all_to_cache()
-ARGV.each{|f| csv += CSV.read(f, **CSV_OPTS)}
+csv = parse_csv(LOG_FILE_PATH)
+ARGV.each{|f| csv += parse_csv(f)}
 csv.map! do |r|
   if e = CACHE[r[0].to_i]
     s = e['start_season'].fetch_values('year','season') rescue []
@@ -101,8 +126,10 @@ csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|
   end
 end
 # raise 'stop hammertime' # to test the merging
-unless json
-  puts CSV.generate(col_sep: "\t"){|o| csv.each{|r| o << r}}
+unless OUTPUT_JSON
+  out = "id\tyear\tseason\tstate\tts\tname\tc1\tc2\tc3\n"
+  out += CSV.generate(col_sep: "\t"){|o| csv.each{|r| o << r}}
+  puts out
 else
   require 'json'
   puts JSON.generate(csv.map do |r|
@@ -128,3 +155,7 @@ STDERR.puts '', 'Time spent (in secs):', time_watched_sum
 STDERR.puts '', 'Time to go: ', time_sum
 seen_amount = csv.map(&:first).uniq.size
 STDERR.puts('Ratio: %2.2f%% (%d of %d)' % [seen_amount*100.0/CACHE.size, seen_amount, CACHE.size])
+
+if File.read(LOG_FILE_PATH) == out
+  STDERR.puts('', 'files do not diff :)')
+end
