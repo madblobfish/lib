@@ -142,7 +142,7 @@ class RealHand
   include Comparable
   attr :cards, :hand
   def initialize(*cards)
-    @cards = cards.first if cards.one? && community_cards.first.is_a?(Array)
+    @cards = cards.first if cards.one? #&& community_cards.first.is_a?(Array)
     build_hand
   end
   def add_card(*more_cards)
@@ -151,7 +151,7 @@ class RealHand
     build_hand
   end
   def self.random
-    RealHand.new(Card.sample(2), Card.sample(5))
+    RealHand.new(Card.sample(7))
   end
   def <=>(other)
     hand <=> other.hand
@@ -160,14 +160,19 @@ class RealHand
     hand.rank
   end
   def inspect
-    "#<Your hand: #{rank} #{cards}>"
+    "#<Hand: #{rank} #{cards.sort.map(&:to_s).join()}>"
+    "#<Hand: #{rank} #{hand.cards.sort.map(&:to_s).join(' ')} " +
+      (remainder.any? ? " (#{remainder.sort.map(&:to_s).join(' ')} )" : '') + '>'
+  end
+  def remainder
+    cards - hand.cards
   end
   private
   def build_hand
     if cards.length > 5
-      @hand = cards.combination(5).map{|e| Hand.new(e) }.max
+      @hand = cards.combination(5).map{|e| Hand.new(e)}.max
     else
-      @hand = Hand.new(e)
+      @hand = Hand.new(cards)
     end
   end
 end
@@ -220,16 +225,40 @@ class TexasHoldem
     @options[:thing][0..((Time.now - @start_time) / @options[:big_blind_inc_time]).floor].last
   end
   def round
-    @round = TexasHoldemRound.new(big_blind, players.rotate(@round_num))
+    @round = TexasHoldemRound.new(big_blind, @players.rotate(@round_num))
   end
   def inspect
-    "#<TexasHold'em: players_count=#{players.length}>"
+    "#<TexasHold'em: players_count=#{@players.length}>"
   end
   def to_s(player_view = -1)
 
   end
 end
 
-th = TexasHoldem.new
-puts th.inspect
-puts th.big_blind
+# th = TexasHoldem.new
+# puts th.inspect
+# puts th.big_blind
+# Card::ALL_CARDS.combination(5).lazy.map{|cds|Hand.new(cds.map{|c|Card.new(c)}).rank}.group_by{|x|x}.transform_values(&:count)
+#=> {flush: 4644, pair: 1098240, highcard: 1184220, two_pairs: 123552, three_of_a_kind: 54912, full_house: 3744, four_of_a_kind: 624, straight_flush: 224, royal_flush: 280, straight: 128520}
+#  straight_flush: 0.008618832148243914
+#  royal_flush: 0.010773540185304891
+#  four_of_a_kind: 0.024009603841536616
+#  full_house: 0.14405762304921968
+#  flush: 0.17868685935912829
+#  three_of_a_kind: 2.112845138055222
+#  two_pairs: 4.75390156062425
+#  straight: 4.945054945054945
+#  pair: 42.25690276110444
+#  highcard: 45.56514913657771
+
+
+num = 3
+cards = Card.sample(num*2 + 5)
+players = num.times.map{RealHand.new(cards.pop(2))}
+players.map{|player| p player}
+cards.each do |c|
+  readline
+  puts "pulling a #{c} "
+  players.each{|p| p.add_card(c)}
+  players.map{|player| p player}
+end
