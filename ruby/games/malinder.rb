@@ -279,7 +279,7 @@ if __FILE__ == $PROGRAM_NAME
 		[a,b].map{|x|x.default = []}
 
 		puts "want:", (a["want"] & b["want"]).sort
-		puts "want/ok:", (a["okay"] & b["want"] + a["want"] & b["okay"]).sort
+		puts "want/ok:", ((a["okay"] & b["want"]) + (a["want"] & b["okay"])).sort
 		puts "okay:", (a["okay"] & b["okay"]).sort
 		puts "nope/want:", (a["nope"] & b["want"]).sort
 		puts "want/nope:", (a["want"] & b["nope"]).sort
