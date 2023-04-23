@@ -42,8 +42,8 @@ load_all_to_cache()
 csv = parse_csv(LOG_FILE_PATH)
 ARGV.each{|f| csv += parse_csv(f)}
 csv.map! do |r|
-  next if r[0].start_with?('imdb,')
-  if e = CACHE[r[0].to_i]
+  next if r[0].to_s.start_with?('imdb,')
+  elsif e = CACHE[r[0].to_i]
     s = e['start_season'].fetch_values('year','season') rescue []
     r[1] ||= s.first
     r[2] ||= s.last
@@ -72,6 +72,7 @@ csv.map! do |r|
   r
   # r.values_at(0,3,4,1,2,5)
 end
+csv.compact!
 
 YEAR_SEASON = {'winter'=>1, 'spring'=>2, 'summer'=>3, 'fall'=>4}
 STATE_LEVEL = {
