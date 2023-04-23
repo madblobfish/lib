@@ -42,6 +42,7 @@ load_all_to_cache()
 csv = parse_csv(LOG_FILE_PATH)
 ARGV.each{|f| csv += parse_csv(f)}
 csv.map! do |r|
+  next if r[0].start_with?('imdb,')
   if e = CACHE[r[0].to_i]
     s = e['start_season'].fetch_values('year','season') rescue []
     r[1] ||= s.first
