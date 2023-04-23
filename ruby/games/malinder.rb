@@ -255,7 +255,6 @@ if __FILE__ == $PROGRAM_NAME
 				'year' => Integer(ARGV.pop, 10),
 			}
 		end
-		p season
 
 		require 'csv'
 		csv_options = {
