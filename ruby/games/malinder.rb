@@ -20,7 +20,13 @@ require_optional(File.dirname(__FILE__) + '/../stdlib/duration'){
 		end
 	end
 }
-require_relative 'lib/gamelib'
+require_optional(File.dirname(__FILE__) + '/lib/gamelib'){
+	class TerminalGame
+		def run
+			raise "missing ./lib/gamelib"
+		end
+	end
+}
 
 # config file: malinder_config.rb in same folder as this
 # things you may put in your config, like:
