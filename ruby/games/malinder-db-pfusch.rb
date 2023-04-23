@@ -42,7 +42,7 @@ load_all_to_cache()
 csv = parse_csv(LOG_FILE_PATH)
 ARGV.each{|f| csv += parse_csv(f)}
 csv.map! do |r|
-  if OUTPUT_JSON && not r[0].is_a?(Numeric) && r[0].to_s.start_with?('imdb,')
+  if OUTPUT_JSON and not r[0].is_a?(Numeric) and r[0].to_s.start_with?('imdb,')
     next
   elsif e = CACHE[r[0].to_i]
     s = e['start_season'].fetch_values('year','season') rescue []
