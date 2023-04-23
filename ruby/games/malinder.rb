@@ -47,8 +47,9 @@ configurable_default(:BAD_WORDS,
 	%w(
 		mini idol cultivat mini chibi promotion game pokemon sport mecha machine limited trailer short season
 		special extra harem hentai ecchi kids collaboration commercial precure reborn rebirth revive isekai
-		reincar
-	)	+ ['love live', 'boys love']
+		reincar sanrio compilation
+		youku bilibili
+	)	+ ['love live', 'boys love', 'sailor moon', 'music film', 'music video']
 )
 configurable_default(:BAD_WORDS_REGEX, /\b#{ Regexp.union(BAD_WORDS).source }\b/i)
 
