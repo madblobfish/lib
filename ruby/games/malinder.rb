@@ -62,6 +62,7 @@ LOG_FILE.sync = true
 CHOICES = Hash[LOG_FILE.each_line.map{|l| id, c, ts = l.split("\t"); [id, {choice:c, ts: ts}]}]
 MAL_PREFIX = 'https://myanimelist.net/anime/'
 
+
 def load_all_to_cache()
 	Dir[CACHE_DIR + 'sources/*'].each do |s|
 		JSON.parse(File.read(s))['data'].each do |v|
@@ -121,6 +122,13 @@ def image(anime)
 	end
 end
 
+def season_shortcuts(input)
+	s = MALinder::SEASON_SHORTCUTS.fetch(input, input)
+	raise "'#{input.inspect}' is not a season" unless MALinder::SEASON_SHORTCUTS.values.include?(s)
+	s
+end
+
+
 class MALinder < TerminalGame
 	SEASON_SHORTCUTS = {
 		'w'=> 'winter', 'sp'=> 'spring', 'su'=> 'summer', 'f'=> 'fall',
@@ -134,8 +142,7 @@ class MALinder < TerminalGame
 		@require_kitty_graphics = true
 #		@show_overflow = true
 
-		season = SEASON_SHORTCUTS.fetch(season, season)
-		raise 'invalid season' unless SEASON_SHORTCUTS.values.include?(season)
+		season = season_shortcuts(season)
 		year = Integer(year, 10) # raise if year is not an integer
 		@which_season = [year, season]
 		season_file = "#{CACHE_DIR}sources/#{year}-#{season}.json"
@@ -180,6 +187,7 @@ class MALinder < TerminalGame
 		paragraph = anime['synopsis'] + "\n"
 		paragraph += "\nType: #{anime['media_type']}" if anime['media_type']
 		paragraph += "\nSource: #{anime['source']}" if anime['source']
+		paragraph += "\nStart: #{anime['start_date']}" if anime['start_date']
 		paragraph += "\nEpisodes: #{anime['num_episodes']}" if anime['num_episodes'] and anime['num_episodes'] != 0
 		paragraph += "\nDuration: #{Duration.new(anime['average_episode_duration']).to_s}" if anime['average_episode_duration']
 		paragraph += "\nGenres: #{anime['genres'].map{|x|x['name']}.join(', ')}" if anime['genres']
@@ -230,6 +238,7 @@ class MALinder < TerminalGame
 	end
 end
 
+
 if __FILE__ == $PROGRAM_NAME
 	GC.disable
 	if ARGV.first == 'results'
@@ -239,6 +248,14 @@ if __FILE__ == $PROGRAM_NAME
 			puts '  or one if you got your own.'
 			exit
 		end
+		season = nil
+		if ARGV.length >= 3
+			season = {
+				'season' => season_shortcuts(ARGV.pop),
+				'year' => Integer(ARGV.pop, 10),
+			}
+		end
+		p season
 
 		require 'csv'
 		csv_options = {
@@ -255,8 +272,9 @@ if __FILE__ == $PROGRAM_NAME
 			x.transform_values do |a|
 				a.map do |a|
 					cached = CACHE.fetch(a[0].to_i, {})
+					next unless season.nil? or cached.fetch('start_season', {}) == season
 					"0\t#{MAL_PREFIX}#{a[0]}\t#{cached.fetch('title','-')}\t#{cached.fetch('start_date','-')}"
-				end
+				end.compact
 			end
 		end
 		[a,b].map{|x|x.default = []}
@@ -291,6 +309,7 @@ if __FILE__ == $PROGRAM_NAME
 		puts 'alternatively'
 		puts '  search <search> [string] ...: to search for something in the local cache'
 		puts '  show <id>: to lookup an entry'
-		puts '  results [a_log] <b_log>: compare and find out things both want'
+		puts '  results [a_log] <b_log> [year season]: compare and find out things both want'
+		puts '    limits by season and year if given'
 	end
 end
