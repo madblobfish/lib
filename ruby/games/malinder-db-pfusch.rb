@@ -15,8 +15,10 @@ def parse_csv(f)
     STDERR.puts("reading with headers: #{f}")
     (CSV.read(f, **CSV_OPTS, headers: true).map do |r|
       h = r.to_h
+      id = h.fetch('id')&.to_s&.split('/')&.last&.to_i
+      id = h.fetch('id')&.to_s if h.fetch('id')&.to_s&.start_with?('imdb,')
       a = [
-        h.fetch('id')&.to_s&.split('/')&.last&.to_i,
+        id,
         h.fetch('year', nil),
         h.fetch('season', nil),
         h.fetch('state') do
@@ -42,9 +44,7 @@ load_all_to_cache()
 csv = parse_csv(LOG_FILE_PATH)
 ARGV.each{|f| csv += parse_csv(f)}
 csv.map! do |r|
-  if r[0].nil? || (OUTPUT_JSON and not r[0].is_a?(Numeric) and r[0].to_s.start_with?('imdb,'))
-    next
-  elsif e = CACHE[r[0].to_i]
+  if e = CACHE[r[0].to_i]
     s = e['start_season'].fetch_values('year','season') rescue []
     r[1] ||= s.first
     r[2] ||= s.last
@@ -73,7 +73,7 @@ csv.map! do |r|
   r
   # r.values_at(0,3,4,1,2,5)
 end
-csv.compact!
+csv
 
 YEAR_SEASON = {'winter'=>1, 'spring'=>2, 'summer'=>3, 'fall'=>4}
 STATE_LEVEL = {
