@@ -7,7 +7,7 @@ CSV_OPTS = {
   col_sep: "\t",
   converters: :integer,
 }
-CSV[:skip_lines] = /^(#|$)/ unless RUBY_VERSION.start_with?('2.')
+CSV_OPTS[:skip_lines] = /^(#|$)/ unless RUBY_VERSION.start_with?('2.')
 def parse_csv(f)
   f = CACHE_DIR + f unless File.exists?(f) # allow relative paths
   header = File.new(f).readline
