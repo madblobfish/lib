@@ -23,7 +23,7 @@ require_optional(File.dirname(__FILE__) + '/../stdlib/duration'){
 require_optional(File.dirname(__FILE__) + '/lib/gamelib'){
 	class TerminalGame
 		def run
-			raise "missing ./lib/gamelib"
+			raise 'missing ./lib/gamelib'
 		end
 	end
 }
@@ -280,13 +280,13 @@ if __FILE__ == $PROGRAM_NAME
 		end
 		[a,b].map{|x|x.default = []}
 
-		puts "want:", (a["want"] & b["want"]).sort
-		puts "want/ok:", ((a["okay"] & b["want"]) + (a["want"] & b["okay"])).sort
-		puts "okay:", (a["okay"] & b["okay"]).sort
-		puts "nope/want:", (a["nope"] & b["want"]).sort
-		puts "want/nope:", (a["want"] & b["nope"]).sort
-		puts "", "nil/*", (bids - (aids & bids)).sort
-		puts "*/nil", (aids - (aids & bids)).sort
+		puts 'want:', (a['want'] & b['want']).sort
+		puts 'want/ok:', ((a['okay'] & b['want']) + (a['want'] & b['okay'])).sort
+		puts 'okay:', (a['okay'] & b['okay']).sort
+		puts 'nope/want:', (a['nope'] & b['want']).sort
+		puts 'want/nope:', (a['want'] & b['nope']).sort
+		puts '', 'nil/*', (bids - (aids & bids)).sort
+		puts '*/nil', (aids - (aids & bids)).sort
 	elsif ARGV.first == 'search' && ARGV.length >= 2
 		res = cache_search(ARGV[1..].join(' '))
 		if res.one?
@@ -295,7 +295,7 @@ if __FILE__ == $PROGRAM_NAME
 			date = Time.now.to_i
 			puts res.map{|k,v|
 				season = v['start_season'].fetch_values('year','season') rescue ['','']
-				[k,*season,'-', date, v["title"], v["alternative_titles"]&.fetch('ja','')]
+				[k,*season,'-', date, v['title'], v['alternative_titles']&.fetch('ja','')]
 			}.sort_by(&:first).map{|a| a.join("\t")}
 		end
 	elsif ARGV.length == 2
