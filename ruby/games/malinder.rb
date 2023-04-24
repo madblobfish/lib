@@ -267,14 +267,16 @@ if __FILE__ == $PROGRAM_NAME
 		a,b = compare(
 			CSV.read(ARGV.length == 1 ? LOG_FILE_PATH : ARGV.first, **csv_options),
 			CSV.read(ARGV.last, **csv_options)
-		).map do |x|
-			x.transform_values do |a|
+		)
+		(a, aids),(b,bids) = [[a, []],[b, []]].map do |x, ids|
+			[x.transform_values do |a|
 				a.map do |a|
 					cached = CACHE.fetch(a[0].to_i, {})
 					next unless season.nil? or cached.fetch('start_season', {}) == season
+					ids << a[0]
 					"0\t#{MAL_PREFIX}#{a[0]}\t#{cached.fetch('title','-')}\t#{cached.fetch('start_date','-')}"
 				end.compact
-			end
+			end, ids]
 		end
 		[a,b].map{|x|x.default = []}
 
@@ -283,6 +285,8 @@ if __FILE__ == $PROGRAM_NAME
 		puts "okay:", (a["okay"] & b["okay"]).sort
 		puts "nope/want:", (a["nope"] & b["want"]).sort
 		puts "want/nope:", (a["want"] & b["nope"]).sort
+		puts "", "nil/*", (bids - (aids & bids)).sort
+		puts "*/nil", (aids - (aids & bids)).sort
 	elsif ARGV.first == 'search' && ARGV.length >= 2
 		res = cache_search(ARGV[1..].join(' '))
 		if res.one?
