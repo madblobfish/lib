@@ -287,6 +287,34 @@ if __FILE__ == $PROGRAM_NAME
 		puts 'want/nope:', (a['want'] & b['nope']).sort
 		puts '', 'nil/*', (bids - (aids & bids)).sort
 		puts '*/nil', (aids - (aids & bids)).sort
+	elsif ARGV.first == 'log' && ARGV.length == 3
+		ARGV.shift #throw away first argument
+		load_all_to_cache
+		nime = begin
+			CACHE[Integer(ARGV.first, 10)]
+		rescue
+			res = cache_search(ARGV.first)
+			raise 'not unique or not found, test with "search" first' unless res.one?
+			res.first.last
+		end
+		# p nime
+		search = "#{nime['id']}\t"
+		found = false
+		headers = File.readlines(LOG_FILE).first.split("\t")
+		newcontent = File.readlines(LOG_FILE).map do |e|
+			if e.start_with?(search)
+				raise 'found anime twice!' if found
+				found = true
+				e = e.split("\t")
+				e[3] = ARGV.last
+				e[3] += ',' + nime['num_episodes'].to_s if ARGV.last == 'seen'
+				e.join("\t")
+			else
+				e
+			end
+		end
+		raise 'not found' unless found
+		File.write(LOG_FILE, newcontent.join(''))
 	elsif ARGV.first == 'search' && ARGV.length >= 2
 		res = cache_search(ARGV[1..].join(' '))
 		if res.one?
@@ -306,13 +334,17 @@ if __FILE__ == $PROGRAM_NAME
 			MALinder.new(*ARGV).run()
 		end
 	else
-		puts 'give me year and season'
-		puts 'season is one of: winter, spring, summer, fall'
+		puts 'Commands:'
+		puts '  <year> <season>: run interactive malinder, decide what you want'
+		puts '    season is one of: winter, spring, summer, fall'
+		puts '    controls: arrow keys, q to quit, 1 for nope, 2/a is ok, 3/y is want'
 		puts ''
-		puts 'alternatively'
+		puts '  show <id>: to lookup an entry from cache'
 		puts '  search <search> [string] ...: to search for something in the local cache'
-		puts '  show <id>: to lookup an entry'
-		puts '  results [a_log] <b_log> [year season]: compare and find out things both want'
+		puts '  log <id/search> <status>: change the status of an anime'
+		puts '    this adds the episode count if status is just seen'
+		puts '    this command rewrites the entire log file!'
+		puts '  results [a_log] <b_log> [year season]: find out common wants'
 		puts '    limits by season and year if given'
 	end
 end
