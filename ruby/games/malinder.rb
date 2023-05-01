@@ -59,7 +59,7 @@ CACHE_BY_RANK = {}
 IMAGE_CACHE = {}
 LOG_FILE = File.open(LOG_FILE_PATH, 'a+')
 LOG_FILE.sync = true
-CHOICES = Hash[LOG_FILE.each_line.map{|l| id, c, ts = l.split("\t"); [id, {choice:c, ts: ts}]}]
+CHOICES = Hash[LOG_FILE.each_line.map{|l| id,y,s, c, ts = l.split("\t"); [id, {choice:c, ts: ts}]}]
 MAL_PREFIX = 'https://myanimelist.net/anime/'
 
 
@@ -329,7 +329,8 @@ if __FILE__ == $PROGRAM_NAME
 	elsif ARGV.length == 2
 		if ARGV.first == 'show'
 			load_all_to_cache
-			puts CACHE[ARGV[1].to_i].sort.map{|v| v.join(":\t")}
+			puts CACHE.fetch(ARGV[1].to_i).sort.map{|v| v.join(":\t")}
+			puts '', "Choice: #{CHOICES[ARGV[1]][:choice]}"
 		else
 			MALinder.new(*ARGV).run()
 		end
