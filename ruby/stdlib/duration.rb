@@ -7,9 +7,9 @@ class Duration
   end
 
   SIZES_AND_FACTORS = {
-    y: gen_lambda(60*60*60*24*365, nil),
-    d: gen_lambda(60*60*60, 24),
-    h: gen_lambda(60*60, 60),
+    y: gen_lambda(60*60*24*365, nil),
+    d: gen_lambda(60*60*24, 365),
+    h: gen_lambda(60*60, 24),
     m: gen_lambda(60, 60),
     s: gen_lambda(1, 60),
     msec: gen_lambda(0.001, 1000),
@@ -59,7 +59,7 @@ raise "implementation error" unless (a - b).to_s == "-10s"
 raise "implementation error" unless (a - b).abs.to_s == "10s"
 raise "implementation error" unless (b - a).to_s == "10s"
 raise "implementation error" unless Duration.parse(a = "-1y4s2msec").to_s == a
-raise "implementation error" unless Duration.parse(a).to_f == -1892160004.002
+raise "implementation error" unless Duration.parse(a).to_f == -31536004.002
 
 if __FILE__ == $PROGRAM_NAME
   # script mode
