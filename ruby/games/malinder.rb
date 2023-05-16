@@ -319,6 +319,7 @@ if __FILE__ == $PROGRAM_NAME
 		res = cache_search(ARGV[1..].join(' '))
 		if res.one?
 			puts res.first[1].sort.map{|v| v.join(":\t")}
+			puts '', "Choice: #{CHOICES[ARGV[1]][:choice]}"
 		else
 			date = Time.now.to_i
 			puts res.map{|k,v|
@@ -329,7 +330,13 @@ if __FILE__ == $PROGRAM_NAME
 	elsif ARGV.length == 2
 		if ARGV.first == 'show'
 			load_all_to_cache
-			puts CACHE.fetch(ARGV[1].to_i).sort.map{|v| v.join(":\t")}
+			puts CACHE.fetch(ARGV[1].to_i).sort.map{|(k,v)|
+				if k == 'genres'
+					[k,v.map{|k|k['name']}.sort.join(', ')].join(":\t")
+				else
+					[k,v].join(":\t")
+				end
+			}
 			puts '', "Choice: #{CHOICES[ARGV[1]][:choice]}"
 		else
 			MALinder.new(*ARGV).run()
