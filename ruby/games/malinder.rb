@@ -59,7 +59,7 @@ CACHE_BY_RANK = {}
 IMAGE_CACHE = {}
 LOG_FILE = File.open(LOG_FILE_PATH, 'a+')
 LOG_FILE.sync = true
-CHOICES = Hash[LOG_FILE.each_line.map{|l| id,y,s, c, ts = l.split("\t"); [id, {choice:c, ts: ts}]}]
+CHOICES = Hash[LOG_FILE.each_line.map{|l| id, y, s, c, ts = l.split("\t"); [id, {choice:c, ts: ts}]}]
 MAL_PREFIX = 'https://myanimelist.net/anime/'
 
 
@@ -324,7 +324,7 @@ if __FILE__ == $PROGRAM_NAME
 			date = Time.now.to_i
 			puts res.map{|k,v|
 				season = v['start_season'].fetch_values('year','season') rescue ['','']
-				[k,*season,'-', date, v['title'], v['alternative_titles']&.fetch('ja','')]
+				[k,*season, (CHOICES[k.to_s][:choice] rescue '-'), date, v['title'], v['alternative_titles']&.fetch('ja','')]
 			}.sort_by(&:first).map{|a| a.join("\t")}
 		end
 	elsif ARGV.length == 2
