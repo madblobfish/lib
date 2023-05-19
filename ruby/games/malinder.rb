@@ -319,7 +319,7 @@ if __FILE__ == $PROGRAM_NAME
 		res = cache_search(ARGV[1..].join(' '))
 		if res.one?
 			puts res.first[1].sort.map{|v| v.join(":\t")}
-			puts '', "Choice: #{CHOICES[ARGV[1]][:choice]}"
+			puts '', "Choice: #{CHOICES[ARGV[1]][:choice] rescue '-'}"
 		else
 			date = Time.now.to_i
 			puts res.map{|k,v|
@@ -337,7 +337,7 @@ if __FILE__ == $PROGRAM_NAME
 					[k,v].join(":\t")
 				end
 			}
-			puts '', "Choice: #{CHOICES[ARGV[1]][:choice]}"
+			puts '', "Choice: #{CHOICES[ARGV[1]][:choice] rescue '-'}"
 		else
 			MALinder.new(*ARGV).run()
 		end
