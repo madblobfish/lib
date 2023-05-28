@@ -38,9 +38,6 @@ def parse_csv(f)
   end
 end
 
-time_watched_sum = 0
-time_sum = 0
-more_stats = {}
 load_all_to_cache()
 csv = parse_csv(LOG_FILE_PATH)
 ARGV.each{|f| csv += parse_csv(f)}
@@ -58,26 +55,13 @@ csv.map! do |r|
         r[5] = title_en
       end
     end
-    status, seen_eps = r[3].split(',', 2)
-    seen_eps ||= e['num_episodes'] if status == 'seen'
-    if %w(paused partly broken seen).include?(status)
-      time_watched_sum += seen_eps.to_i * e.fetch('average_episode_duration', 0)
-    end
-    unless %w(nope okay want backlog).include?(status)
-      eps = e['num_episodes']
-      eps = seen_eps unless status == 'seen'
-      time_sum += eps.to_i * e.fetch('average_episode_duration', 0)
-      more_stats[r[0]] = eps.to_i * e.fetch('average_episode_duration', 0)
-    end
   else
-    STDERR.puts('ID Lookupfail: ' + r[0].to_s) unless r[0].nil?
+    STDERR.puts('ID Lookupfail: ' + r[0].to_s) unless r[0].nil? or r[0].to_s.start_with?('imdb,')
   end
   r
   # r.values_at(0,3,4,1,2,5)
 end
 csv
-#STDERR.puts more_stats.sort_by{|k,v|v}.map{|k,v| "#{k}: #{v}" }
-#exit 0
 
 YEAR_SEASON = {'winter'=>1, 'spring'=>2, 'summer'=>3, 'fall'=>4}
 STATE_LEVEL = {
@@ -170,14 +154,6 @@ else
     end
     r
   end.compact)
-end
-STDERR.puts '', 'Statistics:'
-csv.map{|r|r[3].split(',').first}.group_by{|e|e}.map{|a,b|[a,b.count]}.map{|e| STDERR.puts e.to_s }
-if ARGV.none?
-  STDERR.puts '', 'Time spent (in secs):', time_watched_sum
-  STDERR.puts '', 'Time to go: ', time_sum
-  seen_amount = csv.map(&:first).uniq.size
-  STDERR.puts('Ratio: %2.2f%% (%d of %d)' % [seen_amount*100.0/CACHE.size, seen_amount, CACHE.size])
 end
 
 if File.read(LOG_FILE_PATH) == out

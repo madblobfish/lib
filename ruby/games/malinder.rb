@@ -47,7 +47,7 @@ configurable_default(:BAD_WORDS,
 	%w(
 		mini idol cultivat mini chibi promotion game pokemon sport mecha machine limited trailer short season
 		special extra harem hentai ecchi kids collaboration commercial precure reborn rebirth revive isekai
-		reincar sanrio compilation
+		reincar sanrio compilation transformer
 		youku bilibili
 	)	+ ['love live', 'boys love', 'sailor moon', 'music film', 'music video']
 )
@@ -59,9 +59,8 @@ CACHE_BY_RANK = {}
 IMAGE_CACHE = {}
 LOG_FILE = File.open(LOG_FILE_PATH, 'a+')
 LOG_FILE.sync = true
-CHOICES = Hash[LOG_FILE.each_line.map{|l| id, y, s, c, ts = l.split("\t"); [id, {choice:c, ts: ts}]}]
+CHOICES = Hash[LOG_FILE.each_line.drop(1).map{|l| id, y, s, c, ts = l.split("\t"); [id, {choice:c, ts: ts}]}]
 MAL_PREFIX = 'https://myanimelist.net/anime/'
-
 
 def load_all_to_cache()
 	Dir[CACHE_DIR + 'sources/*'].each do |s|
@@ -327,6 +326,35 @@ if __FILE__ == $PROGRAM_NAME
 				[k,*season, (CHOICES[k.to_s][:choice] rescue '-'), date, v['title'], v['alternative_titles']&.fetch('ja','')]
 			}.sort_by(&:first).map{|a| a.join("\t")}
 		end
+	elsif ARGV == ['stats']
+		load_all_to_cache
+		time_chosen_sum = 0
+		count_chosen = 0
+		time_watched_sum = 0
+		count_watched = 0
+		CHOICES.each do |id, v|
+			if anime = CACHE[id.to_i]
+				status, seen_eps = v[:choice].split(',', 2)
+				seen_eps ||= anime['num_episodes'] if status == 'seen'
+				if %w(paused partly broken seen).include?(status)
+					time_watched_sum += seen_eps.to_i * anime.fetch('average_episode_duration', 0)
+					count_watched += 1 if %w(broken seen).include?(status)
+				end
+				unless %w(nope okay).include?(status)
+					eps = anime['num_episodes']
+					eps = seen_eps unless status == 'broken'
+					time_chosen_sum += eps.to_i * anime.fetch('average_episode_duration', 0)
+					count_chosen += 1
+				end
+			else
+				STDERR.puts 'could not resolve: ' + id unless id.start_with?('imdb,')
+			end
+		end
+		CHOICES.map{|k,v|v[:choice].split(',').first}.group_by{|e|e}.map{|a,b|[a,b.count]}.map{|e| puts e.join(': ') }
+		puts ''
+		puts('Watched ratio: %2.2f%% (%d of %d)' % [count_watched*100.0/count_chosen, count_watched, count_chosen])
+		puts('Watched time ratio: %2.2f%% (%d of %d)' % [time_watched_sum*100.0/time_chosen_sum, time_watched_sum, time_chosen_sum])
+		puts('Tracked ratio: %2.2f%% (%d of %d)' % [CHOICES.size*100.0/CACHE.size, CHOICES.size, CACHE.size])
 	elsif ARGV.length == 2
 		if ARGV.first == 'show'
 			load_all_to_cache
@@ -347,6 +375,7 @@ if __FILE__ == $PROGRAM_NAME
 		puts '    season is one of: winter, spring, summer, fall'
 		puts '    controls: arrow keys, q to quit, 1 for nope, 2/a is ok, 3/y is want'
 		puts ''
+		puts '  stats: get some statistics'
 		puts '  show <id>: to lookup an entry from cache'
 		puts '  search <search> [string] ...: to search for something in the local cache'
 		puts '  log <id/search> <status>: change the status of an anime'
