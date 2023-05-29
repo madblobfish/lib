@@ -93,7 +93,7 @@ def fetch(url, **stuff)
 		verb = stuff[:verb] || content.nil? ? 'GET' : 'POST'
 		http.send_request(verb, uri, content, headers)
 	end
-	raise ret.code if ret.code != '200'
+	raise "#{ret.code} - #{url}" if ret.code != '200'
 	return ret
 end
 # fetch(API + 'anime/30230')
@@ -113,7 +113,11 @@ def image(anime)
 	end
 	if anime['main_picture']
 		url = anime['main_picture'].fetch('large', anime['main_picture'].fetch('medium'))
-		image = fetch(url).body
+		begin
+			image = fetch(url).body
+		rescue
+			raise "#{id}"
+		end
 		File.write(path, image)
 		IMAGE_CACHE[id] = Vips::Image.new_from_buffer(image, '')
 	else
@@ -318,7 +322,7 @@ if __FILE__ == $PROGRAM_NAME
 		res = cache_search(ARGV[1..].join(' '))
 		if res.one?
 			puts res.first[1].sort.map{|v| v.join(":\t")}
-			puts '', "Choice: #{CHOICES[ARGV[1]][:choice] rescue '-'}"
+			puts '', "Choice: #{CHOICES[res.first[1]['id'].to_s][:choice] rescue '-'}"
 		else
 			date = Time.now.to_i
 			puts res.map{|k,v|
@@ -326,7 +330,7 @@ if __FILE__ == $PROGRAM_NAME
 				[k,*season, (CHOICES[k.to_s][:choice] rescue '-'), date, v['title'], v['alternative_titles']&.fetch('ja','')]
 			}.sort_by(&:first).map{|a| a.join("\t")}
 		end
-	elsif ARGV == ['stats']
+	elsif ARGV.first == 'stats'
 		load_all_to_cache
 		time_chosen_sum = 0
 		count_chosen = 0
@@ -352,9 +356,22 @@ if __FILE__ == $PROGRAM_NAME
 		end
 		CHOICES.map{|k,v|v[:choice].split(',').first}.group_by{|e|e}.map{|a,b|[a,b.count]}.map{|e| puts e.join(': ') }
 		puts ''
-		puts('Watched ratio: %2.2f%% (%d of %d)' % [count_watched*100.0/count_chosen, count_watched, count_chosen])
-		puts('Watched time ratio: %2.2f%% (%d of %d)' % [time_watched_sum*100.0/time_chosen_sum, time_watched_sum, time_chosen_sum])
-		puts('Tracked ratio: %2.2f%% (%d of %d)' % [CHOICES.size*100.0/CACHE.size, CHOICES.size, CACHE.size])
+		print_percent = lambda do |name, part, full|
+			puts("%s ratio:\t%2.2f%% (%d of %d)" % [name, part*100.0/full, part, full])
+		end
+		print_percent['Watched', count_watched, count_chosen]
+		print_percent['Watched time', time_watched_sum, time_chosen_sum]
+		print_percent['Tracked', CHOICES.size, CACHE.size]
+		if ARGV.include?('--by-season')
+			puts ''
+			CACHE.reject{|k,a| a['media_type'] == 'music'}.group_by{|k,v| v['start_season']}.sort{|a,b|a.first.values <=> b.first.values}.each do |season, nimes|
+				print_percent[
+					season.values.join(' '),
+					nimes.count{|id,_|CHOICES.has_key?(id.to_s)},
+					nimes.count
+				]
+			end
+		end
 	elsif ARGV.length == 2
 		if ARGV.first == 'show'
 			load_all_to_cache
