@@ -316,8 +316,12 @@ if __FILE__ == $PROGRAM_NAME
 				e
 			end
 		end
-		raise 'not found' unless found
-		File.write(LOG_FILE, newcontent.join(''))
+		if found
+			File.write(LOG_FILE, newcontent.join(''))
+		else
+			LOG_FILE.write("#{nime['id']}\t#{nime['start_season'].fetch_values('year', 'season').join("\t")}\t#{ARGV.last}\t#{Time.now.to_i}\t#{nime['title']}\n")
+			puts 'created new entry'
+		end
 	elsif ARGV.first == 'search' && ARGV.length >= 2
 		res = cache_search(ARGV[1..].join(' '))
 		if res.one?
