@@ -148,6 +148,8 @@ else
       r[8] = e['rank']
       r[9] = e['mean']
       r[10] = e['popularity']
+      r[11] = e['alternative_titles']['en']
+      r[12] = e['alternative_titles']['ja']
     else
       r[6] = nil
       r[7] = nil

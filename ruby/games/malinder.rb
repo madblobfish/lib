@@ -271,7 +271,7 @@ if __FILE__ == $PROGRAM_NAME
 			CSV.read(ARGV.length == 1 ? LOG_FILE_PATH : ARGV.first, **csv_options),
 			CSV.read(ARGV.last, **csv_options)
 		)
-		(a, aids),(b,bids) = [[a, []],[b, []]].map do |x, ids|
+		(a, aids),(b, bids) = [[a, []],[b, []]].map do |x, ids|
 			[x.transform_values do |a|
 				a.map do |a|
 					cached = CACHE.fetch(a[0].to_i, {})
@@ -300,12 +300,10 @@ if __FILE__ == $PROGRAM_NAME
 			raise 'not unique or not found, test with "search" first' unless res.one?
 			res.first.last
 		end
-		# p nime
-		search = "#{nime['id']}\t"
 		found = false
 		headers = File.readlines(LOG_FILE).first.split("\t")
 		newcontent = File.readlines(LOG_FILE).map do |e|
-			if e.start_with?(search)
+			if e.start_with?("#{nime['id']}\t")
 				raise 'found anime twice!' if found
 				found = true
 				e = e.split("\t")
