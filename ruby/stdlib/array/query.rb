@@ -57,7 +57,7 @@ x = [
 raise 'ah' unless x.query('a == 1') == x.select{|h| h['a'] == '1'}
 raise 'ahh' unless x.query('(!(!(a == 1)) && b == 2)') == x.select{|h| h['a'] == '1' && h['b'] == '2'}
 raise 'ahhh' unless x.query('c == 1 && b != 2') == x.select{|h| h['c'] == '1' && h['b'] != '2'}
-raise 'ahhh' unless x.query('c == 1 || b == 2') == x.select{|h| h['c'] == '1' || h['b'] == '2'}
+raise 'ahhh2' unless x.query('c == 1 || b == 2') == x.select{|h| h['c'] == '1' || h['b'] == '2'}
 raise 'ahhhh' unless x.query('c == 1 || b == 2 && c != 4') == x.select{|h| h['c'] == '1' || h['b'] == '2' && h['c'] != '4'}
 raise 'ahhhhh' unless x.query('c == 1 || b == 2 && c != 4') == x.select{|h| h['c'] == '1' || (h['b'] == '2' && h['c'] != '4')}
 raise 'ahhhhhh' unless x.query('(c == 1 || b == 2) && c != 4') == x.select{|h| (h['c'] == '1' || h['b'] == '2') && h['c'] != '4'}
@@ -65,3 +65,19 @@ raise 'ahhhhhhh' unless x.query('b != 2 || (c == 1 || b == 2) && c != 4') == x.s
 raise 'ahhhhhhhh' unless x.query('d has d') == x.select{|h| h['d'].include?('d')}
 raise 'ahhhhhhhhh' unless x.query('!(d has b)') == x.select{|h| ! h['d'].include?('b')}
 raise 'ahhhhhhhhhh' unless x.query('c > 3') == x.select{|h| h['c'].to_f > 3}
+[
+  '(c) > 3',
+  'c !> 3',
+  '(c > 3',
+  'c > 3)',
+  'ahasb = b',
+  'a == b,',
+  '',
+].each_with_index do |str, i|
+  begin
+    x.query(str)
+    raise ('ahn'+ 'o'*i)
+  rescue => e
+    raise ('ahhn'+ 'o'*i) unless e.to_s.start_with?('could not parse: "')
+  end
+end
