@@ -64,3 +64,4 @@ raise 'ahhhhhh' unless x.query('(c == 1 || b == 2) && c != 4') == x.select{|h| (
 raise 'ahhhhhhh' unless x.query('b != 2 || (c == 1 || b == 2) && c != 4') == x.select{|h| h['b'] != '2' || (h['c'] == '1' || h['b'] == '2') && h['c'] != '4'}
 raise 'ahhhhhhhh' unless x.query('d has d') == x.select{|h| h['d'].include?('d')}
 raise 'ahhhhhhhhh' unless x.query('!(d has b)') == x.select{|h| ! h['d'].include?('b')}
+raise 'ahhhhhhhhhh' unless x.query('c > 3') == x.select{|h| h['c'].to_f > 3}
