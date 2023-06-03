@@ -328,8 +328,9 @@ if __FILE__ == $PROGRAM_NAME
 		else
 			date = Time.now.to_i
 			puts res.map{|k,v|
+				old = CHOICES.fetch(v['id'].to_s, {})
 				season = v['start_season'].fetch_values('year','season') rescue ['','']
-				[k,*season, (CHOICES[k.to_s][:choice] rescue '-'), date, v['title'], v['alternative_titles']&.fetch('ja','')]
+				[k,*season, old.fetch(:choice, '-'), old.fetch(:ts, date), v['title'], v['alternative_titles']&.fetch('ja','')]
 			}.sort_by(&:first).map{|a| a.join("\t")}
 		end
 	elsif ARGV.first == 'query'
