@@ -332,6 +332,22 @@ if __FILE__ == $PROGRAM_NAME
 				[k,*season, (CHOICES[k.to_s][:choice] rescue '-'), date, v['title'], v['alternative_titles']&.fetch('ja','')]
 			}.sort_by(&:first).map{|a| a.join("\t")}
 		end
+	elsif ARGV.first == 'query'
+		require_relative '../stdlib/array/query'
+		ARGV.shift #throw away first argument
+		load_all_to_cache
+		x = CACHE.map do |k, v|
+			if CHOICES.has_key?(k.to_s)
+				v['state'] = CHOICES[k.to_s][:choice].split(',').first
+			end
+			v.merge!(v['start_season'])
+			v['genres'] = v['genres']&.map{|h|h['name'].downcase}
+			v
+		end
+		date = Time.now.to_i
+		puts x.query(ARGV.join(' ')).map{|nime|
+			nime.fetch_values('id', 'year', 'season') + [(CHOICES[k.to_s][:choice] rescue '-'), date] + nime.fetch_values('title')
+		}.sort_by(&:first).map{|a| a.join("\t")}
 	elsif ARGV.first == 'stats'
 		load_all_to_cache
 		time_chosen_sum = 0
