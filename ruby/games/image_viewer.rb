@@ -3,6 +3,9 @@ require 'vips' rescue raise 'run "gem install ruby-vips", also install libjxl, l
 require 'open3'
 
 class ImageViewer < TerminalGame
+  def inspect #make errors short
+    '#<ImageViewer>'
+  end
   def initialize(agrgs)
     @require_kitty_graphics = true
     @draw_status_line = agrgs.delete('--no-status').nil? ? true : false
