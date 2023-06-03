@@ -346,7 +346,7 @@ if __FILE__ == $PROGRAM_NAME
 		end
 		date = Time.now.to_i
 		puts x.query(ARGV.join(' ')).map{|nime|
-			nime.fetch_values('id', 'year', 'season') + [(CHOICES[k.to_s][:choice] rescue '-'), date] + nime.fetch_values('title')
+			nime.fetch_values('id', 'year', 'season') + [(CHOICES[nime['id'].to_s][:choice] rescue '-'), date] + nime.fetch_values('title')
 		}.sort_by(&:first).map{|a| a.join("\t")}
 	elsif ARGV.first == 'stats'
 		load_all_to_cache
