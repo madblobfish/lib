@@ -337,7 +337,10 @@ if __FILE__ == $PROGRAM_NAME
 		require_relative '../stdlib/array/query'
 		ARGV.shift #throw away first argument
 		load_all_to_cache
+		date = Time.now.to_i
 		x = CACHE.map do |k, v|
+			v['choice'] = '-'
+			v['timestamp'] = date
 			if CHOICES.has_key?(k.to_s)
 				v['state'] = CHOICES[k.to_s][:choice].split(',').first
 				v['choice'] = CHOICES[k.to_s][:choice]
@@ -347,7 +350,6 @@ if __FILE__ == $PROGRAM_NAME
 			v['genres'] = v['genres']&.map{|h|h['name'].downcase}
 			v
 		end
-		date = Time.now.to_i
 		puts x.query(ARGV.join(' ')).map{|nime|
 			nime.fetch_values('id', 'year', 'season', 'choice', 'timestamp', 'title')
 		}.sort_by(&:first).map{|a| a.join("\t")}
