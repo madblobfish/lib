@@ -64,6 +64,7 @@ rule
 end
 
 ---- header
+# generate using: racc query.y -o query.rb
 # $debug = true
 class Array
 ---- footer

@@ -6,11 +6,12 @@
 
 require 'racc/parser.rb'
 
+# generate using: racc query.y -o query.rb
 # $debug = true
 class Array
 class QueryParser < Racc::Parser
 
-module_eval(<<'...end query.y/module_eval...', 'query.y', 125)
+module_eval(<<'...end query.y/module_eval...', 'query.y', 126)
 
   def parse(str)
     @q = []
