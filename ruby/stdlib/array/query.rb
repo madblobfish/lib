@@ -1,39 +1,39 @@
+require 'parslet'
 # $debug = true
+class Mini < Parslet::Parser
+  rule(:space)  { match[" "].repeat(1) }
+  rule(:space?) { space.maybe }
+
+  rule(:brack_left) { str("(") >> space? }
+  rule(:brack_right) { str(")") >> space? }
+  rule(:neg) { str("!") >> space? }
+
+  rule(:op_eql) { str('==') >> space? }
+  rule(:op_not) { str('!=') >> space? }
+  rule(:op_and) { str("&&") >> space? }
+  rule(:op_in) { str("in") }
+  rule(:op_has) { str("has") }
+  rule(:op_or)  { str("||") >> space? }
+  rule(:op_num) { match('<') >> match('=').maybe >> space? | match('>') >> match('=').maybe >> space? }
+
+  rule(:value) { match["a-zA-Z0-9_."].repeat(1) }
+
+  rule(:exp_eql) { value.as(:left) >> space? >> op_eql.as(:eql) >> value.as(:right) >> space? }
+  rule(:exp_not) { value.as(:left) >> space? >> op_not.as(:not) >> value.as(:right) >> space? }
+  rule(:exp_num) { value.as(:left) >> space? >> op_num.as(:numeric) >> value.as(:right) >> space? }
+  rule(:exp_in) { value.as(:left) >> space >> op_in.as(:in) >> space >> value.as(:right) >> space? }
+  rule(:exp_has) { value.as(:left) >> space >> op_has.as(:has) >> space >> value.as(:right) >> space? }
+  rule(:exp) { exp_eql | exp_not | exp_num | exp_in | exp_has }
+
+  rule(:primary) { neg.as(:unineg) >> brack_left >> or_operation.as(:exp) >> brack_right | brack_left >> or_operation >> brack_right | exp }
+
+  rule(:and_operation) { (primary.as(:left) >> op_and.as(:and) >> and_operation.as(:right)) | primary}
+  rule(:or_operation)  { (and_operation.as(:left) >> op_or.as(:or) >> or_operation.as(:right)) | and_operation}
+
+  # start at the lowest precedence rule.
+  root(:or_operation)
+end
 class Array
-  def query_lambda(query_str)
-    # p query_str if $debug
-    case query_str
-    when /^\s*(!\s*)?\(\s*(.+)\s*\)\s*$/
-      # puts 'bracket' if $debug
-      l = query_lambda($2)
-      $1 ? lambda{|h| not l[h]} : l
-    when /^([^|()]+)\|\|(.+)$/, /^(.+)\|\|([^|()]+)$/
-      # puts 'or' if $debug
-      # p $1, $2 if $debug
-      parts = [query_lambda($1), query_lambda($2)]
-      lambda{|h| parts.any?{|l| l[h]}}
-    when /^([^&|()]+)\&\&(.+)$/, /^(.+)\&\&([^&|()]+)$/
-      # puts 'and' if $debug
-      parts = query_str.split('&&').map{|s| query_lambda(s)}
-      lambda{|h| parts.all?{|l| l[h]}}
-    when /^\s*([a-z0-9_]+)\s+has\s+([a-z0-9_]+)\s*$/i
-      # puts 'array has' if $debug
-      lambda{|h| (h[$1].map(&:to_s) rescue h[$1]).include?($2) rescue false}
-    when /^\s*([a-z0-9_]+)\s*(<=?|>=?)\s*([a-z0-9_.]+)\s*$/i
-      # puts 'comp' if $debug
-      lambda{|h| h[$1].to_f.send($2.to_sym, $3.to_f)}
-    when /^\s*([a-z0-9_]+)\s*\!\=\s*([a-z0-9_]+)\s*$/i
-      # puts 'not equals' if $debug
-      lambda{|h| h[$1].to_s != $2}
-    when /^\s*([a-z0-9_]+)\s*\=\=\s*([a-z0-9_]+)\s*$/i
-      # puts 'equals' if $debug
-      lambda{|h| h[$1].to_s == $2}
-    else
-      raise "could not parse: #{query_str.inspect}"
-    end
-  end
-  # works on array which contains Hashs with string keys and string values for now
-  # query syntax and priority (highest first):
   #   key==value: equals
   #   a<=b, a>=b: converts to float then compares, also without equals
   #   key!=value: does not equal
@@ -43,8 +43,56 @@ class Array
   #   exp&&exp: logical and
   #   exp||exp: logical or
   def query(query_str)
-    fun = query_lambda(query_str)
+    fun = transform(Mini.new.parse(query_str))
     return self.select{|v| fun[v]}
+  rescue Parslet::ParseFailed => failure
+    # puts failure.parse_failure_cause.ascii_tree if $debug
+    raise
+  end
+
+  def transform(tree)
+    # tree[:op] = tree[:op].to_s
+    case tree
+    in brack:
+      # puts "and" if $debug
+      # puts left, right if $debug
+      p brack
+      exp = transform(brack)
+      lambda{|h| exp[h]}
+    in and:, left:, right:
+      # puts "and" if $debug
+      # puts left, right if $debug
+      l,r = transform(left), transform(right)
+      lambda{|h| l[h] && r[h]}
+    in or:, left:, right:
+      # puts "or" if $debug
+      # puts left, right if $debug
+      l,r = transform(left), transform(right)
+      lambda{|h| l[h] || r[h]}
+    in unineg:, exp:
+      # puts "negative" if $debug
+      neg = transform(exp)
+      lambda{|h| ! neg[h]}
+    in eql:, left:, right:
+      # puts "equal" if $debug
+      # p left, right if $debug
+      lambda{|h| h[left.to_s].to_s == right.to_s }
+    in not:, left:, right:
+      # puts "not equal" if $debug
+      lambda{|h| h[left.to_s].to_s != right.to_s }
+    in has:, left:, right:
+      # puts "has" if $debug
+      lambda{|h| (h[left.to_s].map(&:to_s) rescue h[left.to_s]).include?(right.to_s) rescue false}
+    in in:, left:, right:
+      # puts "in" if $debug
+      vals = right.to_s.split(',').map(&:strip)
+      lambda{|h| vals.include?(h[left.to_s].to_s) }
+    in numeric:, left:, right:
+      # puts "numeric" if $debug
+      lambda{|h| h[left.to_s].to_f.send(numeric.to_s.strip.to_sym, right.to_s.to_f) }
+    else
+      raise "could not parse/transform: #{tree}"
+    end
   end
 end
 
@@ -68,6 +116,10 @@ raise 'ahhhhhhhhh' unless x.query('!(d has b)') == x.select{|h| ! h['d'].include
 raise 'ahhhhhhhhhh' unless x.query('d has asd') == x.select{|h| h['d'].class == String && h['d'] == 'asd'}
 raise 'ahhhhhhhhhhh' unless x.query('c > 3') == x.select{|h| h['c'].to_f > 3}
 raise 'ahhhhhhhhhhhh' unless x.query('c > 3.3') == x.select{|h| h['c'].to_f > 3.3}
+raise 'ahhhhhhhhhhhhh' unless x.query('(c > 2) || (c < 9)') == x.select{|h| h['c'].to_f > 2 || h['c'].to_f < 9}
+# $debug = true
+x.query("(aaaaa == b && a > aaaaaaaa) || !(aaaaaaaaaaaaaaaaaaaaaaaaaaaaa == b)")
+# x.query("(state == seen &&year > 2023) || !(title has Gintama && genres has Action)")
 [
   '(c) > 3',
   'c !> 3',
@@ -83,7 +135,8 @@ raise 'ahhhhhhhhhhhh' unless x.query('c > 3.3') == x.select{|h| h['c'].to_f > 3.
   begin
     x.query(str)
     raise ('ahn'+ 'o'*i)
-  rescue => e
-    raise ('ahhn'+ 'o'*i) unless e.to_s.start_with?('could not parse: "')
+  rescue Parslet::ParseFailed => e
+    raise ('ahhn'+ 'o'*i) unless e.to_s.start_with?('Expected one of [')
   end
 end
+# $debug = true

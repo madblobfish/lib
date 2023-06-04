@@ -418,6 +418,8 @@ if __FILE__ == $PROGRAM_NAME
 		puts '  stats: get some statistics'
 		puts '  show <id>: to lookup an entry from cache'
 		puts '  search <search> [string] ...: to search for something in the local cache'
+		puts '  query <querysyntax>: search local cache using expressions'
+		puts '    (state == seen && year > 2023) || !(title has Gintama && genres has Action)'
 		puts '  log <id/search> <status>: change the status of an anime'
 		puts '    this adds the episode count if status is just seen'
 		puts '    this command rewrites the entire log file!'
