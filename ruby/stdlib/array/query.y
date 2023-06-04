@@ -1,30 +1,33 @@
 class QueryParser
   prechigh
     nonassoc UNEG
-    left OP_AND
-    left OP_OR
+    left '&&'
+    left '||'
   preclow
 rule
   target: exp
 
-  val: VALUE | VALUE_AND_SPACE
+  val: VALUE | VALUE SPACE
   query:
-    val OP_EQL val {
+    val '==' val {
       # puts "eql #{val}" if $debug
-      result = lambda{|h| h[val[0]].to_s == val[2]} }
-    | val OP_NOT val {
+      result = lambda{|h| h[val[0]].to_s == val[2]}
+    }
+    | val '!=' val {
       # puts "not #{val}" if $debug
-      result = lambda{|h| h[val[0]].to_s != val[2]} }
+      result = lambda{|h| h[val[0]].to_s != val[2]}
+    }
     | val OP_NUM val {
       # puts "num #{val}" if $debug
-      result = lambda{|h| h[val[0]].to_f.send(val[1].to_sym, val[2].to_f) } }
-    | VALUE_AND_SPACE OP_HAS val {
-      # puts "has #{val}" if $debug
-      result = lambda{|h| (h[val[0]].map(&:to_s) rescue h[val[0]].to_s).include?(val[2]) rescue false}
+      result = lambda{|h| h[val[0]].to_f.send(val[1].to_sym, val[2].to_f) }
     }
-    | VALUE_AND_SPACE OP_IN val {
+    | VALUE SPACE 'has' val {
+      # puts "has #{val}" if $debug
+      result = lambda{|h| (h[val[0]].map(&:to_s) rescue h[val[0]].to_s).include?(val[3]) rescue false}
+    }
+    | VALUE SPACE 'in' val {
       # puts "in #{val}" if $debug
-      vals = val[2].split(',').map(&:strip)
+      vals = val[3].split(',').map(&:strip)
       result = lambda{|h|
         if h[val[0]].class == Array
           (h[val[0]] & vals).any?
@@ -33,9 +36,9 @@ rule
         end
       }
     }
-    | VALUE_AND_SPACE OP_ALL val {
+    | VALUE SPACE 'all' val {
       # puts "all #{val}" if $debug
-      vals = val[2].split(',').map(&:strip)
+      vals = val[3].split(',').map(&:strip)
       result = lambda{|h|
         if h[val[0]].class == Array
           (vals - h[val[0]]).empty?
@@ -45,10 +48,10 @@ rule
       }
     }
   exp:
-    exp OP_OR exp {
+    exp '||' exp {
       # puts 'or' if $debug
       result = lambda{|h| val[0][h] || val[2][h]} }
-    | exp OP_AND exp {
+    | exp '&&' exp {
       # puts 'and' if $debug
       result = lambda{|h| val[0][h] && val[2][h]} }
     | '!' exp =UNEG {
@@ -61,7 +64,7 @@ rule
 end
 
 ---- header
-# $debug = false
+# $debug = true
 class Array
 ---- footer
   def query(str)
@@ -114,10 +117,10 @@ raise 'ahhhhhhhhhhhhhhhh' unless x.query('d all a,c') == x.select{|h| (%w(a c) -
   rescue Racc::ParseError => e
     raise ('ahhn'+ 'o'*i) + ': ' + str unless e.to_s.start_with?("\nparse error on value")
   rescue RuntimeError => e
-    raise ('ahhn'+ 'o'*i) + ': ' + str unless e.to_s.start_with?("could not tokenize")
+    raise ('ahhn'+ 'o'*i) + ': ' + str unless e.to_s.start_with?('could not tokenize ')
   end
 end
-# $debug = true
+# $debug = false
 ---- inner
 
   def parse(str)
@@ -125,30 +128,15 @@ end
     until str.empty?
       case str
       when /\A\s+/ #ignore spaces
-      when /\Aall\s+([a-zA-Z0-9_.,-]+)/
-        @q.push [:OP_ALL, 'all']
+      when /\A(all|in|has)\s+([a-zA-Z0-9_.,-]+)/
+        @q.push [$1, $1]
+        @q.push [:VALUE, $2]
+      when /\A([a-zA-Z0-9_.-]+)(\s+)?/
         @q.push [:VALUE, $1]
-      when /\Ain\s+([a-zA-Z0-9_.,-]+)/
-        @q.push [:OP_IN, 'in']
-        @q.push [:VALUE, $1]
-      when /\Ahas\s+([a-zA-Z0-9_.,-]+)/
-        @q.push [:OP_HAS, 'has']
-        @q.push [:VALUE, $1]
-      when /\A[a-zA-Z0-9_.-]+\s+/
-        @q.push [:VALUE_AND_SPACE, $&.strip]
-      when /\A[a-zA-Z0-9_.-]+/
-        @q.push [:VALUE, $&]
-      when /\A==/
-        @q.push [:OP_EQL, '==']
-      when /\A!=/
-        @q.push [:OP_NOT, '!=']
+        @q.push [:SPACE, ''] if $2
       when /\A[<>]=?/
         @q.push [:OP_NUM, $&]
-      when /\A&&/
-        @q.push [:OP_AND, '&&']
-      when /\A\|\|/
-        @q.push [:OP_OR, '||']
-      when /\A[!()\n]|\|\||&&/o
+      when /\A==|!=|\|\||&&|[!()\n]/o
         s = $&
         @q.push [s, s]
       else

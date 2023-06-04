@@ -6,41 +6,26 @@
 
 require 'racc/parser.rb'
 
-# $debug = false
+# $debug = true
 class Array
 class QueryParser < Racc::Parser
 
-module_eval(<<'...end query.y/module_eval...', 'query.y', 122)
+module_eval(<<'...end query.y/module_eval...', 'query.y', 125)
 
   def parse(str)
     @q = []
     until str.empty?
       case str
       when /\A\s+/ #ignore spaces
-      when /\Aall\s+([a-zA-Z0-9_.,-]+)/
-        @q.push [:OP_ALL, 'all']
+      when /\A(all|in|has)\s+([a-zA-Z0-9_.,-]+)/
+        @q.push [$1, $1]
+        @q.push [:VALUE, $2]
+      when /\A([a-zA-Z0-9_.-]+)(\s+)?/
         @q.push [:VALUE, $1]
-      when /\Ain\s+([a-zA-Z0-9_.,-]+)/
-        @q.push [:OP_IN, 'in']
-        @q.push [:VALUE, $1]
-      when /\Ahas\s+([a-zA-Z0-9_.,-]+)/
-        @q.push [:OP_HAS, 'has']
-        @q.push [:VALUE, $1]
-      when /\A[a-zA-Z0-9_.-]+\s+/
-        @q.push [:VALUE_AND_SPACE, $&.strip]
-      when /\A[a-zA-Z0-9_.-]+/
-        @q.push [:VALUE, $&]
-      when /\A==/
-        @q.push [:OP_EQL, '==']
-      when /\A!=/
-        @q.push [:OP_NOT, '!=']
+        @q.push [:SPACE, ''] if $2
       when /\A[<>]=?/
         @q.push [:OP_NUM, $&]
-      when /\A&&/
-        @q.push [:OP_AND, '&&']
-      when /\A\|\|/
-        @q.push [:OP_OR, '||']
-      when /\A[!()\n]|\|\||&&/o
+      when /\A==|!=|\|\||&&|[!()\n]/o
         s = $&
         @q.push [s, s]
       else
@@ -60,56 +45,56 @@ module_eval(<<'...end query.y/module_eval...', 'query.y', 122)
 ##### State transition tables begin ###
 
 racc_action_table = [
-    11,    10,     3,     4,     9,     3,     4,     3,     4,    20,
-     6,     7,    30,     6,     7,     6,     7,     3,     4,     3,
-     4,    12,    13,    14,    11,     6,     7,     6,     7,    15,
-    16,    17,    11,    10,     3,    23,     3,    23,     3,    23,
-     3,    23,     3,    23,     3,    23 ]
+    10,     9,     3,    10,     9,     3,     8,     3,    11,     3,
+     5,     6,    27,     5,     6,     5,     6,     5,     6,     3,
+    12,    13,    14,    20,    21,    22,    17,     5,     6,    23,
+    23,    23,    10,    23,    23,    23,    31 ]
 
 racc_action_check = [
-    19,    19,     0,     0,     1,     6,     6,     7,     7,     9,
-     0,     0,    19,     6,     6,     7,     7,    10,    10,    11,
-    11,     4,     4,     4,    21,    10,    10,    11,    11,     5,
-     5,     5,     2,     2,    12,    12,    13,    13,    14,    14,
-    15,    15,    16,    16,    17,    17 ]
+    16,    16,     0,     2,     2,     5,     1,     6,     3,     9,
+     0,     0,    16,     5,     5,     6,     6,     9,     9,    10,
+     4,     4,     4,    11,    11,    11,     8,    10,    10,    12,
+    13,    14,    18,    20,    21,    22,    23 ]
 
 racc_action_pointer = [
-    -3,     4,    29,   nil,    11,    22,     0,     2,   nil,     9,
-    12,    14,    29,    31,    33,    35,    37,    39,   nil,    -3,
-   nil,    21,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,
-   nil ]
+    -3,     6,     0,     2,    13,     0,     2,   nil,    26,     4,
+    14,    13,    24,    25,    26,   nil,    -3,   nil,    29,   nil,
+    28,    29,    30,    30,   nil,   nil,   nil,   nil,   nil,   nil,
+   nil,   nil ]
 
 racc_action_default = [
-   -15,   -15,    -1,    -2,    -3,   -15,   -15,   -15,   -14,   -15,
-   -15,   -15,   -15,   -15,   -15,   -15,   -15,   -15,   -12,   -15,
-    31,   -10,   -11,    -3,    -7,    -8,    -9,    -4,    -5,    -6,
-   -13 ]
+   -15,   -15,    -1,    -2,   -15,   -15,   -15,   -14,   -15,   -15,
+   -15,    -3,   -15,   -15,   -15,   -12,   -15,    32,   -10,   -11,
+   -15,   -15,   -15,    -2,    -4,    -5,    -6,   -13,    -7,    -8,
+    -9,    -3 ]
 
 racc_goto_table = [
-     2,     1,   nil,   nil,   nil,   nil,    18,    19,   nil,   nil,
-    21,    22,    24,    25,    26,    27,    28,    29 ]
+     2,     1,   nil,   nil,   nil,    15,    16,   nil,   nil,    18,
+    19,    24,    25,    26,   nil,   nil,   nil,   nil,   nil,    28,
+    29,    30 ]
 
 racc_goto_check = [
-     2,     1,   nil,   nil,   nil,   nil,     2,     2,   nil,   nil,
-     2,     2,     3,     3,     3,     3,     3,     3 ]
+     2,     1,   nil,   nil,   nil,     2,     2,   nil,   nil,     2,
+     2,     3,     3,     3,   nil,   nil,   nil,   nil,   nil,     3,
+     3,     3 ]
 
 racc_goto_pointer = [
-   nil,     1,     0,     0,   nil ]
+   nil,     1,     0,    -1,   nil ]
 
 racc_goto_default = [
-   nil,   nil,   nil,     5,     8 ]
+   nil,   nil,   nil,     4,     7 ]
 
 racc_reduce_table = [
   0, 0, :racc_error,
   1, 17, :_reduce_none,
   1, 19, :_reduce_none,
-  1, 19, :_reduce_none,
+  2, 19, :_reduce_none,
   3, 20, :_reduce_4,
   3, 20, :_reduce_5,
   3, 20, :_reduce_6,
-  3, 20, :_reduce_7,
-  3, 20, :_reduce_8,
-  3, 20, :_reduce_9,
+  4, 20, :_reduce_7,
+  4, 20, :_reduce_8,
+  4, 20, :_reduce_9,
   3, 18, :_reduce_10,
   3, 18, :_reduce_11,
   2, 18, :_reduce_12,
@@ -118,22 +103,22 @@ racc_reduce_table = [
 
 racc_reduce_n = 15
 
-racc_shift_n = 31
+racc_shift_n = 32
 
 racc_token_table = {
   false => 0,
   :error => 1,
   :UNEG => 2,
-  :OP_AND => 3,
-  :OP_OR => 4,
+  "&&" => 3,
+  "||" => 4,
   :VALUE => 5,
-  :VALUE_AND_SPACE => 6,
-  :OP_EQL => 7,
-  :OP_NOT => 8,
+  :SPACE => 6,
+  "==" => 7,
+  "!=" => 8,
   :OP_NUM => 9,
-  :OP_HAS => 10,
-  :OP_IN => 11,
-  :OP_ALL => 12,
+  "has" => 10,
+  "in" => 11,
+  "all" => 12,
   "!" => 13,
   "(" => 14,
   ")" => 15 }
@@ -162,16 +147,16 @@ Racc_token_to_s_table = [
   "$end",
   "error",
   "UNEG",
-  "OP_AND",
-  "OP_OR",
+  "\"&&\"",
+  "\"||\"",
   "VALUE",
-  "VALUE_AND_SPACE",
-  "OP_EQL",
-  "OP_NOT",
+  "SPACE",
+  "\"==\"",
+  "\"!=\"",
   "OP_NUM",
-  "OP_HAS",
-  "OP_IN",
-  "OP_ALL",
+  "\"has\"",
+  "\"in\"",
+  "\"all\"",
   "\"!\"",
   "\"(\"",
   "\")\"",
@@ -197,39 +182,42 @@ module_eval(<<'.,.,', 'query.y', 12)
   def _reduce_4(val, _values, result)
           # puts "eql #{val}" if $debug
       result = lambda{|h| h[val[0]].to_s == val[2]}
+
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 15)
+module_eval(<<'.,.,', 'query.y', 16)
   def _reduce_5(val, _values, result)
           # puts "not #{val}" if $debug
       result = lambda{|h| h[val[0]].to_s != val[2]}
+
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 18)
+module_eval(<<'.,.,', 'query.y', 20)
   def _reduce_6(val, _values, result)
           # puts "num #{val}" if $debug
       result = lambda{|h| h[val[0]].to_f.send(val[1].to_sym, val[2].to_f) }
+
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 21)
+module_eval(<<'.,.,', 'query.y', 24)
   def _reduce_7(val, _values, result)
           # puts "has #{val}" if $debug
-      result = lambda{|h| (h[val[0]].map(&:to_s) rescue h[val[0]].to_s).include?(val[2]) rescue false}
+      result = lambda{|h| (h[val[0]].map(&:to_s) rescue h[val[0]].to_s).include?(val[3]) rescue false}
 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 25)
+module_eval(<<'.,.,', 'query.y', 28)
   def _reduce_8(val, _values, result)
           # puts "in #{val}" if $debug
-      vals = val[2].split(',').map(&:strip)
+      vals = val[3].split(',').map(&:strip)
       result = lambda{|h|
         if h[val[0]].class == Array
           (h[val[0]] & vals).any?
@@ -242,10 +230,10 @@ module_eval(<<'.,.,', 'query.y', 25)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 36)
+module_eval(<<'.,.,', 'query.y', 39)
   def _reduce_9(val, _values, result)
           # puts "all #{val}" if $debug
-      vals = val[2].split(',').map(&:strip)
+      vals = val[3].split(',').map(&:strip)
       result = lambda{|h|
         if h[val[0]].class == Array
           (vals - h[val[0]]).empty?
@@ -258,7 +246,7 @@ module_eval(<<'.,.,', 'query.y', 36)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 48)
+module_eval(<<'.,.,', 'query.y', 51)
   def _reduce_10(val, _values, result)
           # puts 'or' if $debug
       result = lambda{|h| val[0][h] || val[2][h]}
@@ -266,7 +254,7 @@ module_eval(<<'.,.,', 'query.y', 48)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 51)
+module_eval(<<'.,.,', 'query.y', 54)
   def _reduce_11(val, _values, result)
           # puts 'and' if $debug
       result = lambda{|h| val[0][h] && val[2][h]}
@@ -274,7 +262,7 @@ module_eval(<<'.,.,', 'query.y', 51)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 54)
+module_eval(<<'.,.,', 'query.y', 57)
   def _reduce_12(val, _values, result)
           # puts 'not' if $debug
       result = lambda{|h| ! val[1][h] }
@@ -282,7 +270,7 @@ module_eval(<<'.,.,', 'query.y', 54)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 57)
+module_eval(<<'.,.,', 'query.y', 60)
   def _reduce_13(val, _values, result)
           # puts 'brack' if $debug
       result = val[1]
@@ -348,7 +336,7 @@ raise 'ahhhhhhhhhhhhhhhh' unless x.query('d all a,c') == x.select{|h| (%w(a c) -
   rescue Racc::ParseError => e
     raise ('ahhn'+ 'o'*i) + ': ' + str unless e.to_s.start_with?("\nparse error on value")
   rescue RuntimeError => e
-    raise ('ahhn'+ 'o'*i) + ': ' + str unless e.to_s.start_with?("could not tokenize")
+    raise ('ahhn'+ 'o'*i) + ': ' + str unless e.to_s.start_with?('could not tokenize ')
   end
 end
-# $debug = true
+# $debug = false
