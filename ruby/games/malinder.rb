@@ -347,7 +347,7 @@ if __FILE__ == $PROGRAM_NAME
 				v['timestamp'] = CHOICES[k.to_s][:ts]
 			end
 			v.merge!(v['start_season'])
-			v['genres'] = v['genres']&.map{|h|h['name'].downcase}
+			v['genres'] = v['genres']&.map{|h|h['name'].downcase.tr(' ', '_')}
 			v
 		end
 		puts x.query(ARGV.join(' ')).map{|nime|
@@ -419,7 +419,7 @@ if __FILE__ == $PROGRAM_NAME
 		puts '  show <id>: to lookup an entry from cache'
 		puts '  search <search> [string] ...: to search for something in the local cache'
 		puts '  query <querysyntax>: search local cache using expressions'
-		puts '    (state == seen && year > 2023) || !(title has Gintama && genres has Action)'
+		puts '    e.g.: (state == seen && year < 1992) || title has Gintama && genres all action,time_travel'
 		puts '  log <id/search> <status>: change the status of an anime'
 		puts '    this adds the episode count if status is just seen'
 		puts '    this command rewrites the entire log file!'
