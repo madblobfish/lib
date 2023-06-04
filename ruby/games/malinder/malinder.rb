@@ -9,7 +9,7 @@ rescue LoadError
 	false
 end
 VIPS = require_optional('vips')
-require_optional(File.dirname(__FILE__) + '/../stdlib/duration'){
+require_optional(File.dirname(__FILE__) + '/../../stdlib/duration'){
 	class Duration
 		def initialize(secs)
 			@secs = secs
@@ -20,7 +20,7 @@ require_optional(File.dirname(__FILE__) + '/../stdlib/duration'){
 		end
 	end
 }
-require_optional(File.dirname(__FILE__) + '/lib/gamelib'){
+require_optional(File.dirname(__FILE__) + '/../lib/gamelib'){
 	class TerminalGame
 		def run
 			raise 'missing ./lib/gamelib'
@@ -28,12 +28,9 @@ require_optional(File.dirname(__FILE__) + '/lib/gamelib'){
 	end
 }
 
-# config file: malinder_config.rb in same folder as this
-# things you may put in your config, like:
-# DEFAULT_HEADERS = {'X-MAL-CLIENT-ID': 'asdf'}
-# LOG_SUFFIX = '-yourname'
 CACHE_DIR = ENV.fetch('XDG_CACHE_HOME', ENV.fetch('HOME') + '/.cache') + '/malinder/'
-require_optional(CACHE_DIR + '/config.rb')
+CONFIG_DIR = ENV.fetch('XDG_CACHE_HOME', ENV.fetch('HOME') + '/.config') + '/malinder/'
+require_optional(CONFIG_DIR + '/config.rb')
 
 def configurable_default(name, default)
 	Object.const_set(name, default) unless Object.const_defined?(name)
@@ -41,8 +38,8 @@ end
 # configurable_default
 configurable_default(:API, 'https://api.myanimelist.net/v2/')
 FileUtils.mkdir_p(CACHE_DIR + 'images/')
-configurable_default(:LOG_SUFFIX, '')
-configurable_default(:LOG_FILE_PATH, "#{CACHE_DIR}choices#{LOG_SUFFIX}.log")
+configurable_default(:LOG_SUFFIX, '-' + ENV['USER'])
+configurable_default(:LOG_FILE_PATH, "#{CONFIG_DIR}choices#{LOG_SUFFIX}.log")
 configurable_default(:BAD_WORDS,
 	%w(
 		mini idol cultivat mini chibi promotion game pokemon sport mecha machine limited trailer short season
@@ -63,7 +60,7 @@ CHOICES = Hash[LOG_FILE.each_line.drop(1).map{|l| id, y, s, c, ts = l.split("\t"
 MAL_PREFIX = 'https://myanimelist.net/anime/'
 
 def load_all_to_cache()
-	Dir[CACHE_DIR + 'sources/*'].each do |s|
+	Dir[CONFIG_DIR + 'sources/*'].each do |s|
 		JSON.parse(File.read(s))['data'].each do |v|
 			CACHE[v['node']['id']] ||= v['node']
 			CACHE_BY_RANK[v['node']['rank']] ||= v['node']['id']
@@ -148,7 +145,7 @@ class MALinder < TerminalGame
 		season = season_shortcuts(season)
 		year = Integer(year, 10) # raise if year is not an integer
 		@which_season = [year, season]
-		season_file = "#{CACHE_DIR}sources/#{year}-#{season}.json"
+		season_file = "#{CONFIG_DIR}sources/#{year}-#{season}.json"
 		raise 'missing json, run malinder.sh first' unless File.exists?(season_file)
 		@season = JSON.parse(File.read(season_file))['data'].map{|v|v['node']}
 		@season.reject!{|a| CHOICES.has_key?(a['id'].to_s)}
@@ -334,7 +331,7 @@ if __FILE__ == $PROGRAM_NAME
 			}.sort_by(&:first).map{|a| a.join("\t")}
 		end
 	elsif ARGV.first == 'query'
-		require_relative '../stdlib/array/query'
+		require_relative '../../stdlib/array/query'
 		ARGV.shift #throw away first argument
 		load_all_to_cache
 		date = Time.now.to_i
@@ -416,9 +413,9 @@ if __FILE__ == $PROGRAM_NAME
 		puts '    controls: arrow keys, q to quit, 1 for nope, 2/a is ok, 3/y is want'
 		puts ''
 		puts '  stats: get some statistics'
-		puts '  show <id>: to lookup an entry from cache'
-		puts '  search <search> [string] ...: to search for something in the local cache'
-		puts '  query <querysyntax>: search local cache using expressions'
+		puts '  show <id>: lookup an entry from cache'
+		puts '  search <search> [string] ...: fuzzy search on names in the cache'
+		puts '  query <querysyntax>: search cache using expressions'
 		puts '    e.g.: (state == seen && year < 1992) || title has Gintama && genres all action,time_travel'
 		puts '  log <id/search> <status>: change the status of an anime'
 		puts '    this adds the episode count if status is just seen'
