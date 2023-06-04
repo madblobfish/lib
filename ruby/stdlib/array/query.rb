@@ -53,6 +53,7 @@ x = [
   {'a' => '1', 'b' => '1', 'c' => '3', 'd' => ['a', 'b']},
   {'a' => '1', 'b' => '2', 'c' => '3', 'd' => ['a', 'c']},
   {'a' => '1', 'b' => '2', 'c' => '4', 'd' => ['a']},
+  {'a' => '1', 'b' => '2', 'c' => '4', 'd' => 'asd'},
 ]
 raise 'ah' unless x.query('a == 1') == x.select{|h| h['a'] == '1'}
 raise 'ahh' unless x.query('(!(!(a == 1)) && b == 2)') == x.select{|h| h['a'] == '1' && h['b'] == '2'}
@@ -62,9 +63,10 @@ raise 'ahhhh' unless x.query('c == 1 || b == 2 && c != 4') == x.select{|h| h['c'
 raise 'ahhhhh' unless x.query('c == 1 || b == 2 && c != 4') == x.select{|h| h['c'] == '1' || (h['b'] == '2' && h['c'] != '4')}
 raise 'ahhhhhh' unless x.query('(c == 1 || b == 2) && c != 4') == x.select{|h| (h['c'] == '1' || h['b'] == '2') && h['c'] != '4'}
 raise 'ahhhhhhh' unless x.query('b != 2 || (c == 1 || b == 2) && c != 4') == x.select{|h| h['b'] != '2' || (h['c'] == '1' || h['b'] == '2') && h['c'] != '4'}
-raise 'ahhhhhhhh' unless x.query('d has d') == x.select{|h| h['d'].include?('d')}
+raise 'ahhhhhhhh' unless x.query('d has d') == x.select{|h| [Array, String].include?(h['d'].class) && h['d'].include?('d')}
 raise 'ahhhhhhhhh' unless x.query('!(d has b)') == x.select{|h| ! h['d'].include?('b')}
 raise 'ahhhhhhhhhh' unless x.query('c > 3') == x.select{|h| h['c'].to_f > 3}
+raise 'ahhhhhhhhhhh' unless x.query('d has asd') == x.select{|h| h['d'].class == String && h['d'] == 'asd'}
 [
   '(c) > 3',
   'c !> 3',
