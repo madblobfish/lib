@@ -19,7 +19,7 @@ class Array
     when /^\s*([a-z0-9_]+)\s+has\s+([a-z0-9_]+)\s*$/i
       # puts 'array has' if $debug
       lambda{|h| (h[$1].map(&:to_s) rescue h[$1]).include?($2) rescue false}
-    when /^\s*([a-z0-9_]+)\s*(<=?|>=?)\s*([a-z0-9_]+)\s*$/i
+    when /^\s*([a-z0-9_]+)\s*(<=?|>=?)\s*([a-z0-9_.]+)\s*$/i
       # puts 'comp' if $debug
       lambda{|h| h[$1].to_f.send($2.to_sym, $3.to_f)}
     when /^\s*([a-z0-9_]+)\s*\!\=\s*([a-z0-9_]+)\s*$/i
@@ -51,12 +51,12 @@ end
 # $debug = false
 x = [
   {'a' => '1', 'b' => '1', 'c' => '3', 'd' => ['a', 'b']},
-  {'a' => '1', 'b' => '2', 'c' => '3', 'd' => ['a', 'c']},
+  {'a' => '1', 'b' => '2', 'c' => '3.4', 'd' => ['a', 'c']},
   {'a' => '1', 'b' => '2', 'c' => '4', 'd' => ['a']},
   {'a' => '1', 'b' => '2', 'c' => '4', 'd' => 'asd'},
 ]
 raise 'ah' unless x.query('a == 1') == x.select{|h| h['a'] == '1'}
-raise 'ahh' unless x.query('(!(!(a == 1)) && b == 2)') == x.select{|h| h['a'] == '1' && h['b'] == '2'}
+raise 'ahh' unless x.query('(!(!(a==1))&& b == 2)') == x.select{|h| h['a'] == '1' && h['b'] == '2'}
 raise 'ahhh' unless x.query('c == 1 && b != 2') == x.select{|h| h['c'] == '1' && h['b'] != '2'}
 raise 'ahhh2' unless x.query('c == 1 || b == 2') == x.select{|h| h['c'] == '1' || h['b'] == '2'}
 raise 'ahhhh' unless x.query('c == 1 || b == 2 && c != 4') == x.select{|h| h['c'] == '1' || h['b'] == '2' && h['c'] != '4'}
@@ -66,6 +66,7 @@ raise 'ahhhhhhh' unless x.query('b != 2 || (c == 1 || b == 2) && c != 4') == x.s
 raise 'ahhhhhhhh' unless x.query('d has d') == x.select{|h| [Array, String].include?(h['d'].class) && h['d'].include?('d')}
 raise 'ahhhhhhhhh' unless x.query('!(d has b)') == x.select{|h| ! h['d'].include?('b')}
 raise 'ahhhhhhhhhh' unless x.query('c > 3') == x.select{|h| h['c'].to_f > 3}
+raise 'ahhhhhhhhhh' unless x.query('c > 3.3') == x.select{|h| h['c'].to_f > 3.3}
 raise 'ahhhhhhhhhhh' unless x.query('d has asd') == x.select{|h| h['d'].class == String && h['d'] == 'asd'}
 [
   '(c) > 3',
@@ -74,6 +75,9 @@ raise 'ahhhhhhhhhhh' unless x.query('d has asd') == x.select{|h| h['d'].class ==
   'c > 3)',
   'ahasb = b',
   'a == b,',
+  'a == b == c',
+  'a has b has c',
+  'a > b > c',
   '',
 ].each_with_index do |str, i|
   begin
