@@ -28,15 +28,15 @@ require_optional(File.dirname(__FILE__) + '/../lib/gamelib'){
 	end
 }
 
-CACHE_DIR = ENV.fetch('XDG_CACHE_HOME', ENV.fetch('HOME') + '/.cache') + '/malinder/'
-CONFIG_DIR = ENV.fetch('XDG_CACHE_HOME', ENV.fetch('HOME') + '/.config') + '/malinder/'
+CONFIG_DIR = ENV.fetch('XDG_CONFIG_HOME', ENV.fetch('HOME') + '/.config') + '/malinder/'
 require_optional(CONFIG_DIR + '/config.rb')
 
 def configurable_default(name, default)
 	Object.const_set(name, default) unless Object.const_defined?(name)
 end
-# configurable_default
 configurable_default(:API, 'https://api.myanimelist.net/v2/')
+configurable_default(:AUTOPULL, true)
+configurable_default(:CACHE_DIR, ENV.fetch('XDG_CACHE_HOME', ENV.fetch('HOME') + '/.cache') + '/malinder/')
 FileUtils.mkdir_p(CACHE_DIR + 'images/')
 configurable_default(:LOG_SUFFIX, '-' + ENV['USER'])
 configurable_default(:LOG_FILE_PATH, "#{CONFIG_DIR}choices#{LOG_SUFFIX}.log")
@@ -60,6 +60,7 @@ CHOICES = Hash[LOG_FILE.each_line.drop(1).map{|l| id, y, s, c, ts = l.split("\t"
 MAL_PREFIX = 'https://myanimelist.net/anime/'
 
 def load_all_to_cache()
+	`cd #{CONFIG_DIR}sources/; git pull --ff-only` if AUTOPULL
 	Dir[CONFIG_DIR + 'sources/*'].each do |s|
 		JSON.parse(File.read(s))['data'].each do |v|
 			CACHE[v['node']['id']] ||= v['node']
