@@ -9,7 +9,7 @@ class Array
     potential_loop_point = 1
     while potential_loop_point <= (self.length+1)/2
       loops = self.each_slice(potential_loop_point).to_a
-      if loops.last.length != potential_loop_point
+      if loops.last.length != potential_loop_point && loops.length > 2
         if loops.pop.is_prefix_of(loops.first)
           if loops.uniq.length == 1
             return loops.first
