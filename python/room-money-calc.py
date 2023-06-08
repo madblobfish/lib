@@ -15,7 +15,7 @@ def how_much_money_fits_mah_room_all_bills(room_area, room_height=2.35):
 	return {x: how_much_money_fits_mah_room(x, room_area, room_height) for x in EURO_BILL_SIZE}
 
 import sys
-if __file__ == sys.argv[0]:
+if __name__ == '__main__':
 	if len(sys.argv) == 4:
 		print(how_much_money_fits_mah_room(int(sys.argv[3]), float(sys.argv[1]), float(sys.argv[2])))
 	elif len(sys.argv) == 3:
