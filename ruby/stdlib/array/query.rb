@@ -11,8 +11,7 @@ require 'racc/parser.rb'
 class Array
 class QueryParser < Racc::Parser
 
-module_eval(<<'...end query.y/module_eval...', 'query.y', 126)
-
+module_eval(<<'...end query.y/module_eval...', 'query.y', 73)
   def parse(str)
     @q = []
     until str.empty?
@@ -179,7 +178,7 @@ Racc_debug_parser = false
 
 # reduce 3 omitted
 
-module_eval(<<'.,.,', 'query.y', 12)
+module_eval(<<'.,.,', 'query.y', 13)
   def _reduce_4(val, _values, result)
           # puts "eql #{val}" if $debug
       result = lambda{|h| h[val[0]].to_s == val[2]}
@@ -188,7 +187,7 @@ module_eval(<<'.,.,', 'query.y', 12)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 16)
+module_eval(<<'.,.,', 'query.y', 17)
   def _reduce_5(val, _values, result)
           # puts "not #{val}" if $debug
       result = lambda{|h| h[val[0]].to_s != val[2]}
@@ -197,7 +196,7 @@ module_eval(<<'.,.,', 'query.y', 16)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 20)
+module_eval(<<'.,.,', 'query.y', 21)
   def _reduce_6(val, _values, result)
           # puts "num #{val}" if $debug
       result = lambda{|h| h[val[0]].to_f.send(val[1].to_sym, val[2].to_f) }
@@ -206,7 +205,7 @@ module_eval(<<'.,.,', 'query.y', 20)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 24)
+module_eval(<<'.,.,', 'query.y', 25)
   def _reduce_7(val, _values, result)
           # puts "has #{val}" if $debug
       result = lambda{|h| (h[val[0]].map(&:to_s) rescue h[val[0]].to_s).include?(val[3]) rescue false}
@@ -215,7 +214,7 @@ module_eval(<<'.,.,', 'query.y', 24)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 28)
+module_eval(<<'.,.,', 'query.y', 29)
   def _reduce_8(val, _values, result)
           # puts "in #{val}" if $debug
       vals = val[3].split(',').map(&:strip)
@@ -231,7 +230,7 @@ module_eval(<<'.,.,', 'query.y', 28)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 39)
+module_eval(<<'.,.,', 'query.y', 40)
   def _reduce_9(val, _values, result)
           # puts "all #{val}" if $debug
       vals = val[3].split(',').map(&:strip)
@@ -247,7 +246,7 @@ module_eval(<<'.,.,', 'query.y', 39)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 51)
+module_eval(<<'.,.,', 'query.y', 53)
   def _reduce_10(val, _values, result)
           # puts 'or' if $debug
       result = lambda{|h| val[0][h] || val[2][h]}
@@ -255,7 +254,7 @@ module_eval(<<'.,.,', 'query.y', 51)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 54)
+module_eval(<<'.,.,', 'query.y', 56)
   def _reduce_11(val, _values, result)
           # puts 'and' if $debug
       result = lambda{|h| val[0][h] && val[2][h]}
@@ -263,7 +262,7 @@ module_eval(<<'.,.,', 'query.y', 54)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 57)
+module_eval(<<'.,.,', 'query.y', 59)
   def _reduce_12(val, _values, result)
           # puts 'not' if $debug
       result = lambda{|h| ! val[1][h] }
@@ -271,7 +270,7 @@ module_eval(<<'.,.,', 'query.y', 57)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 60)
+module_eval(<<'.,.,', 'query.y', 62)
   def _reduce_13(val, _values, result)
           # puts 'brack' if $debug
       result = val[1]
@@ -318,6 +317,7 @@ raise 'ahhhhhhhhhhhhhh' unless x.query('c in 3,4') == x.select{|h| %w(3 4).inclu
 raise 'ahhhhhhhhhhhhhhh' unless x.query('d in a,4') == x.select{|h| (%w(a 4) & h['d']).any? rescue false}
 raise 'ahhhhhhhhhhhhhhhh' unless x.query('d all a,c') == x.select{|h| (%w(a c) - h['d']).empty? rescue false}
 [
+  'c++',
   '(c) > 3',
   'c !> 3',
   '(c > 3',

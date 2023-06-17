@@ -8,6 +8,7 @@ rule
   target: exp
 
   val: VALUE | VALUE SPACE
+
   query:
     val '==' val {
       # puts "eql #{val}" if $debug
@@ -47,6 +48,7 @@ rule
         end
       }
     }
+
   exp:
     exp '||' exp {
       # puts 'or' if $debug
@@ -67,6 +69,36 @@ end
 # generate using: racc query.y -o query.rb
 # $debug = true
 class Array
+---- inner
+  def parse(str)
+    @q = []
+    until str.empty?
+      case str
+      when /\A\s+/ #ignore spaces
+      when /\A(all|in|has)\s+([a-zA-Z0-9_.,-]+)/
+        @q.push [$1, $1]
+        @q.push [:VALUE, $2]
+      when /\A([a-zA-Z0-9_.-]+)(\s+)?/
+        @q.push [:VALUE, $1]
+        @q.push [:SPACE, ''] if $2
+      when /\A[<>]=?/
+        @q.push [:OP_NUM, $&]
+      when /\A==|!=|\|\||&&|[!()\n]/o
+        s = $&
+        @q.push [s, s]
+      else
+        raise "could not tokenize #{str}"
+      end
+      str = $'
+    end
+    # puts "tokens: #{@q.inspect}" if $debug
+    @q.push [false, '$end']
+    do_parse
+  end
+
+  def next_token
+    @q.shift
+  end
 ---- footer
   def query(str)
     # puts "parsin" if $debug
@@ -99,6 +131,7 @@ raise 'ahhhhhhhhhhhhhh' unless x.query('c in 3,4') == x.select{|h| %w(3 4).inclu
 raise 'ahhhhhhhhhhhhhhh' unless x.query('d in a,4') == x.select{|h| (%w(a 4) & h['d']).any? rescue false}
 raise 'ahhhhhhhhhhhhhhhh' unless x.query('d all a,c') == x.select{|h| (%w(a c) - h['d']).empty? rescue false}
 [
+  'c++',
   '(c) > 3',
   'c !> 3',
   '(c > 3',
@@ -122,34 +155,3 @@ raise 'ahhhhhhhhhhhhhhhh' unless x.query('d all a,c') == x.select{|h| (%w(a c) -
   end
 end
 # $debug = false
----- inner
-
-  def parse(str)
-    @q = []
-    until str.empty?
-      case str
-      when /\A\s+/ #ignore spaces
-      when /\A(all|in|has)\s+([a-zA-Z0-9_.,-]+)/
-        @q.push [$1, $1]
-        @q.push [:VALUE, $2]
-      when /\A([a-zA-Z0-9_.-]+)(\s+)?/
-        @q.push [:VALUE, $1]
-        @q.push [:SPACE, ''] if $2
-      when /\A[<>]=?/
-        @q.push [:OP_NUM, $&]
-      when /\A==|!=|\|\||&&|[!()\n]/o
-        s = $&
-        @q.push [s, s]
-      else
-        raise "could not tokenize #{str}"
-      end
-      str = $'
-    end
-    # puts "tokens: #{@q.inspect}" if $debug
-    @q.push [false, '$end']
-    do_parse
-  end
-
-  def next_token
-    @q.shift
-  end
