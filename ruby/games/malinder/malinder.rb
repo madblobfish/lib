@@ -56,7 +56,7 @@ CACHE_BY_RANK = {}
 IMAGE_CACHE = {}
 LOG_FILE = File.open(LOG_FILE_PATH, 'a+')
 LOG_FILE.sync = true
-CHOICES = Hash[LOG_FILE.each_line.drop(1).map{|l| id, y, s, c, ts = l.split("\t"); [id, {choice:c, ts: ts}]}]
+CHOICES = Hash[LOG_FILE.each_line.drop(1).map{|l| id, y, s, c, ts, name, c1, c2, c3 = l.split("\t"); [id, {choice:c, ts: ts, c1: c1, c2: c2, c3: c3}]}]
 MAL_PREFIX = 'https://myanimelist.net/anime/'
 
 def load_all_to_cache()
@@ -337,19 +337,17 @@ if __FILE__ == $PROGRAM_NAME
 		load_all_to_cache
 		date = Time.now.to_i
 		x = CACHE.map do |k, v|
-			v['choice'] = '-'
-			v['timestamp'] = date
-			if CHOICES.has_key?(k.to_s)
-				v['state'] = CHOICES[k.to_s][:choice].split(',').first
-				v['choice'] = CHOICES[k.to_s][:choice]
-				v['timestamp'] = CHOICES[k.to_s][:ts]
-			end
+			old = CHOICES.fetch(v['id'].to_s, {})
+			v['state'] = old.fetch(:choice, '-')
+			v['choice'] = v['state'].split(',').first
+			v['timestamp'] = old.fetch(:ts, date)
+			v['c1'] = old.fetch(:c1, nil)
 			v.merge!(v['start_season'])
 			v['genres'] = v['genres']&.map{|h|h['name'].downcase.tr(' ', '_')}
 			v
 		end
 		puts x.query(ARGV.join(' ')).map{|nime|
-			nime.fetch_values('id', 'year', 'season', 'choice', 'timestamp', 'title')
+			nime.fetch_values('id', 'year', 'season', 'state', 'timestamp', 'title', 'c1').compact
 		}.sort_by(&:first).map{|a| a.join("\t")}
 	elsif ARGV.first == 'stats'
 		load_all_to_cache
