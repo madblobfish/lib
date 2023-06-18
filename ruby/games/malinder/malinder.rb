@@ -344,6 +344,7 @@ if __FILE__ == $PROGRAM_NAME
 			v['c1'] = old.fetch(:c1, nil)
 			v.merge!(v['start_season'])
 			v['genres'] = v['genres']&.map{|h|h['name'].downcase.tr(' ', '_')}
+			v['names'] = [v['title'], *v['alternative_titles']&.values.flatten]
 			v
 		end
 		puts x.query(ARGV.join(' ')).map{|nime|
