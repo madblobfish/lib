@@ -11,16 +11,20 @@ require 'racc/parser.rb'
 class Array
 class QueryParser < Racc::Parser
 
-module_eval(<<'...end query.y/module_eval...', 'query.y', 73)
+module_eval(<<'...end query.y/module_eval...', 'query.y', 95)
   def parse(str)
+    value_subregex = '\p{Hiragana}\p{Katakana}\p{Han}\p{Hangul}ー〜、a-zA-Z0-9_+*.'
     @q = []
     until str.empty?
       case str
       when /\A\s+/ #ignore spaces
-      when /\A(all|in|has)\s+([a-zA-Z0-9_.,-]+)/
+      when /\A(Like)\s+([#{value_subregex},-]+)/
+        @q.push [:SENSITIVE_LIKE, 'like']
+        @q.push [:VALUE, $2]
+      when /\A(all|in|has|like)\s+([#{value_subregex},-]+)/
         @q.push [$1, $1]
         @q.push [:VALUE, $2]
-      when /\A([a-zA-Z0-9_.-]+)(\s+)?/
+      when /\A([#{value_subregex}-]+)(\s+)?/
         @q.push [:VALUE, $1]
         @q.push [:SPACE, ''] if $2
       when /\A[<>]=?/
@@ -46,64 +50,68 @@ module_eval(<<'...end query.y/module_eval...', 'query.y', 73)
 
 racc_action_table = [
     10,     9,     3,    10,     9,     3,     8,     3,    11,     3,
-     5,     6,    27,     5,     6,     5,     6,     5,     6,     3,
-    12,    13,    14,    20,    21,    22,    17,     5,     6,    23,
-    23,    23,    10,    23,    23,    23,    31 ]
+    17,     3,     5,     6,    29,     5,     6,     5,     6,     5,
+     6,     5,     6,    20,    21,    22,    23,    24,    12,    13,
+    14,    25,    25,    25,    10,    25,    25,    25,    25,    25,
+    35 ]
 
 racc_action_check = [
     16,    16,     0,     2,     2,     5,     1,     6,     3,     9,
-     0,     0,    16,     5,     5,     6,     6,     9,     9,    10,
-     4,     4,     4,    11,    11,    11,     8,    10,    10,    12,
-    13,    14,    18,    20,    21,    22,    23 ]
+     8,    10,     0,     0,    16,     5,     5,     6,     6,     9,
+     9,    10,    10,    11,    11,    11,    11,    11,     4,     4,
+     4,    12,    13,    14,    18,    20,    21,    22,    23,    24,
+    25 ]
 
 racc_action_pointer = [
-    -3,     6,     0,     2,    13,     0,     2,   nil,    26,     4,
-    14,    13,    24,    25,    26,   nil,    -3,   nil,    29,   nil,
-    28,    29,    30,    30,   nil,   nil,   nil,   nil,   nil,   nil,
-   nil,   nil ]
+    -3,     6,     0,     2,    21,     0,     2,   nil,    10,     4,
+     6,    13,    26,    27,    28,   nil,    -3,   nil,    31,   nil,
+    30,    31,    32,    33,    34,    34,   nil,   nil,   nil,   nil,
+   nil,   nil,   nil,   nil,   nil,   nil ]
 
 racc_action_default = [
-   -15,   -15,    -1,    -2,   -15,   -15,   -15,   -14,   -15,   -15,
-   -15,    -3,   -15,   -15,   -15,   -12,   -15,    32,   -10,   -11,
-   -15,   -15,   -15,    -2,    -4,    -5,    -6,   -13,    -7,    -8,
-    -9,    -3 ]
+   -17,   -17,    -1,    -2,   -17,   -17,   -17,   -16,   -17,   -17,
+   -17,    -3,   -17,   -17,   -17,   -14,   -17,    36,   -12,   -13,
+   -17,   -17,   -17,   -17,   -17,    -2,    -4,    -5,    -6,   -15,
+    -7,    -8,    -9,   -10,   -11,    -3 ]
 
 racc_goto_table = [
-     2,     1,   nil,   nil,   nil,    15,    16,   nil,   nil,    18,
-    19,    24,    25,    26,   nil,   nil,   nil,   nil,   nil,    28,
-    29,    30 ]
+    26,    27,    28,     1,   nil,   nil,   nil,   nil,    30,    31,
+    32,    33,    34,     2,   nil,   nil,   nil,   nil,    15,    16,
+   nil,   nil,    18,    19 ]
 
 racc_goto_check = [
-     2,     1,   nil,   nil,   nil,     2,     2,   nil,   nil,     2,
-     2,     3,     3,     3,   nil,   nil,   nil,   nil,   nil,     3,
-     3,     3 ]
+     3,     3,     3,     1,   nil,   nil,   nil,   nil,     3,     3,
+     3,     3,     3,     2,   nil,   nil,   nil,   nil,     2,     2,
+   nil,   nil,     2,     2 ]
 
 racc_goto_pointer = [
-   nil,     1,     0,    -1,   nil ]
+   nil,     3,    13,   -12,   nil ]
 
 racc_goto_default = [
    nil,   nil,   nil,     4,     7 ]
 
 racc_reduce_table = [
   0, 0, :racc_error,
-  1, 17, :_reduce_none,
   1, 19, :_reduce_none,
-  2, 19, :_reduce_none,
-  3, 20, :_reduce_4,
-  3, 20, :_reduce_5,
-  3, 20, :_reduce_6,
-  4, 20, :_reduce_7,
-  4, 20, :_reduce_8,
-  4, 20, :_reduce_9,
-  3, 18, :_reduce_10,
-  3, 18, :_reduce_11,
-  2, 18, :_reduce_12,
-  3, 18, :_reduce_13,
-  1, 18, :_reduce_none ]
+  1, 21, :_reduce_none,
+  2, 21, :_reduce_none,
+  3, 22, :_reduce_4,
+  3, 22, :_reduce_5,
+  3, 22, :_reduce_6,
+  4, 22, :_reduce_7,
+  4, 22, :_reduce_8,
+  4, 22, :_reduce_9,
+  4, 22, :_reduce_10,
+  4, 22, :_reduce_11,
+  3, 20, :_reduce_12,
+  3, 20, :_reduce_13,
+  2, 20, :_reduce_14,
+  3, 20, :_reduce_15,
+  1, 20, :_reduce_none ]
 
-racc_reduce_n = 15
+racc_reduce_n = 17
 
-racc_shift_n = 32
+racc_shift_n = 36
 
 racc_token_table = {
   false => 0,
@@ -119,11 +127,13 @@ racc_token_table = {
   "has" => 10,
   "in" => 11,
   "all" => 12,
-  "!" => 13,
-  "(" => 14,
-  ")" => 15 }
+  "like" => 13,
+  :SENSITIVE_LIKE => 14,
+  "!" => 15,
+  "(" => 16,
+  ")" => 17 }
 
-racc_nt_base = 16
+racc_nt_base = 18
 
 racc_use_result_var = true
 
@@ -157,6 +167,8 @@ Racc_token_to_s_table = [
   "\"has\"",
   "\"in\"",
   "\"all\"",
+  "\"like\"",
+  "SENSITIVE_LIKE",
   "\"!\"",
   "\"(\"",
   "\")\"",
@@ -246,39 +258,71 @@ module_eval(<<'.,.,', 'query.y', 40)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 53)
+module_eval(<<'.,.,', 'query.y', 51)
   def _reduce_10(val, _values, result)
+          # puts "like #{val}" if $debug
+      regexp = /#{val[3]}/i
+      result = lambda{|h|
+        if h[val[0]].class == Array
+          h[val[0]].any?{|v| v.match?(regexp)}
+        else
+          h[val[0]].match?(regexp)
+        end
+      }
+
+    result
+  end
+.,.,
+
+module_eval(<<'.,.,', 'query.y', 62)
+  def _reduce_11(val, _values, result)
+          # puts "sensitive like #{val}" if $debug
+      regexp = /#{val[3]}/
+      result = lambda{|h|
+        if h[val[0]].class == Array
+          h[val[0]].any?{|v| v.match?(regexp)}
+        else
+          h[val[0]].match?(regexp)
+        end
+      }
+
+    result
+  end
+.,.,
+
+module_eval(<<'.,.,', 'query.y', 75)
+  def _reduce_12(val, _values, result)
           # puts 'or' if $debug
       result = lambda{|h| val[0][h] || val[2][h]}
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 56)
-  def _reduce_11(val, _values, result)
+module_eval(<<'.,.,', 'query.y', 78)
+  def _reduce_13(val, _values, result)
           # puts 'and' if $debug
       result = lambda{|h| val[0][h] && val[2][h]}
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 59)
-  def _reduce_12(val, _values, result)
+module_eval(<<'.,.,', 'query.y', 81)
+  def _reduce_14(val, _values, result)
           # puts 'not' if $debug
       result = lambda{|h| ! val[1][h] }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 62)
-  def _reduce_13(val, _values, result)
+module_eval(<<'.,.,', 'query.y', 84)
+  def _reduce_15(val, _values, result)
           # puts 'brack' if $debug
       result = val[1]
     result
   end
 .,.,
 
-# reduce 14 omitted
+# reduce 16 omitted
 
 def _reduce_none(val, _values, result)
   val[0]
@@ -294,9 +338,9 @@ end   # class QueryParser
   end
 end
 x = [
-  {'a' => '1', 'b' => '1', 'c' => '3', 'd' => ['a', 'b']},
+  {'a' => '1', 'b' => '1', 'c' => '3', 'd' => ['a', 'b', 'HIあああo']},
   {'a' => '1', 'b' => '2', 'c' => '3.4', 'd' => ['a', 'c']},
-  {'a' => '1', 'b' => '2', 'c' => '4', 'd' => ['a']},
+  {'a' => '1', 'b' => '2', 'c' => '4', 'd' => ['a', 'アあ']},
   {'a' => '1', 'b' => '2', 'c' => '4', 'd' => 'asd'},
 ]
 raise 'ah' unless x.query('!a == 1') == x.select{|h| h['a'] != '1'}
@@ -316,6 +360,11 @@ raise 'ahhhhhhhhhhhhh' unless x.query('(c > 2) || (c < 9)') == x.select{|h| h['c
 raise 'ahhhhhhhhhhhhhh' unless x.query('c in 3,4') == x.select{|h| %w(3 4).include?(h['c'])}
 raise 'ahhhhhhhhhhhhhhh' unless x.query('d in a,4') == x.select{|h| (%w(a 4) & h['d']).any? rescue false}
 raise 'ahhhhhhhhhhhhhhhh' unless x.query('d all a,c') == x.select{|h| (%w(a c) - h['d']).empty? rescue false}
+raise 'ahhhhhhhhhhhhhhhhh' unless x.query('d like あ+') == x.select{|h| h['d'].any?{|v| v.match?(/あ+/)} rescue false}
+raise 'ahhhhhhhhhhhhhhhhha' unless x.query('d like hi') == x.select{|h| h['d'].any?{|v| v.match?(/^hi/i)} rescue false}
+raise 'ahhhhhhhhhhhhhhhhhb' unless x.query('d like HI') == x.select{|h| h['d'].any?{|v| v.match?(/^HI/i)} rescue false}
+raise 'ahhhhhhhhhhhhhhhhhc' unless x.query('d Like HI') == x.select{|h| h['d'].any?{|v| v.match?(/^HI/)} rescue false}
+raise 'ahhhhhhhhhhhhhhhhhd' unless x.query('d Like hi') == x.select{|h| h['d'].any?{|v| v.match?(/^hi/)} rescue false}
 [
   'c++',
   '(c) > 3',
@@ -329,7 +378,8 @@ raise 'ahhhhhhhhhhhhhhhh' unless x.query('d all a,c') == x.select{|h| (%w(a c) -
   'a in b in c',
   'a all b all c',
   'a > b > c',
-  '',
+  'a like (a)',
+  'a like [a]',
 ].each_with_index do |str, i|
   begin
     x.query(str)

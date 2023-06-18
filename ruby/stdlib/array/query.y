@@ -48,6 +48,28 @@ rule
         end
       }
     }
+    | VALUE SPACE 'like' val {
+      # puts "like #{val}" if $debug
+      regexp = /#{val[3]}/i
+      result = lambda{|h|
+        if h[val[0]].class == Array
+          h[val[0]].any?{|v| v.match?(regexp)}
+        else
+          h[val[0]].match?(regexp)
+        end
+      }
+    }
+    | VALUE SPACE SENSITIVE_LIKE val {
+      # puts "sensitive like #{val}" if $debug
+      regexp = /#{val[3]}/
+      result = lambda{|h|
+        if h[val[0]].class == Array
+          h[val[0]].any?{|v| v.match?(regexp)}
+        else
+          h[val[0]].match?(regexp)
+        end
+      }
+    }
 
   exp:
     exp '||' exp {
@@ -71,14 +93,18 @@ end
 class Array
 ---- inner
   def parse(str)
+    value_subregex = '\p{Hiragana}\p{Katakana}\p{Han}\p{Hangul}ー〜、a-zA-Z0-9_+*.'
     @q = []
     until str.empty?
       case str
       when /\A\s+/ #ignore spaces
-      when /\A(all|in|has)\s+([a-zA-Z0-9_.,-]+)/
+      when /\A(Like)\s+([#{value_subregex},-]+)/
+        @q.push [:SENSITIVE_LIKE, 'like']
+        @q.push [:VALUE, $2]
+      when /\A(all|in|has|like)\s+([#{value_subregex},-]+)/
         @q.push [$1, $1]
         @q.push [:VALUE, $2]
-      when /\A([a-zA-Z0-9_.-]+)(\s+)?/
+      when /\A([#{value_subregex}-]+)(\s+)?/
         @q.push [:VALUE, $1]
         @q.push [:SPACE, ''] if $2
       when /\A[<>]=?/
@@ -108,9 +134,9 @@ class Array
   end
 end
 x = [
-  {'a' => '1', 'b' => '1', 'c' => '3', 'd' => ['a', 'b']},
+  {'a' => '1', 'b' => '1', 'c' => '3', 'd' => ['a', 'b', 'HIあああo']},
   {'a' => '1', 'b' => '2', 'c' => '3.4', 'd' => ['a', 'c']},
-  {'a' => '1', 'b' => '2', 'c' => '4', 'd' => ['a']},
+  {'a' => '1', 'b' => '2', 'c' => '4', 'd' => ['a', 'アあ']},
   {'a' => '1', 'b' => '2', 'c' => '4', 'd' => 'asd'},
 ]
 raise 'ah' unless x.query('!a == 1') == x.select{|h| h['a'] != '1'}
@@ -130,6 +156,11 @@ raise 'ahhhhhhhhhhhhh' unless x.query('(c > 2) || (c < 9)') == x.select{|h| h['c
 raise 'ahhhhhhhhhhhhhh' unless x.query('c in 3,4') == x.select{|h| %w(3 4).include?(h['c'])}
 raise 'ahhhhhhhhhhhhhhh' unless x.query('d in a,4') == x.select{|h| (%w(a 4) & h['d']).any? rescue false}
 raise 'ahhhhhhhhhhhhhhhh' unless x.query('d all a,c') == x.select{|h| (%w(a c) - h['d']).empty? rescue false}
+raise 'ahhhhhhhhhhhhhhhhh' unless x.query('d like あ+') == x.select{|h| h['d'].any?{|v| v.match?(/あ+/)} rescue false}
+raise 'ahhhhhhhhhhhhhhhhha' unless x.query('d like hi') == x.select{|h| h['d'].any?{|v| v.match?(/^hi/i)} rescue false}
+raise 'ahhhhhhhhhhhhhhhhhb' unless x.query('d like HI') == x.select{|h| h['d'].any?{|v| v.match?(/^HI/i)} rescue false}
+raise 'ahhhhhhhhhhhhhhhhhc' unless x.query('d Like HI') == x.select{|h| h['d'].any?{|v| v.match?(/^HI/)} rescue false}
+raise 'ahhhhhhhhhhhhhhhhhd' unless x.query('d Like hi') == x.select{|h| h['d'].any?{|v| v.match?(/^hi/)} rescue false}
 [
   'c++',
   '(c) > 3',
@@ -143,7 +174,8 @@ raise 'ahhhhhhhhhhhhhhhh' unless x.query('d all a,c') == x.select{|h| (%w(a c) -
   'a in b in c',
   'a all b all c',
   'a > b > c',
-  '',
+  'a like (a)',
+  'a like [a]',
 ].each_with_index do |str, i|
   begin
     x.query(str)
