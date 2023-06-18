@@ -157,15 +157,14 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   deth = ARGV.delete('--death') ? true : false
-  ARGV = ['eazy'] if ARGV.empty?
   case ARGV.first
   when 'eazy'
     Maze.new(7,13,deth).run()
     # Miswalk: 0
     # Backwalk: 0
-    # Steps: 38
-    # Path: 39
-    # Time: 9.669698715s
+    # Steps: 23
+    # Path: 24
+    # Time: 7.520582832s
   when 'normal'
     Maze.new(10,16,deth).run()
     # Miswalk: 0
@@ -182,6 +181,11 @@ if __FILE__ == $PROGRAM_NAME
     # Time: 88.105600061s
   when 'hard'
     Maze.new(28,100,deth).run()
+    # Miswalk: 109
+    # Backwalk: 218
+    # Steps: 1918
+    # Path: 1374
+    # Time: 1937.503126671s
   else
     puts 'hi we got 4 modi [hard|har|normal|eazy]'
     puts 'try --death for more fun'
