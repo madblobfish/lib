@@ -298,6 +298,17 @@ if __FILE__ == $PROGRAM_NAME
 			raise 'not unique or not found, test with "search" first' unless res.one?
 			res.first.last
 		end
+		log_value = if (Integer(ARGV.last, 10) rescue false)
+			'partly,' + ARGV.last
+		else
+			ARGV.last
+		end
+		if nime['num_episodes'] < log_value.split(',',2).last.to_i
+			raise 'log episode higher than number of episodes'
+		elsif nime['num_episodes'].to_s == log_value.split(',',2).last || log_value == 'seen'
+			log_value = 'seen,' + nime['num_episodes'].to_s
+			puts "was actually seen, I fixed that for you ;)" unless log_value == 'seen'
+		end
 		found = false
 		headers = File.readlines(LOG_FILE).first.split("\t")
 		newcontent = File.readlines(LOG_FILE).map do |e|
@@ -305,8 +316,7 @@ if __FILE__ == $PROGRAM_NAME
 				raise 'found anime twice!' if found
 				found = true
 				e = e.split("\t")
-				e[3] = ARGV.last
-				e[3] += ',' + nime['num_episodes'].to_s if ARGV.last == 'seen'
+				e[3] = log_value
 				e.join("\t")
 			else
 				e
