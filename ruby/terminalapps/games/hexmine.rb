@@ -1,5 +1,5 @@
-require_relative 'lib/gamelib.rb'
-require_relative '../stdlib/color_palette.rb' rescue nil
+require_relative '../lib/gamelib.rb'
+require_relative '../../stdlib/color_palette.rb' rescue nil
 
 class Minesweep < TerminalGame
   def initialize(size=12, mines=20)

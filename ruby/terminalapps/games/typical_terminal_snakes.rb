@@ -1,4 +1,4 @@
-require_relative "lib/gamelib.rb"
+require_relative '../lib/gamelib.rb'
 
 class TTS < TerminalGame
   EMPTY_CELL = {symbol:'⬜', color: [50,50,50]}
@@ -52,10 +52,10 @@ class TTS < TerminalGame
   end
 
   def snake_color(n)
-    require_relative '../stdlib/color_palette.rb'
+    require_relative '../../stdlib/color_palette.rb'
     color_to_ansi(*color_palette(n.to_f / @len))
   rescue
-    ""
+    ''
   end
 
   def block_to_str(block)

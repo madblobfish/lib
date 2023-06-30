@@ -1,4 +1,4 @@
-require_relative 'lib/gamelib.rb'
+require_relative '../lib/gamelib.rb'
 
 # theese are my dirty little secrets:
 class Array

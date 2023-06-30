@@ -1,8 +1,9 @@
-require_relative 'lib/gamelib.rb'
+require_relative '../lib/gamelib.rb'
 
 class Bla < TerminalGame
   BG_HEIGHT = 576
   def initialize
+    @require_kitty_graphics = true
     @timer = 0
     @movespeed = 3
     @offset = 35

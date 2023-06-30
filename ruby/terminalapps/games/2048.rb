@@ -1,4 +1,4 @@
-require_relative 'lib/gamelib.rb'
+require_relative '../lib/gamelib.rb'
 
 class FourThousandFourtyEightError < StandardError;end
 class GameOver < FourThousandFourtyEightError;end
@@ -32,7 +32,7 @@ class FourThousandFourtyEight < TerminalGame
     out = num.to_s.each_char.map{|e| "𝟘𝟙𝟚𝟛𝟜𝟝𝟞𝟟𝟠𝟡"[e.to_i] }.join('').rjust(rjust)
     if color
       begin
-        require_relative '../stdlib/color_palette.rb'
+        require_relative '../../stdlib/color_palette.rb'
       rescue LoadError => e
         return out
       end

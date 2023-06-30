@@ -1,4 +1,4 @@
-require_relative 'lib/gamelib'
+require_relative '../lib/gamelib'
 
 def BMP_to_arr(buffer)
   a = buffer.b

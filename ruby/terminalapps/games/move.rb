@@ -1,5 +1,5 @@
-require_relative 'lib/gamelib'
-require_relative '../stdlib/color_palette.rb' rescue nil
+require_relative '../lib/gamelib'
+require_relative '../../stdlib/color_palette.rb' rescue nil
 
 class Array
   def index2d(item)

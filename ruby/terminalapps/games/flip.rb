@@ -1,4 +1,4 @@
-require_relative 'lib/gamelib'
+require_relative '../lib/gamelib'
 
 class Flip < TerminalGame
   def initialize(size=4)
@@ -25,7 +25,7 @@ class Flip < TerminalGame
   def mouse_handler(y, x, button_id, dir)
     return if dir != :up
     y /= 2
-    return draw if [x, y].any?{|c|c < 0 || c > @size}
+    return draw if [x, y].any?{|c|c < 0 || c > @size-1}
     @map[x][y] = ! @map[x][y]
     [
       [ 0, 1],
@@ -34,7 +34,17 @@ class Flip < TerminalGame
       [-1, 0],
     ].each do |(a,b)|
       begin
-        @map[x+a][y+b] = ! @map[x+a][y+b]
+        if x+a > @size-1
+          @map[0][y+b] = ! @map[0][y+b]
+        elsif x+a < 0
+          @map[@size-1][y+b] = ! @map[@size-1][y+b]
+        elsif y+b > @size-1
+          @map[x+a][0] = ! @map[x+a][0]
+        elsif y+b < 0
+          @map[x+a][@size-1] = ! @map[x+a][@size-1]
+        else
+          @map[x+a][y+b] = ! @map[x+a][y+b]
+        end
       rescue
         # ignore
       end
