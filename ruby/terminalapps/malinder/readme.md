@@ -34,6 +34,9 @@ To share or distribute `malinder` logs, it is recommended to set up your sources
 
 ## Quickstart
 ```bash
+gem install ffi ruby-vips
+pacman -Syu libvips # or your distribution's way
+
 git clone https://github.com/madblobfish/lib ~/madblobfish-lib
 alias malinder="ruby ~/madblobfish-lib/ruby/games/malinder.rb"
 mkdir ~/.config/malinder/; cd ~/.config/malinder

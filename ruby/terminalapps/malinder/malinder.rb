@@ -414,6 +414,7 @@ if __FILE__ == $PROGRAM_NAME
 			}
 			puts '', "Choice: #{CHOICES[ARGV[1]][:choice] rescue '-'}"
 		else
+			require 'vips' rescue raise 'install ruby-vips gem'
 			MALinder.new(*ARGV).run()
 		end
 	else
