@@ -294,7 +294,7 @@ class MALinder < TerminalGame
 	def logchoice(choice)
 		anime = @season[@current]
 		return if CHOICES.has_key?(anime['id'].to_s)
-		which_season = anime['start_season'].fetch_values('season', 'year')
+		which_season = anime['start_season'].fetch_values('year', 'season')
 		LOG_FILE.write("#{anime['id']}\t#{which_season.join("\t")}\t#{choice}\t#{Time.now.to_i}\t#{anime['title']}\n")
 		@season.delete_at(@current)
 		exit() if @season.empty?
