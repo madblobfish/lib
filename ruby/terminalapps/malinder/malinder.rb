@@ -9,7 +9,7 @@ rescue LoadError
 	false
 end
 VIPS = require_optional('vips')
-require_optional(File.dirname(__FILE__) + '/../../stdlib/duration'){
+require_optional(__dir__ + '/../../stdlib/duration'){
 	class Duration
 		def initialize(secs)
 			@secs = secs
@@ -20,7 +20,7 @@ require_optional(File.dirname(__FILE__) + '/../../stdlib/duration'){
 		end
 	end
 }
-require_optional(File.dirname(__FILE__) + '/../lib/gamelib'){
+require_optional(__dir__ + '/../lib/gamelib'){
 	class TerminalGame
 		def run
 			raise 'missing ./lib/gamelib'
