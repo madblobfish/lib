@@ -35,7 +35,9 @@ def configurable_default(name, default)
 	Object.const_set(name, default) unless Object.const_defined?(name)
 end
 configurable_default(:API, 'https://api.myanimelist.net/v2/')
-configurable_default(:AUTOPULL, true)
+configurable_default(:AUTOPULL_WAIT, 600)
+sources_outdated = (Time.now - File.mtime("#{CONFIG_DIR}sources/.git/FETCH_HEAD")).to_f >= AUTOPULL_WAIT
+configurable_default(:AUTOPULL, AUTOPULL_WAIT == 0 ? true : sources_outdated)
 configurable_default(:CACHE_DIR, ENV.fetch('XDG_CACHE_HOME', ENV.fetch('HOME') + '/.cache') + '/malinder/')
 FileUtils.mkdir_p(CACHE_DIR + 'images/')
 configurable_default(:LOG_SUFFIX, '-' + ENV['USER'])
@@ -60,8 +62,8 @@ CHOICES = Hash[LOG_FILE.each_line.drop(1).map{|l| id, y, s, c, ts, name, c1, c2,
 MAL_PREFIX = 'https://myanimelist.net/anime/'
 
 def load_all_to_cache()
-	`cd #{CONFIG_DIR}sources/; git pull --ff-only` if AUTOPULL
-	Dir[CONFIG_DIR + 'sources/*'].each do |s|
+	system({'GIT_DIR'=> "#{CONFIG_DIR}sources/.git"}, 'git', 'fetch', exception: true) if AUTOPULL
+	Dir[CONFIG_DIR + 'sources/*'].map do |s|
 		JSON.parse(File.read(s))['data'].each do |v|
 			CACHE[v['node']['id']] ||= v['node']
 			CACHE_BY_RANK[v['node']['rank']] ||= v['node']['id']
@@ -289,7 +291,7 @@ if __FILE__ == $PROGRAM_NAME
 		puts '', 'nil/*', (bids - (aids & bids)).sort
 		puts '*/nil', (aids - (aids & bids)).sort
 	elsif ARGV.first == 'log' && ARGV.length == 3
-		ARGV.shift #throw away first argument
+		ARGV.shift # throw away first argument
 		load_all_to_cache
 		nime = begin
 			CACHE[Integer(ARGV.first, 10)]
@@ -343,7 +345,7 @@ if __FILE__ == $PROGRAM_NAME
 		end
 	elsif ARGV.first == 'query'
 		require_relative '../../stdlib/array/query'
-		ARGV.shift #throw away first argument
+		ARGV.shift # throw away first argument
 		load_all_to_cache
 		date = Time.now.to_i
 		x = CACHE.map do |k, v|
