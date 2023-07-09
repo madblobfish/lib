@@ -251,7 +251,7 @@ class MALinder < TerminalGame
 					title = cache.fetch('alternative_titles', {})['en'] rescue nil
 					title ||= cache['title']
 				end
-				[rel['relation'], id, choice, title].join("\t")
+				[MAL_PREFIX + id.to_s, choice, rel['relation'], title].join("\t")
 			end.join(separator)
 		end
 		if VIPS
