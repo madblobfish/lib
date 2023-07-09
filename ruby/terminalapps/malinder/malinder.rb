@@ -120,13 +120,10 @@ def fetch_related(id)
 	if File.exists?(cached_file)
 		related = File.read(cached_file)
 	else
-		raise "FETCHED!"
 		related = fetch("https://api.jikan.moe/v4/anime/#{id.to_i}/relations").body
 		File.write(cached_file, related)
 	end
 	JSON.parse(related).fetch('data')
-rescue
-	[]
 end
 # fetch(API + 'anime/30230')
 # fetch(j['main_picture']['large'])
