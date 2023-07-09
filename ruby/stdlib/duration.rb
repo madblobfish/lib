@@ -1,4 +1,5 @@
 class Duration
+  include Comparable
   private
   def self.gen_lambda(factor, max)
     reverse = lambda{|sec| sec * factor}
@@ -20,6 +21,9 @@ class Duration
   end
   def abs
     Duration.new(@sec.abs)
+  end
+  def <=>(other)
+    other <=> self.to_f
   end
   def to_i; @sec.to_i; end
   def to_f; @sec.to_f; end
