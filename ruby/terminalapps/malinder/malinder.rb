@@ -38,8 +38,14 @@ configurable_default(:API, 'https://api.myanimelist.net/v2/')
 configurable_default(:AUTOPULL_SOURCES_WAIT, 600)
 sources_outdated = (Time.now - File.mtime("#{CONFIG_DIR}sources/.git/FETCH_HEAD")).to_f >= AUTOPULL_SOURCES_WAIT
 configurable_default(:AUTOPULL_SOURCES, AUTOPULL_SOURCES_WAIT == 0 ? true : AUTOPULL_SOURCES_WAIT == -1 ? false : sources_outdated)
+configurable_default(:AUTOPULL_CONFIG_WAIT, 600)
+config_outdated = (Time.now - File.mtime("#{CONFIG_DIR}.git/FETCH_HEAD")).to_f >= AUTOPULL_CONFIG_WAIT
+configurable_default(:AUTOPULL_CONFIG, AUTOPULL_CONFIG_WAIT == 0 ? true : AUTOPULL_CONFIG_WAIT == -1 ? false : sources_outdated)
 configurable_default(:CACHE_DIR, ENV.fetch('XDG_CACHE_HOME', ENV.fetch('HOME') + '/.cache') + '/malinder/')
-FileUtils.mkdir_p(CACHE_DIR + 'images/')
+CACHE_DIR_IMAGES = CACHE_DIR + 'images/'
+CACHE_DIR_RELATIONS = CACHE_DIR + 'relations/'
+FileUtils.mkdir_p(CACHE_DIR_IMAGES)
+FileUtils.mkdir_p(CACHE_DIR_RELATIONS)
 configurable_default(:LOG_SUFFIX, '-' + ENV['USER'])
 configurable_default(:LOG_FILE_PATH, "#{CONFIG_DIR}choices#{LOG_SUFFIX}.log")
 configurable_default(:BAD_WORDS,
@@ -107,13 +113,28 @@ def fetch(url, **stuff)
 	raise "#{ret.code} - #{url}" if ret.code != '200'
 	return ret
 end
+def fetch_related(id)
+	return [] if id.to_s.start_with?('imdb,')
+	return [] if id.to_i == 0
+	cached_file = CACHE_DIR_RELATIONS + id.to_i.to_s + '.json'
+	if File.exists?(cached_file)
+		related = File.read(cached_file)
+	else
+		raise "FETCHED!"
+		related = fetch("https://api.jikan.moe/v4/anime/#{id.to_i}/relations").body
+		File.write(cached_file, related)
+	end
+	JSON.parse(related).fetch('data')
+rescue
+	[]
+end
 # fetch(API + 'anime/30230')
 # fetch(j['main_picture']['large'])
 
 def image(anime)
 	id = anime['id']
 	return IMAGE_CACHE[id] if IMAGE_CACHE.has_key?(id)
-	path = CACHE_DIR + 'images/' + id.to_i.to_s + '.png'
+	path = CACHE_DIR_IMAGES + id.to_i.to_s + '.png'
 	if File.exists?(path)
 		begin
 			IMAGE_CACHE[id] = Vips::Image.new_from_file(path)
@@ -218,6 +239,22 @@ class MALinder < TerminalGame
 			separator = "\n  "
 			paragraph += "\n\nOthers:" + separator
 			paragraph += others.map{|name, choices| "#{name}: #{choices[anime['id'].to_s][:choice]}" }.join(separator)
+		end
+		related = fetch_related(anime['id'])
+		if related.any?
+			separator = "\n  "
+			paragraph += "\n\nRelated:" + separator
+			paragraph += related.map do |rel|
+				id = rel['entry'].first['mal_id']
+				cache = CACHE[id]
+				choice = CHOICES.fetch(id.to_s, {}).fetch(:choice, '-')
+				title = rel['entry'].first['name']
+				if cache
+					title = cache.fetch('alternative_titles', {})['en'] rescue nil
+					title ||= cache['title']
+				end
+				[rel['relation'], id, choice, title].join("\t")
+			end.join(separator)
 		end
 		if VIPS
 			paragraph = break_lines(text_color_bad_words(paragraph), @cols/2+1)
