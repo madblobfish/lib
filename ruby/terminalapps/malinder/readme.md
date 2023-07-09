@@ -43,6 +43,7 @@ mkdir ~/.config/malinder/; cd ~/.config/malinder
 echo LOG_SUFFIX = "-$USER" > config.rb
 git init; git add .; git commit -m 'init'
 git clone git@server:malindersources sources # do this yourself lol
+malinder --help
 malinder search Black Jack | grep -P "\t-\t" | sed 's/\t-\t/\tnope\t/' >> ~/.config/malinder/choices-m.log
 malinder 2000 winter
 malinder stats

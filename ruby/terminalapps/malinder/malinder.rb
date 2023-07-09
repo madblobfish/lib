@@ -492,15 +492,17 @@ if __FILE__ == $PROGRAM_NAME
 		end
 	else
 		puts 'Commands:'
-		puts '  <year> <season>: run interactive malinder, decide what you want'
+		puts '  <year> <season>: run an interactive malinder Terminal UI, decide what you want'
 		puts '    season is one of: winter, spring, summer, fall'
 		puts '    controls: arrow keys, q to quit, 1 for nope, 2/a is ok, 3/y is want'
 		puts ''
 		puts '  stats: get some statistics'
+		puts '    --by-season provide some stats by season'
 		puts '  show <id>: lookup an entry from cache'
 		puts '  search <search> [string] ...: fuzzy search on names in the cache'
 		puts '  query <querysyntax>: search cache using expressions'
 		puts '    e.g.: (state == seen && year < 1992) || title has Gintama && genres all action,time_travel'
+		puts '    --show makes it run the results in the interactive Terminal UI'
 		puts '  log <id/search> <status>: change the status of an anime'
 		puts '    this adds the episode count if status is just seen'
 		puts '    this command rewrites the entire log file!'
