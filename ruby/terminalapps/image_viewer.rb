@@ -1,5 +1,6 @@
 require_relative 'lib/gamelib'
 require 'vips' rescue raise 'run "gem install ruby-vips", also install libjxl, libjxl-threads?, libvips, libopenslide'
+Vips.cache_set_max_mem(1024*1024*1024)
 require 'open3'
 
 class ImageViewer < TerminalGame
