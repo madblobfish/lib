@@ -77,6 +77,7 @@ CHOICES_OTHERS = {}
 	CHOICES_OTHERS[name] = parse_choices(File.open(path))
 end
 MAL_PREFIX = 'https://myanimelist.net/anime/'
+MAL_MANGA_PREFIX = 'https://myanimelist.net/manga/'
 
 def load_all_to_cache()
 	system({'GIT_DIR'=> "#{CONFIG_DIR}sources/.git"}, 'git', 'fetch', exception: true) if AUTOPULL_SOURCES
@@ -251,7 +252,9 @@ class MALinder < TerminalGame
 					title = cache.fetch('alternative_titles', {})['en'] rescue nil
 					title ||= cache['title']
 				end
-				[MAL_PREFIX + id.to_s, choice, rel['relation'], title].join("\t")
+				url_prefix = MAL_PREFIX
+				url_prefix = MAL_MANGA_PREFIX if rel['entry'].first['type'] == 'manga'
+				[url_prefix + id.to_s, choice, rel['relation'], title].join("\t")
 			end.join(separator)
 		end
 		if VIPS
