@@ -140,21 +140,27 @@ class MALinder < TerminalGame
 	def inspect #reduce size of errors
 		'#<MALinder>'
 	end
-	def initialize(year, season)
+	def initialize(year_or_ids, season=false)
 		@fps = :manual
 		@require_kitty_graphics = true
 #		@show_overflow = true
 
-		season = season_shortcuts(season)
-		year = Integer(year, 10) # raise if year is not an integer
-		@which_season = [year, season]
-		season_file = "#{CONFIG_DIR}sources/#{year}-#{season}.json"
-		raise 'missing json, run malinder.sh first' unless File.exists?(season_file)
-		@season = JSON.parse(File.read(season_file))['data'].map{|v|v['node']}
-		@season.reject!{|a| CHOICES.has_key?(a['id'].to_s)}
-		@season.reject!{|a| a['media_type'] == 'music'}
-		@season.select!{|a| a['start_season']['year'] == year}
-#		@season.select!{|a| a['nsfw'] == 'white'}
+		if year_or_ids.is_a?(Array)
+			load_all_to_cache()
+			@season = CACHE.fetch_values(*year_or_ids)
+		else
+			year = year_or_ids
+			raise "season not given" if season == false
+			season = season_shortcuts(season)
+			year = Integer(year, 10) # raise if year is not an integer
+			season_file = "#{CONFIG_DIR}sources/#{year}-#{season}.json"
+			raise 'missing json, run malinder.sh first' unless File.exists?(season_file)
+			@season = JSON.parse(File.read(season_file))['data'].map{|v|v['node']}
+			@season.reject!{|a| CHOICES.has_key?(a['id'].to_s)}
+			@season.reject!{|a| a['media_type'] == 'music'}
+			@season.select!{|a| a['start_season']['year'] == year}
+			# @season.select!{|a| a['nsfw'] == 'white'}
+		end
 		raise 'empty (all marked or nothing here)' if @season.empty?
 		@current = 0
 	end
@@ -234,7 +240,9 @@ class MALinder < TerminalGame
 
 	def logchoice(choice)
 		anime = @season[@current]
-		LOG_FILE.write("#{anime['id']}\t#{@which_season.join("\t")}\t#{choice}\t#{Time.now.to_i}\t#{anime['title']}\n")
+		return if CHOICES.has_key?(anime['id'].to_s)
+		which_season = anime['start_season'].fetch_values('season', 'year').to_s
+		LOG_FILE.write("#{anime['id']}\t#{which_season.join("\t")}\t#{choice}\t#{Time.now.to_i}\t#{anime['title']}\n")
 		@season.delete_at(@current)
 		exit() if @season.empty?
 		@current %= @season.size
@@ -350,6 +358,7 @@ if __FILE__ == $PROGRAM_NAME
 	elsif ARGV.first == 'query'
 		require_relative '../../stdlib/array/query'
 		ARGV.shift # throw away first argument
+		show = ARGV.delete('--show')
 		load_all_to_cache
 		date = Time.now.to_i
 		x = CACHE.map do |k, v|
@@ -363,9 +372,13 @@ if __FILE__ == $PROGRAM_NAME
 			v['names'] = [v['title'], *v['alternative_titles']&.values.flatten]
 			v
 		end
-		puts x.query(ARGV.join(' ')).map{|nime|
-			nime.fetch_values('id', 'year', 'season', 'state', 'timestamp', 'title', 'c1').compact
-		}.sort_by(&:first).map{|a| a.join("\t")}
+		if show
+			MALinder.new(x.query(ARGV.join(' ')).map{|a|a["id"]}).run()
+		else
+			puts x.query(ARGV.join(' ')).map{|nime|
+				nime.fetch_values('id', 'year', 'season', 'state', 'timestamp', 'title', 'c1').compact
+			}.sort_by(&:first).map{|a| a.join("\t")}
+		end
 	elsif ARGV.first == 'stats'
 		load_all_to_cache
 		time_chosen_sum = 0
