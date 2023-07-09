@@ -376,7 +376,7 @@ if __FILE__ == $PROGRAM_NAME
 			raise 'log episode higher than number of episodes'
 		elsif nime['num_episodes'].to_s == log_value.split(',',2).last || log_value == 'seen'
 			log_value = 'seen,' + nime['num_episodes'].to_s
-			puts "was actually seen, I fixed that for you ;)" unless log_value == 'seen'
+			puts "was actually '#{log_value}', I fixed that for you ;)" unless log_value == 'seen'
 		end
 		found = false
 		headers = File.readlines(LOG_FILE).first.split("\t")
@@ -385,6 +385,10 @@ if __FILE__ == $PROGRAM_NAME
 				raise 'found anime twice!' if found
 				found = true
 				e = e.split("\t")
+				if e[3] == log_value
+					puts "already the state"
+					exit 0
+				end
 				e[3] = log_value
 				e.join("\t")
 			else
