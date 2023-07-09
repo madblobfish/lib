@@ -231,7 +231,7 @@ class MALinder < TerminalGame
 		paragraph += "\nStart: #{anime['start_date']}" if anime['start_date']
 		paragraph += "\nEpisodes: #{anime['num_episodes']}" if anime['num_episodes'] and anime['num_episodes'] != 0
 		paragraph += "\nDuration: #{Duration.new(anime['average_episode_duration']).to_s}" if anime['average_episode_duration']
-		paragraph += "\nGenres: #{anime['genres'].map{|x|x['name']}.join(', ')}" if anime['genres']
+		paragraph += "\nGenres: #{anime['genres'].map{|x|x.is_a?(Hash) ? x['name'] : x}.join(', ')}" if anime['genres']
 		paragraph += "\n\nLink: #{MAL_PREFIX}#{anime['id']}"
 		paragraph += "\n\nCHOICE: #{CHOICES[anime['id'].to_s][:choice]}" if CHOICES.has_key?(anime['id'].to_s)
 		others = CHOICES_OTHERS.select{|name, choices| choices.has_key?(anime['id'].to_s)}
