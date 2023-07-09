@@ -1,6 +1,15 @@
 require_relative 'malinder.rb'
 require 'csv'
 
+if ARGV.include?('--help')
+  puts 'give me files to merge and cleanup, the configured logfile is always input'
+  puts 'inputs can be relative paths to the config directory'
+  puts 'Tipp: write stdout somewhere else, only then override after checking the diff or so'
+  puts '--json output json instead'
+  puts '--help print this'
+  exit 0
+end
+
 OUTPUT_JSON = ARGV.delete('--json')
 
 CSV_OPTS = {
