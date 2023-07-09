@@ -35,9 +35,9 @@ def configurable_default(name, default)
 	Object.const_set(name, default) unless Object.const_defined?(name)
 end
 configurable_default(:API, 'https://api.myanimelist.net/v2/')
-configurable_default(:AUTOPULL_WAIT, 600)
-sources_outdated = (Time.now - File.mtime("#{CONFIG_DIR}sources/.git/FETCH_HEAD")).to_f >= AUTOPULL_WAIT
-configurable_default(:AUTOPULL, AUTOPULL_WAIT == 0 ? true : sources_outdated)
+configurable_default(:AUTOPULL_SOURCES_WAIT, 600)
+sources_outdated = (Time.now - File.mtime("#{CONFIG_DIR}sources/.git/FETCH_HEAD")).to_f >= AUTOPULL_SOURCES_WAIT
+configurable_default(:AUTOPULL_SOURCES, AUTOPULL_SOURCES_WAIT == 0 ? true : AUTOPULL_SOURCES_WAIT == -1 ? false : sources_outdated)
 configurable_default(:CACHE_DIR, ENV.fetch('XDG_CACHE_HOME', ENV.fetch('HOME') + '/.cache') + '/malinder/')
 FileUtils.mkdir_p(CACHE_DIR + 'images/')
 configurable_default(:LOG_SUFFIX, '-' + ENV['USER'])
@@ -62,7 +62,7 @@ CHOICES = Hash[LOG_FILE.each_line.drop(1).map{|l| id, y, s, c, ts, name, c1, c2,
 MAL_PREFIX = 'https://myanimelist.net/anime/'
 
 def load_all_to_cache()
-	system({'GIT_DIR'=> "#{CONFIG_DIR}sources/.git"}, 'git', 'fetch', exception: true) if AUTOPULL
+	system({'GIT_DIR'=> "#{CONFIG_DIR}sources/.git"}, 'git', 'fetch', exception: true) if AUTOPULL_SOURCES
 	Dir[CONFIG_DIR + 'sources/*'].map do |s|
 		JSON.parse(File.read(s))['data'].each do |v|
 			CACHE[v['node']['id']] ||= v['node']
