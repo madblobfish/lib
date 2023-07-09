@@ -58,7 +58,18 @@ CACHE_BY_RANK = {}
 IMAGE_CACHE = {}
 LOG_FILE = File.open(LOG_FILE_PATH, 'a+')
 LOG_FILE.sync = true
-CHOICES = Hash[LOG_FILE.each_line.drop(1).map{|l| id, y, s, c, ts, name, c1, c2, c3 = l.split("\t"); [id, {choice:c, ts: ts, c1: c1, c2: c2, c3: c3}]}]
+def parse_choices(file)
+	Hash[file.each_line.drop(1).map do |l|
+		id, y, s, c, ts, name, c1, c2, c3 = l.split("\t")
+		[id, {choice:c, ts: ts, c1: c1, c2: c2, c3: c3}]
+	end]
+end
+CHOICES = parse_choices(LOG_FILE)
+CHOICES_OTHERS = {}
+(Dir["#{CONFIG_DIR}choices*.log"] - [LOG_FILE_PATH]).map do |path|
+	name = path.delete_prefix(CONFIG_DIR + 'choices').delete_prefix('-').delete_suffix('.log')
+	CHOICES_OTHERS[name] = parse_choices(File.open(path))
+end
 MAL_PREFIX = 'https://myanimelist.net/anime/'
 
 def load_all_to_cache()
@@ -201,6 +212,13 @@ class MALinder < TerminalGame
 		paragraph += "\nDuration: #{Duration.new(anime['average_episode_duration']).to_s}" if anime['average_episode_duration']
 		paragraph += "\nGenres: #{anime['genres'].map{|x|x['name']}.join(', ')}" if anime['genres']
 		paragraph += "\n\nLink: #{MAL_PREFIX}#{anime['id']}"
+		paragraph += "\n\nCHOICE: #{CHOICES[anime['id'].to_s][:choice]}" if CHOICES.has_key?(anime['id'].to_s)
+		others = CHOICES_OTHERS.select{|name, choices| choices.has_key?(anime['id'].to_s)}
+		if others.any?
+			separator = "\n  "
+			paragraph += "\n\nOthers:" + separator
+			paragraph += others.map{|name, choices| "#{name}: #{choices[anime['id'].to_s][:choice]}" }.join(separator)
+		end
 		if VIPS
 			paragraph = break_lines(text_color_bad_words(paragraph), @cols/2+1)
 		else
