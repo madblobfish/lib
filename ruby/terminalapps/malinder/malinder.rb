@@ -195,7 +195,11 @@ class MALinder < TerminalGame
 		paragraph += "\nDuration: #{Duration.new(anime['average_episode_duration']).to_s}" if anime['average_episode_duration']
 		paragraph += "\nGenres: #{anime['genres'].map{|x|x['name']}.join(', ')}" if anime['genres']
 		paragraph += "\n\nLink: #{MAL_PREFIX}#{anime['id']}"
-		paragraph = break_lines(text_color_bad_words(paragraph), @cols/2+1)
+		if VIPS
+			paragraph = break_lines(text_color_bad_words(paragraph), @cols/2+1)
+		else
+			paragraph += "\n\n\nNote: ruby-vips not installed => graphics are not displayed"
+		end
 		print(paragraph.gsub(/\n(\s*\n)+/, "\n\n").gsub(/\n/, "\r\n"))
 		move_cursor(0,0)
 		if VIPS
@@ -416,7 +420,6 @@ if __FILE__ == $PROGRAM_NAME
 			}
 			puts '', "Choice: #{CHOICES[ARGV[1]][:choice] rescue '-'}"
 		else
-			require 'vips' rescue raise 'install ruby-vips gem'
 			MALinder.new(*ARGV).run()
 		end
 	else
