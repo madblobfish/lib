@@ -40,13 +40,15 @@ pacman -Syu libvips # or your distribution's way
 git clone https://github.com/madblobfish/lib ~/madblobfish-lib
 alias malinder="ruby ~/madblobfish-lib/ruby/games/malinder.rb"
 mkdir ~/.config/malinder/; cd ~/.config/malinder
-echo LOG_SUFFIX = "-$USER" > config.rb
+#echo LOG_SUFFIX = "-$USER" > config.rb # thats the default
 git init; git add .; git commit -m 'init'
 git clone git@server:malindersources sources # do this yourself lol
 malinder --help
-malinder search Black Jack | grep -P "\t-\t" | sed 's/\t-\t/\tnope\t/' >> ~/.config/malinder/choices-m.log
+malinder search Black Jack | grep -P "\t-\t" | sed 's/\t-\t/\tnope\t/' >> ~/.config/malinder/choices-my.log
+sed -re 's/\tnope\t/\tokay\t' ~/.config/malinder/choices-my.log > ~/.config/malinder/choices-relative.log
 malinder 2000 winter
 malinder stats
 ruby ~/madblobfish-lib/ruby/games/malinder-db-pfusch.rb choices-relative.txt ~/.config/malinder/sharedfile.txt > /tmp/choices-my.log
 cp /tmp/choices-my.log ~/.config/malinder/choices-$USER.log
+malinder results choices-relative.log
 ```

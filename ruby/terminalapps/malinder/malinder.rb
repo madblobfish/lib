@@ -418,7 +418,7 @@ if __FILE__ == $PROGRAM_NAME
 	elsif ARGV.first == 'query'
 		require_relative '../../stdlib/array/query'
 		ARGV.shift # throw away first argument
-		show = ARGV.delete('--show')
+		interactive = ARGV.delete('--interactive') || ARGV.delete('-i')
 		load_all_to_cache
 		date = Time.now.to_i
 		x = CACHE.map do |k, v|
@@ -432,7 +432,7 @@ if __FILE__ == $PROGRAM_NAME
 			v['names'] = [v['title'], *v['alternative_titles']&.values.flatten]
 			v
 		end
-		if show
+		if interactive
 			MALinder.new(x.query(ARGV.join(' ')).map{|a|a["id"]}).run()
 		else
 			puts x.query(ARGV.join(' ')).map{|nime|
@@ -481,9 +481,13 @@ if __FILE__ == $PROGRAM_NAME
 				]
 			end
 		end
-	elsif ARGV.length == 2
-		if ARGV.first == 'show'
-			load_all_to_cache
+	elsif ARGV.first == 'show'
+		load_all_to_cache
+		interactive = ARGV.delete('--interactive') || ARGV.delete('-i') 
+		anime = CACHE.fetch(ARGV[1].to_i)
+		if interactive
+			MALinder.new([ARGV[1].to_i]).run
+		else
 			puts CACHE.fetch(ARGV[1].to_i).sort.map{|(k,v)|
 				if k == 'genres'
 					[k,v.map{|k|k['name']}.sort.join(', ')].join(":\t")
@@ -492,9 +496,9 @@ if __FILE__ == $PROGRAM_NAME
 				end
 			}
 			puts '', "Choice: #{CHOICES[ARGV[1]][:choice] rescue '-'}"
-		else
-			MALinder.new(*ARGV).run()
 		end
+	elsif ARGV.length == 2
+		MALinder.new(*ARGV).run()
 	else
 		puts 'Commands:'
 		puts '  <year> <season>: run an interactive malinder Terminal UI, decide what you want'
@@ -507,11 +511,13 @@ if __FILE__ == $PROGRAM_NAME
 		puts '  search <search> [string] ...: fuzzy search on names in the cache'
 		puts '  query <querysyntax>: search cache using expressions'
 		puts '    e.g.: (state == seen && year < 1992) || title has Gintama && genres all action,time_travel'
-		puts '    --show makes it run the results in the interactive Terminal UI'
+		puts '    -i,--interactive makes it run the results in the interactive Terminal UI'
 		puts '  log <id/search> <status>: change the status of an anime'
 		puts '    this adds the episode count if status is just seen'
 		puts '    this command rewrites the entire log file!'
 		puts '  results [a_log] <b_log> [year season]: find out common wants'
 		puts '    limits by season and year if given'
+		puts ''
+		puts '  -i,--interactive may make it show results in the interactive Terminal UI'
 	end
 end
