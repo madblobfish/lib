@@ -368,12 +368,18 @@ if __FILE__ == $PROGRAM_NAME
 			raise 'not unique or not found, test with "search" first' unless res.one?
 			res.first.last
 		end
+		if nime.nil?
+			nime = {
+				'id': Integer(ARGV.first, 10),
+				'start_season' => {'year'=>'', 'season'=>''}
+			}
+		end
 		log_value = if (Integer(ARGV.last, 10) rescue false)
 			'partly,' + ARGV.last
 		else
 			ARGV.last
 		end
-		if nime['num_episodes'] < log_value.split(',',2).last.to_i
+		if nime['num_episodes'].to_i < log_value.split(',',2).last.to_i
 			raise 'log episode higher than number of episodes'
 		elsif nime['num_episodes'].to_s == log_value.split(',',2).last || log_value == 'seen'
 			log_value = 'seen,' + nime['num_episodes'].to_s
