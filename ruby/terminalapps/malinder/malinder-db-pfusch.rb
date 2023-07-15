@@ -6,11 +6,13 @@ if ARGV.include?('--help')
   puts 'inputs can be relative paths to the config directory'
   puts 'Tipp: write stdout somewhere else, only then override after checking the diff or so'
   puts '--json output json instead'
+  puts '--inplace override the choices file'
   puts '--help print this'
   exit 0
 end
 
 OUTPUT_JSON = ARGV.delete('--json')
+INPLACE = ARGV.delete('--inplace')
 
 CSV_OPTS = {
   col_sep: "\t",
@@ -145,7 +147,11 @@ end
 unless OUTPUT_JSON
   out = "id\tyear\tseason\tstate\tts\tname\tc1\tc2\tc3\n"
   out += CSV.generate(col_sep: "\t"){|o| csv.each{|r| o << r}}
-  puts out
+  if INPLACE
+    File.write(LOG_FILE_PATH, out)
+  else
+    puts out
+  end
 else
   require 'json'
   configurable_default(:JSON_IGNORE, [])
