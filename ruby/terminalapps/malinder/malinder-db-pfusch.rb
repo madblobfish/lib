@@ -6,13 +6,15 @@ if ARGV.include?('--help')
   puts 'inputs can be relative paths to the config directory'
   puts 'Tipp: write stdout somewhere else, only then override after checking the diff or so'
   puts '--json output json instead'
-  puts '--inplace override the choices file'
+  puts '--inplace override the choices file, only for non json'
+  puts '-v be more loud'
   puts '--help print this'
   exit 0
 end
 
 OUTPUT_JSON = ARGV.delete('--json')
 INPLACE = ARGV.delete('--inplace')
+VERBOSE = ARGV.delete('-v')
 
 CSV_OPTS = {
   col_sep: "\t",
@@ -23,7 +25,7 @@ def parse_csv(f)
   f = CONFIG_DIR + f unless File.exists?(f) # allow relative paths
   header = File.new(f).readline
   if header.start_with?("id\t", "seencount(state)\t")
-    STDERR.puts("reading with headers: #{f}")
+    STDERR.puts("reading with headers: #{f}") if VERBOSE
     (CSV.read(f, **CSV_OPTS, headers: true).map do |r|
       h = r.to_h
       id = h.fetch('id')&.to_s&.split('/')&.last&.to_i
@@ -44,7 +46,7 @@ def parse_csv(f)
       a.reverse.drop_while(&:nil?).reverse
     end.compact)
   else
-    STDERR.puts("reading: #{f}")
+    STDERR.puts("reading: #{f}") if VERBOSE
     CSV.read(f, **CSV_OPTS)
   end
 end
@@ -120,8 +122,8 @@ csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|
   elsif stages.count > 1 || seencount.count > 1
     #STDERR.puts(c.inspect)
     stays = seencount.max.last.group_by{|c|STATE_LEVEL.fetch(c[3].split(',').first)}.max.last
-    STDERR.puts('removing lines due to more progressed stuff: ' + (c - stays).inspect)
-    STDERR.puts('stays: ' + stays.inspect)
+    STDERR.puts('removing lines due to more progressed stuff: ' + (c - stays).inspect) if VERBOSE
+    STDERR.puts('stays: ' + stays.inspect) if VERBOSE
     csv -= c - stays
 #  elsif c.map{|e| e[3]}.all?{|s| s.start_with?('broken')}
 #    STDERR.puts(c.inspect)
@@ -147,6 +149,11 @@ end
 unless OUTPUT_JSON
   out = "id\tyear\tseason\tstate\tts\tname\tc1\tc2\tc3\n"
   out += CSV.generate(col_sep: "\t"){|o| csv.each{|r| o << r}}
+  if File.read(LOG_FILE_PATH) == out
+    STDERR.puts('', 'files do not diff :)')
+  else
+    STDERR.puts('', 'TOOL IS maybe still UnSaVE! diff the result to check or accept to loose some things!')
+  end
   if INPLACE
     File.write(LOG_FILE_PATH, out)
   else
@@ -171,10 +178,4 @@ else
     end
     r
   end.compact)
-end
-
-if File.read(LOG_FILE_PATH) == out
-  STDERR.puts('', 'files do not diff :)')
-else
-  STDERR.puts('', 'TOOL IS maybe still UnSaVE! diff the result to check or accept to loose some things!')
 end
