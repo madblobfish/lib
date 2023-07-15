@@ -20,7 +20,7 @@ CSV_OPTS = {
 }
 CSV_OPTS[:skip_lines] = /^(#|$)/ unless RUBY_VERSION.start_with?('2.')
 def parse_csv(f)
-  f = CACHE_DIR + f unless File.exists?(f) # allow relative paths
+  f = CONFIG_DIR + f unless File.exists?(f) # allow relative paths
   header = File.new(f).readline
   if header.start_with?("id\t", "seencount(state)\t")
     STDERR.puts("reading with headers: #{f}")
