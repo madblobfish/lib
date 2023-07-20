@@ -43,7 +43,7 @@ if __FILE__ == $PROGRAM_NAME
 		[a,b].map{|x|x.default = []}
 
 		puts 'want:', (a['want'] & b['want']).sort
-		puts 'want/ok:', ((a['okay'] & b['want']) + (a['want'] & b['okay'])).sort
+		puts 'want/ok & ok/want:', ((a['okay'] & b['want']) + (a['want'] & b['okay'])).sort
 		puts 'okay:', (a['okay'] & b['okay']).sort
 		puts 'nope/want:', (a['nope'] & b['want']).sort
 		puts 'want/nope:', (a['want'] & b['nope']).sort
@@ -177,21 +177,22 @@ if __FILE__ == $PROGRAM_NAME
 	else
 		puts 'Commands:'
 		puts '  <year> <season>: run an interactive malinder Terminal UI, decide what you want'
-		puts '    season is one of: winter, spring, summer, fall'
-		puts '    controls: arrow keys, q to quit, 1 for nope, 2/a is ok, 3/y is want'
+		puts '      season is one of: winter, spring, summer, fall'
+		puts '      controls: arrow keys, q to quit, 1 for nope, 2/a is ok, 3/y is want'
 		puts ''
-		puts '  stats: get some statistics'
-		puts '    --by-season provide some stats by season'
+		puts '  stats [--by-season]: get some statistics'
 		puts '  show <id>: lookup an entry from cache'
-		puts '  search <search> [string] ...: fuzzy search on names in the cache'
+		puts '  search <name>: fuzzy search on "names" in the cache'
 		puts '  query <querysyntax>: search cache using expressions'
-		puts '    e.g.: (state == seen && year < 1992) || title has Gintama && genres all action,time_travel'
-		puts '    -i,--interactive makes it run the results in the interactive Terminal UI'
+		puts '      e.g.: (state == seen && year < 1992) || title has Gintama && genres all action,time_travel'
 		puts '  log <id/search> <status>: change the status of an anime'
-		puts '    this adds the episode count if status is just seen'
-		puts '    this command rewrites the entire log file!'
-		puts '  results [a_log] <b_log> [year season]: find out common wants'
-		puts '    limits by season and year if given'
+		puts '      adds the episode count if status is just seen'
+		puts '      adds "partial," if status is a number'
+		puts '      rewrites the entire log file!'
+		puts '  results [a_log] <b_log> [year season|querysyntax]: find out common wants'
+		puts '      limits by year and season if given'
+		puts '      e.g.: someguy.log 2013 summer'
+		puts '      e.g.: /tmp/some.log "(year <= 2019) && type != movie"'
 		puts ''
 		puts '  -i,--interactive may make it show results in the interactive Terminal UI'
 	end
