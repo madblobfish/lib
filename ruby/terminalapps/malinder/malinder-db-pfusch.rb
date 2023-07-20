@@ -1,4 +1,4 @@
-require_relative 'malinder.rb'
+require_relative 'malinder-base.rb'
 require 'csv'
 
 if ARGV.include?('--help')
