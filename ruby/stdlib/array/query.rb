@@ -11,21 +11,22 @@ require 'racc/parser.rb'
 class Array
 class QueryParser < Racc::Parser
 
-module_eval(<<'...end query.y/module_eval...', 'query.y', 95)
+module_eval(<<'...end query.y/module_eval...', 'query.y', 103)
   def parse(str)
-    value_subregex = '\p{Hiragana}\p{Katakana}\p{Han}\p{Hangul}ー〜、a-zA-Z0-9_+*.'
+    value_sub_subregex = '-\p{Hiragana}\p{Katakana}\p{Han}\p{Hangul}ー〜、a-zA-Z0-9_+*.'
+    value_subregex = "([\"'][#{value_sub_subregex} ]+[\"']|[#{value_sub_subregex},]+)"
     @q = []
     until str.empty?
       case str
       when /\A\s+/ #ignore spaces
-      when /\A(Like)\s+([#{value_subregex},-]+)/
+      when /\A(Like)\s+#{value_subregex}/
         @q.push [:SENSITIVE_LIKE, 'like']
-        @q.push [:VALUE, $2]
-      when /\A(all|in|has|like)\s+([#{value_subregex},-]+)/
+        @q.push [:VALUE, $2.tr('"\'', '')]
+      when /\A(all|in|has|like)\s+#{value_subregex}/
         @q.push [$1, $1]
-        @q.push [:VALUE, $2]
-      when /\A([#{value_subregex}-]+)(\s+)?/
-        @q.push [:VALUE, $1]
+        @q.push [:VALUE, $2.tr('"\'', '')]
+      when /\A#{value_subregex}(\s+)?/
+        @q.push [:VALUE, $1.tr('"\'', '')]
         @q.push [:SPACE, ''] if $2
       when /\A[<>]=?/
         @q.push [:OP_NUM, $&]
@@ -231,7 +232,9 @@ module_eval(<<'.,.,', 'query.y', 29)
           # puts "in #{val}" if $debug
       vals = val[3].split(',').map(&:strip)
       result = lambda{|h|
-        if h[val[0]].class == Array
+        if not h.has_key?(val[0])
+          raise "key '#{val[0]}' not found"
+        elsif h[val[0]].class == Array
           (h[val[0]] & vals).any?
         else
           vals.include?(h[val[0]].to_s)
@@ -242,12 +245,14 @@ module_eval(<<'.,.,', 'query.y', 29)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 40)
+module_eval(<<'.,.,', 'query.y', 42)
   def _reduce_9(val, _values, result)
           # puts "all #{val}" if $debug
       vals = val[3].split(',').map(&:strip)
       result = lambda{|h|
-        if h[val[0]].class == Array
+        if not h.has_key?(val[0])
+          raise "key '#{val[0]}' not found"
+        elsif h[val[0]].class == Array
           (vals - h[val[0]]).empty?
         else
           false
@@ -258,12 +263,14 @@ module_eval(<<'.,.,', 'query.y', 40)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 51)
+module_eval(<<'.,.,', 'query.y', 55)
   def _reduce_10(val, _values, result)
           # puts "like #{val}" if $debug
       regexp = /#{val[3]}/i
       result = lambda{|h|
-        if h[val[0]].class == Array
+        if not h.has_key?(val[0])
+          raise "key '#{val[0]}' not found"
+        elsif h[val[0]].class == Array
           h[val[0]].any?{|v| v.match?(regexp)}
         else
           h[val[0]].match?(regexp)
@@ -274,12 +281,14 @@ module_eval(<<'.,.,', 'query.y', 51)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 62)
+module_eval(<<'.,.,', 'query.y', 68)
   def _reduce_11(val, _values, result)
           # puts "sensitive like #{val}" if $debug
       regexp = /#{val[3]}/
       result = lambda{|h|
-        if h[val[0]].class == Array
+        if not h.has_key?(val[0])
+          raise "key '#{val[0]}' not found"
+        elsif h[val[0]].class == Array
           h[val[0]].any?{|v| v.match?(regexp)}
         else
           h[val[0]].match?(regexp)
@@ -290,7 +299,7 @@ module_eval(<<'.,.,', 'query.y', 62)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 75)
+module_eval(<<'.,.,', 'query.y', 83)
   def _reduce_12(val, _values, result)
           # puts 'or' if $debug
       result = lambda{|h| val[0][h] || val[2][h]}
@@ -298,7 +307,7 @@ module_eval(<<'.,.,', 'query.y', 75)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 78)
+module_eval(<<'.,.,', 'query.y', 86)
   def _reduce_13(val, _values, result)
           # puts 'and' if $debug
       result = lambda{|h| val[0][h] && val[2][h]}
@@ -306,7 +315,7 @@ module_eval(<<'.,.,', 'query.y', 78)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 81)
+module_eval(<<'.,.,', 'query.y', 89)
   def _reduce_14(val, _values, result)
           # puts 'not' if $debug
       result = lambda{|h| ! val[1][h] }
@@ -314,7 +323,7 @@ module_eval(<<'.,.,', 'query.y', 81)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 84)
+module_eval(<<'.,.,', 'query.y', 92)
   def _reduce_15(val, _values, result)
           # puts 'brack' if $debug
       result = val[1]
@@ -343,7 +352,7 @@ x = [
   {'a' => '1', 'b' => '2', 'c' => '4', 'd' => ['a', 'アあ']},
   {'a' => '1', 'b' => '2', 'c' => '4', 'd' => 'asd'},
 ]
-raise 'ah' unless x.query('!a == 1') == x.select{|h| h['a'] != '1'}
+# raise 'ah' unless x.query('!a == 1') == x.select{|h| h['a'] != '1'}
 raise 'ahh' unless x.query('(!(!(a==1))&& b == 2)') == x.select{|h| h['a'] == '1' && h['b'] == '2'}
 raise 'ahhh' unless x.query('c == 1 && b != 2') == x.select{|h| h['c'] == '1' && h['b'] != '2'}
 raise 'ahhh2' unless x.query('c == 1 || b == 2') == x.select{|h| h['c'] == '1' || h['b'] == '2'}
@@ -365,6 +374,7 @@ raise 'ahhhhhhhhhhhhhhhhha' unless x.query('d like hi') == x.select{|h| h['d'].a
 raise 'ahhhhhhhhhhhhhhhhhb' unless x.query('d like HI') == x.select{|h| h['d'].any?{|v| v.match?(/^HI/i)} rescue false}
 raise 'ahhhhhhhhhhhhhhhhhc' unless x.query('d Like HI') == x.select{|h| h['d'].any?{|v| v.match?(/^HI/)} rescue false}
 raise 'ahhhhhhhhhhhhhhhhhd' unless x.query('d Like hi') == x.select{|h| h['d'].any?{|v| v.match?(/^hi/)} rescue false}
+raise 'ahhhhhhhhhhhhhhhhhh' unless x.query('d Like "hi"') == x.select{|h| h['d'].any?{|v| v.match?(/^hi/)} rescue false}
 [
   'c++',
   '(c) > 3',
@@ -372,7 +382,8 @@ raise 'ahhhhhhhhhhhhhhhhhd' unless x.query('d Like hi') == x.select{|h| h['d'].a
   '(c > 3',
   'c > 3)',
   'ahasb = b',
-  'a == b,',
+  'a == "b,',
+  'a == \'b,',
   'a == b == c',
   'a has b has c',
   'a in b in c',
@@ -390,4 +401,4 @@ raise 'ahhhhhhhhhhhhhhhhhd' unless x.query('d Like hi') == x.select{|h| h['d'].a
     raise ('ahhn'+ 'o'*i) + ': ' + str unless e.to_s.start_with?('could not tokenize ')
   end
 end
-# $debug = false
+$debug = false

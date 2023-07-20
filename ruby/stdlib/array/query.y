@@ -30,7 +30,9 @@ rule
       # puts "in #{val}" if $debug
       vals = val[3].split(',').map(&:strip)
       result = lambda{|h|
-        if h[val[0]].class == Array
+        if not h.has_key?(val[0])
+          raise "key '#{val[0]}' not found"
+        elsif h[val[0]].class == Array
           (h[val[0]] & vals).any?
         else
           vals.include?(h[val[0]].to_s)
@@ -41,7 +43,9 @@ rule
       # puts "all #{val}" if $debug
       vals = val[3].split(',').map(&:strip)
       result = lambda{|h|
-        if h[val[0]].class == Array
+        if not h.has_key?(val[0])
+          raise "key '#{val[0]}' not found"
+        elsif h[val[0]].class == Array
           (vals - h[val[0]]).empty?
         else
           false
@@ -52,7 +56,9 @@ rule
       # puts "like #{val}" if $debug
       regexp = /#{val[3]}/i
       result = lambda{|h|
-        if h[val[0]].class == Array
+        if not h.has_key?(val[0])
+          raise "key '#{val[0]}' not found"
+        elsif h[val[0]].class == Array
           h[val[0]].any?{|v| v.match?(regexp)}
         else
           h[val[0]].match?(regexp)
@@ -63,7 +69,9 @@ rule
       # puts "sensitive like #{val}" if $debug
       regexp = /#{val[3]}/
       result = lambda{|h|
-        if h[val[0]].class == Array
+        if not h.has_key?(val[0])
+          raise "key '#{val[0]}' not found"
+        elsif h[val[0]].class == Array
           h[val[0]].any?{|v| v.match?(regexp)}
         else
           h[val[0]].match?(regexp)
@@ -93,19 +101,20 @@ end
 class Array
 ---- inner
   def parse(str)
-    value_subregex = '\p{Hiragana}\p{Katakana}\p{Han}\p{Hangul}ー〜、a-zA-Z0-9_+*.'
+    value_sub_subregex = '-\p{Hiragana}\p{Katakana}\p{Han}\p{Hangul}ー〜、a-zA-Z0-9_+*.'
+    value_subregex = "([\"'][#{value_sub_subregex} ]+[\"']|[#{value_sub_subregex},]+)"
     @q = []
     until str.empty?
       case str
       when /\A\s+/ #ignore spaces
-      when /\A(Like)\s+([#{value_subregex},-]+)/
+      when /\A(Like)\s+#{value_subregex}/
         @q.push [:SENSITIVE_LIKE, 'like']
-        @q.push [:VALUE, $2]
-      when /\A(all|in|has|like)\s+([#{value_subregex},-]+)/
+        @q.push [:VALUE, $2.tr('"\'', '')]
+      when /\A(all|in|has|like)\s+#{value_subregex}/
         @q.push [$1, $1]
-        @q.push [:VALUE, $2]
-      when /\A([#{value_subregex}-]+)(\s+)?/
-        @q.push [:VALUE, $1]
+        @q.push [:VALUE, $2.tr('"\'', '')]
+      when /\A#{value_subregex}(\s+)?/
+        @q.push [:VALUE, $1.tr('"\'', '')]
         @q.push [:SPACE, ''] if $2
       when /\A[<>]=?/
         @q.push [:OP_NUM, $&]
@@ -161,6 +170,7 @@ raise 'ahhhhhhhhhhhhhhhhha' unless x.query('d like hi') == x.select{|h| h['d'].a
 raise 'ahhhhhhhhhhhhhhhhhb' unless x.query('d like HI') == x.select{|h| h['d'].any?{|v| v.match?(/^HI/i)} rescue false}
 raise 'ahhhhhhhhhhhhhhhhhc' unless x.query('d Like HI') == x.select{|h| h['d'].any?{|v| v.match?(/^HI/)} rescue false}
 raise 'ahhhhhhhhhhhhhhhhhd' unless x.query('d Like hi') == x.select{|h| h['d'].any?{|v| v.match?(/^hi/)} rescue false}
+raise 'ahhhhhhhhhhhhhhhhhh' unless x.query('d Like "hi"') == x.select{|h| h['d'].any?{|v| v.match?(/^hi/)} rescue false}
 [
   'c++',
   '(c) > 3',
@@ -168,7 +178,8 @@ raise 'ahhhhhhhhhhhhhhhhhd' unless x.query('d Like hi') == x.select{|h| h['d'].a
   '(c > 3',
   'c > 3)',
   'ahasb = b',
-  'a == b,',
+  'a == "b,',
+  'a == \'b,',
   'a == b == c',
   'a has b has c',
   'a in b in c',
