@@ -104,15 +104,15 @@ def season_shortcuts(input)
 	s
 end
 
-def cache_query(query, cache=nil, choices=CHOICES)
+def cache_query(query, cache=nil, choices=CHOICES, choices_others=CHOICES_OTHERS)
 	require_relative '../../stdlib/array/query'
 	if cache.nil?
 		load_all_to_cache()
 		cache = CACHE
 	end
-	cache_prepare_query(cache, choices).query(query)
+	cache_prepare_query(cache, choices, choices_others).query(query)
 end
-def cache_prepare_query(cache=nil, choices=CHOICES)
+def cache_prepare_query(cache=nil, choices=CHOICES, choices_others=CHOICES_OTHERS)
 	if cache.nil?
 		load_all_to_cache()
 		cache = CACHE
@@ -122,9 +122,10 @@ def cache_prepare_query(cache=nil, choices=CHOICES)
 		old = choices.fetch(v['id'].to_s, {})
 		v['state'] = old.fetch(:choice, '-')
 		v['choice'] = v['state'].split(',').first
-		CHOICES_OTHERS.each do |name, choices|
-			v['state-' + name] = choices.fetch(:choice, '-')
-			v['choice-' + name] = choices.fetch(:choice, '-').split(',').first
+		choices_others.each do |name, c|
+			choice = c.fetch(v['id'].to_s, {}).fetch(:choice, '-')
+			v['state-' + name] = choice
+			v['choice-' + name] = choice.split(',').first
 		end
 		v['timestamp'] = old.fetch(:ts, date)
 		v['c1'] = old.fetch(:c1, nil)
