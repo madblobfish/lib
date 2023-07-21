@@ -122,6 +122,10 @@ def cache_prepare_query(cache=nil, choices=CHOICES)
 		old = choices.fetch(v['id'].to_s, {})
 		v['state'] = old.fetch(:choice, '-')
 		v['choice'] = v['state'].split(',').first
+		CHOICES_OTHERS.each do |name, choices|
+			v['state-' + name] = choices.fetch(:choice, '-')
+			v['choice-' + name] = choices.fetch(:choice, '-').split(',').first
+		end
 		v['timestamp'] = old.fetch(:ts, date)
 		v['c1'] = old.fetch(:c1, nil)
 		v.merge!(v['start_season'])
