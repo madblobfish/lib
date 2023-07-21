@@ -122,7 +122,7 @@ class Array
         s = $&
         @q.push [s, s]
       else
-        raise "could not tokenize #{str}"
+        raise "could not tokenize '#{str}'"
       end
       str = $'
     end

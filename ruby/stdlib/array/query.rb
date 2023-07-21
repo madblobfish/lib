@@ -34,7 +34,7 @@ module_eval(<<'...end query.y/module_eval...', 'query.y', 103)
         s = $&
         @q.push [s, s]
       else
-        raise "could not tokenize #{str}"
+        raise "could not tokenize '#{str}'"
       end
       str = $'
     end
@@ -352,7 +352,7 @@ x = [
   {'a' => '1', 'b' => '2', 'c' => '4', 'd' => ['a', 'アあ']},
   {'a' => '1', 'b' => '2', 'c' => '4', 'd' => 'asd'},
 ]
-# raise 'ah' unless x.query('!a == 1') == x.select{|h| h['a'] != '1'}
+raise 'ah' unless x.query('!a == 1') == x.select{|h| h['a'] != '1'}
 raise 'ahh' unless x.query('(!(!(a==1))&& b == 2)') == x.select{|h| h['a'] == '1' && h['b'] == '2'}
 raise 'ahhh' unless x.query('c == 1 && b != 2') == x.select{|h| h['c'] == '1' && h['b'] != '2'}
 raise 'ahhh2' unless x.query('c == 1 || b == 2') == x.select{|h| h['c'] == '1' || h['b'] == '2'}
@@ -401,4 +401,4 @@ raise 'ahhhhhhhhhhhhhhhhhh' unless x.query('d Like "hi"') == x.select{|h| h['d']
     raise ('ahhn'+ 'o'*i) + ': ' + str unless e.to_s.start_with?('could not tokenize ')
   end
 end
-$debug = false
+# $debug = false
