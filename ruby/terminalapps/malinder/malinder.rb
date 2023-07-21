@@ -100,9 +100,9 @@ if __FILE__ == $PROGRAM_NAME
 			puts 'created new entry'
 		end
 	elsif ARGV.first == 'query' || (ARGV.first == 'search' && ARGV.length >= 2)
-		ARGV.shift # throw away first argument
+		mode = ARGV.shift # throw away first argument
 		interactive = ARGV.delete('--interactive') || ARGV.delete('-i')
-		if ARGV.first == 'search'
+		if mode == 'search'
 			res = cache_query("names like '#{ARGV.join(' ')}'")
 		else
 			res = cache_query(ARGV.join(' '))
