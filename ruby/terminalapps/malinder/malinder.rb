@@ -103,9 +103,9 @@ if __FILE__ == $PROGRAM_NAME
 		ARGV.shift # throw away first argument
 		interactive = ARGV.delete('--interactive') || ARGV.delete('-i')
 		if ARGV.first == 'search'
-			res = cache_query(ARGV.join(' '))
-		else
 			res = cache_query("names like '#{ARGV.join(' ')}'")
+		else
+			res = cache_query(ARGV.join(' '))
 		end
 		if interactive
 			MALinder.new(res.map{|a|a["id"]}.sort()).run()
