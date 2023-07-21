@@ -29,10 +29,10 @@ def configurable_default(name, default)
 	Object.const_set(name, default) unless Object.const_defined?(name)
 end
 configurable_default(:API, 'https://api.myanimelist.net/v2/')
-configurable_default(:AUTOPULL_SOURCES_WAIT, 600)
+configurable_default(:AUTOPULL_SOURCES_WAIT, 86400*2)
 sources_outdated = (Time.now - File.mtime("#{CONFIG_DIR}sources/.git/FETCH_HEAD")).to_f >= AUTOPULL_SOURCES_WAIT
 configurable_default(:AUTOPULL_SOURCES, AUTOPULL_SOURCES_WAIT == 0 ? true : AUTOPULL_SOURCES_WAIT == -1 ? false : sources_outdated)
-configurable_default(:AUTOPULL_CONFIG_WAIT, 600)
+configurable_default(:AUTOPULL_CONFIG_WAIT, 86400)
 config_outdated = (Time.now - File.mtime("#{CONFIG_DIR}.git/FETCH_HEAD")).to_f >= AUTOPULL_CONFIG_WAIT
 configurable_default(:AUTOPULL_CONFIG, AUTOPULL_CONFIG_WAIT == 0 ? true : AUTOPULL_CONFIG_WAIT == -1 ? false : sources_outdated)
 configurable_default(:CACHE_DIR, ENV.fetch('XDG_CACHE_HOME', ENV.fetch('HOME') + '/.cache') + '/malinder/')
