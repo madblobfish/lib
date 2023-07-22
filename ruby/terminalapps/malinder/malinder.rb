@@ -45,13 +45,20 @@ if __FILE__ == $PROGRAM_NAME
 		end
 		[a,b].map{|x|x.default = []}
 
-		puts 'want:', (a['want'] & b['want']).sort
-		puts 'want/ok & ok/want:', ((a['okay'] & b['want']) + (a['want'] & b['okay'])).sort
-		puts 'okay:', (a['okay'] & b['okay']).sort
-		puts 'nope/want:', (a['nope'] & b['want']).sort
-		puts 'want/nope:', (a['want'] & b['nope']).sort
-		puts '', 'nil/*', (bids - (aids & bids)).sort
-		puts '*/nil', (aids - (aids & bids)).sort
+		res = {
+			'want:'=> (a['want'] & b['want']).sort,
+			'want/ok & ok/want:'=> ((a['okay'] & b['want']) + (a['want'] & b['okay'])).sort,
+			'okay:'=> (a['okay'] & b['okay']).sort,
+			'nope/want:'=> (a['nope'] & b['want']).sort,
+			'want/nope:'=> (a['want'] & b['nope']).sort,
+			'nil/*'=> (bids - (aids & bids)).sort,
+			'*/nil'=> (aids - (aids & bids)).sort,
+		}
+		if OPTIONS[:json]
+			puts JSON.pretty_generate(res)
+		else
+			res.each{|k,v| puts '' if k == 'nil/*'; puts k, v}
+		end
 	elsif ARGV.first == 'log' && ARGV.length == 3
 		ARGV.shift # throw away first argument
 		load_all_to_cache
