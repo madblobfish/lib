@@ -79,21 +79,18 @@ class MALinder < TerminalGame
 		@require_kitty_graphics = true
 #		@show_overflow = true
 
+		load_all_to_cache()
 		if year_or_ids.is_a?(Array)
-			load_all_to_cache()
 			@season = CACHE.fetch_values(*year_or_ids)
 		else
 			year = year_or_ids
 			raise "season not given" if season == false
 			season = season_shortcuts(season)
 			year = Integer(year, 10) # raise if year is not an integer
+			# this stays just for checking and better error messages
 			season_file = "#{CONFIG_DIR}sources/#{year}-#{season}.json"
 			raise 'missing json, run malinder.sh first' unless File.exists?(season_file)
-			@season = JSON.parse(File.read(season_file))['data'].map{|v|v['node']}
-			@season.reject!{|a| CHOICES.has_key?(a['id'].to_s)}
-			@season.reject!{|a| a['media_type'] == 'music'}
-			@season.select!{|a| a['start_season']['year'] == year}
-			# @season.select!{|a| a['nsfw'] == 'white'}
+			@season = cache_query("year == #{year} && season == #{season} && choice == -")
 		end
 		raise 'empty (all marked or nothing here)' if @season.empty?
 		@current = 0
