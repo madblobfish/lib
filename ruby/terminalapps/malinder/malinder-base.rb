@@ -56,7 +56,7 @@ configurable_default(:DEFAULT_FILTER, '!(media_type == music || genres has henta
 
 # not configurable
 CACHE = {}
-CACHE_BY_RANK = {}
+CACHE_FULL = {}
 IMAGE_CACHE = {}
 LOG_FILE = File.open(LOG_FILE_PATH, 'a+')
 LOG_FILE.sync = true
@@ -100,10 +100,10 @@ def load_all_to_cache()
 			v['names'] = [v['title'], *v['alternative_titles']&.values.flatten]
 			# v['names'] = [v['title'], *v.fetch('alternative_titles', {})&.values.flatten]
 
+			CACHE_FULL[v['id']] ||= v
 			# remove unwanted content
 			next unless default_filter[v]
 			CACHE[v['id']] ||= v
-			CACHE_BY_RANK[v['rank']] ||= v['id']
 		end
 	end
 	# Ractor.make_shareable(CACHE)

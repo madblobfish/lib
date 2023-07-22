@@ -55,7 +55,7 @@ load_all_to_cache()
 csv = parse_csv(LOG_FILE_PATH)
 ARGV.each{|f| csv += parse_csv(f)}
 csv.map! do |r|
-  if e = CACHE[r[0].to_i]
+  if e = CACHE_FULL[r[0].to_i]
     s = e['start_season'].fetch_values('year','season') rescue []
     r[1] ||= s.first
     r[2] ||= s.last
@@ -164,7 +164,7 @@ else
   configurable_default(:JSON_IGNORE, [])
   puts JSON.generate(csv.map do |r|
     next if JSON_IGNORE.include?(r[5])
-    if e = CACHE[r[0].to_i]
+    if e = CACHE_FULL[r[0].to_i]
       r[6] = e['num_episodes']
       r[7] = e['average_episode_duration']
       r[8] = e['rank']
