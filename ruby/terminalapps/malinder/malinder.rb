@@ -55,7 +55,7 @@ if __FILE__ == $PROGRAM_NAME
 		nime = begin
 			CACHE[Integer(ARGV.first, 10)]
 		rescue
-			res = cache_search(ARGV.first)
+			res = cache_query("names like '#{ARGV.first}'")
 			raise 'not unique or not found, test with "search" first' unless res.one?
 			res.first.last
 		end

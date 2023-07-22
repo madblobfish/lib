@@ -52,6 +52,7 @@ configurable_default(:BAD_WORDS,
 	)	+ ['love live', 'boys love', 'sailor moon', 'music film', 'music video']
 )
 configurable_default(:BAD_WORDS_REGEX, /\b#{ Regexp.union(BAD_WORDS).source }\b/i)
+configurable_default(:DEFAULT_FILTER, '!(media_type == music || genres has hentai || names like rainbow)') # set to nil to disable
 
 # not configurable
 CACHE = {}
@@ -75,21 +76,40 @@ MAL_PREFIX = 'https://myanimelist.net/anime/'
 MAL_MANGA_PREFIX = 'https://myanimelist.net/manga/'
 
 def load_all_to_cache()
+	require_relative '../../stdlib/array/query'
 	system({'GIT_DIR'=> "#{CONFIG_DIR}sources/.git"}, 'git', 'fetch', exception: true) if AUTOPULL_SOURCES
+	default_filter = DEFAULT_FILTER.nil? ? lambda{|_|true} : Array::QueryParser.new.parse(DEFAULT_FILTER)
+	date = Time.now
 	Dir[CONFIG_DIR + 'sources/*'].map do |s|
-		JSON.parse(File.read(s))['data'].each do |v|
-			CACHE[v['node']['id']] ||= v['node']
-			CACHE_BY_RANK[v['node']['rank']] ||= v['node']['id']
+		JSON.parse(File.read(s))['data'].each do |blah|
+			# unified cache internal representation
+			v = blah['node']
+			old = CHOICES.fetch(v['id'].to_s, {})
+			v['state'] = old.fetch(:choice, '-')
+			v['choice'] = v['state'].split(',').first
+			CHOICES_OTHERS.each do |name, c|
+				choice = c.fetch(v['id'].to_s, {}).fetch(:choice, '-')
+				v['state-' + name] = choice
+				v['choice-' + name] = choice.split(',').first
+			end
+			v['timestamp'] = old.fetch(:ts, date)
+			v['c1'] = old.fetch(:c1, nil)
+			v.merge!(v['start_season'])
+			v['genres'] = v['genres']&.map{|h| h['name'].downcase.tr(' ', '_')}
+			v['names'] = [v['title'], *v['alternative_titles']&.values.flatten]
+			# v['names'] = [v['title'], *v.fetch('alternative_titles', {})&.values.flatten]
+
+			# remove unwanted content
+			next unless default_filter[v]
+			CACHE[v['id']] ||= v
+			CACHE_BY_RANK[v['rank']] ||= v['id']
 		end
 	end
 	# Ractor.make_shareable(CACHE)
 end
-def cache_search(needle)
-	load_all_to_cache() if CACHE.empty?
-	search = /#{needle}/i
-	CACHE.select do |_,v|
-		[v['title'], *v['alternative_titles']&.values.flatten].any?{|s| s.match?(search)}
-	end
+def cache_query(query)
+	load_all_to_cache()
+	CACHE.values.query(query)
 end
 
 def compare(a,b)
@@ -102,36 +122,4 @@ def season_shortcuts(input)
 	s = MALinder::SEASON_SHORTCUTS.fetch(input, input)
 	raise "'#{input.inspect}' is not a season" unless MALinder::SEASON_SHORTCUTS.values.include?(s)
 	s
-end
-
-def cache_query(query, cache=nil, choices=CHOICES, choices_others=CHOICES_OTHERS)
-	require_relative '../../stdlib/array/query'
-	if cache.nil?
-		load_all_to_cache()
-		cache = CACHE
-	end
-	cache_prepare_query(cache, choices, choices_others).query(query)
-end
-def cache_prepare_query(cache=nil, choices=CHOICES, choices_others=CHOICES_OTHERS)
-	if cache.nil?
-		load_all_to_cache()
-		cache = CACHE
-	end
-	date = Time.now.to_i
-	cache.map do |k, v|
-		old = choices.fetch(v['id'].to_s, {})
-		v['state'] = old.fetch(:choice, '-')
-		v['choice'] = v['state'].split(',').first
-		choices_others.each do |name, c|
-			choice = c.fetch(v['id'].to_s, {}).fetch(:choice, '-')
-			v['state-' + name] = choice
-			v['choice-' + name] = choice.split(',').first
-		end
-		v['timestamp'] = old.fetch(:ts, date)
-		v['c1'] = old.fetch(:c1, nil)
-		v.merge!(v['start_season'])
-		v['genres'] = v['genres']&.map{|h| h['name'].downcase.tr(' ', '_')}
-		v['names'] = [v['title'], *v['alternative_titles']&.values.flatten]
-		v
-	end
 end
