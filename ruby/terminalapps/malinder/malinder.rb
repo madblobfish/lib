@@ -196,7 +196,7 @@ if __FILE__ == $PROGRAM_NAME
 		if OPTIONS[:interactive]
 			MALinder.new([id]).run
 		else
-			res = CACHE.fetch(id)
+			res = CACHE_FULL.fetch(id)
 			choice = CHOICES[id.to_s][:choice] rescue '-'
 			if OPTIONS[:json]
 				res['choice'] = choice
