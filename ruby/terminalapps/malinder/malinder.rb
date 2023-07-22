@@ -203,12 +203,13 @@ if __FILE__ == $PROGRAM_NAME
 				puts JSON.pretty_generate(res)
 			else
 				puts res.sort.map{|(k,v)|
+					next if %w(choice state names start_season).include?(k)
 					if k == 'genres'
 						[k,v.join(', ')].join(":\t")
 					else
 						[k,v].join(":\t")
 					end
-				}
+				}.compact
 				puts '', "Choice: #{choice}"
 			end
 		end
