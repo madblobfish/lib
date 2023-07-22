@@ -96,7 +96,7 @@ def load_all_to_cache()
 			v['timestamp'] = old.fetch(:ts, date)
 			v['c1'] = old.fetch(:c1, nil)
 			v.merge!(v['start_season'])
-			v['genres'] = v['genres']&.map{|h| h['name'].downcase.tr(' ', '_')}
+			v['genres'] = v['genres']&.map{|h| (h.is_a?(Hash) ? h['name']: h).downcase.tr(' ', '_')}
 			v['names'] = [v['title'], *v['alternative_titles']&.values.flatten]
 			# v['names'] = [v['title'], *v.fetch('alternative_titles', {})&.values.flatten]
 

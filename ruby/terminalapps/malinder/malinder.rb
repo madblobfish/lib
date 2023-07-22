@@ -204,7 +204,7 @@ if __FILE__ == $PROGRAM_NAME
 			else
 				puts res.sort.map{|(k,v)|
 					if k == 'genres'
-						[k,v.map{|k|k['name']}.sort.join(', ')].join(":\t")
+						[k,v.join(', ')].join(":\t")
 					else
 						[k,v].join(":\t")
 					end
