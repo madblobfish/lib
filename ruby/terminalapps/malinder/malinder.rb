@@ -1,12 +1,43 @@
-require_relative 'malinder-base.rb'
-require_relative 'malinder-tui.rb'
+HELP_TEXT = []
+HELP_TEXT << 'Commands:'
+HELP_TEXT << '  <year> <season>: run an interactive malinder Terminal UI, decide what you want'
+HELP_TEXT << '      season is one of: winter, spring, summer, fall'
+HELP_TEXT << '      controls: arrow keys, q to quit, 1 for nope, 2/a is ok, 3/y is want'
+HELP_TEXT << ''
+HELP_TEXT << '  stats [--by-season]: get some statistics'
+HELP_TEXT << '  show <id>: lookup an entry from cache'
+HELP_TEXT << '  search <name>: fuzzy search on "names" in the cache'
+HELP_TEXT << '  query <querysyntax>: search cache using expressions'
+HELP_TEXT << '      e.g.: (state == seen && year < 1992) || title has Gintama && genres all action,time_travel'
+HELP_TEXT << '  log <id/search> <status>: change the status of an anime'
+HELP_TEXT << '      adds the episode count if status is just seen'
+HELP_TEXT << '      adds "partial," if status is a number'
+HELP_TEXT << '      rewrites the entire log file!'
+HELP_TEXT << '  results [a_log] <b_log> [year season|querysyntax]: find out common wants'
+HELP_TEXT << '      limits by year and season if given'
+HELP_TEXT << '      e.g.: someguy.log 2013 summer'
+HELP_TEXT << '      e.g.: /tmp/some.log "(year <= 2019) && type != movie"'
+HELP_TEXT << ''
+HELP_TEXT << '  -i, --interactive may make it show results in the interactive Terminal UI'
+HELP_TEXT << '  --json may output json instead'
 
 if __FILE__ == $PROGRAM_NAME
+	if ARGV.include?('--help') || ARGV.empty?
+		puts HELP_TEXT
+		exit 0
+	end
+
 	OPTIONS = {
 		interactive: ARGV.delete('--interactive') || ARGV.delete('-i'),
+		no_default_filter: ARGV.delete('--no-default-filter'),
 		json: ARGV.delete('--json'),
 	}
 	GC.disable
+	require_relative 'malinder-base.rb'
+	require_relative 'malinder-tui.rb'
+	load_all_to_cache
+	GC.enable
+
 	if ARGV.first == 'results' && (2..4).include?(ARGV.length)
 		ARGV.shift
 		season = nil
@@ -28,7 +59,6 @@ if __FILE__ == $PROGRAM_NAME
 			parse_choices(ARGV.length == 1 ? LOG_FILE_PATH : ARGV.first),
 			parse_choices(ARGV.last),
 		)
-		load_all_to_cache()
 		(a, aids),(b, bids) = [[a, []],[b, []]].map do |x, ids|
 			[x.transform_values do |a|
 				a.map do |a|
@@ -57,7 +87,6 @@ if __FILE__ == $PROGRAM_NAME
 		end
 	elsif ARGV.first == 'log' && ARGV.length == 3
 		ARGV.shift # throw away first argument
-		load_all_to_cache
 		nime = begin
 			CACHE[Integer(ARGV.first, 10)]
 		rescue
@@ -122,7 +151,6 @@ if __FILE__ == $PROGRAM_NAME
 			}.sort_by(&:first).map{|a| a.join("\t")}
 		end
 	elsif ARGV.first == 'stats'
-		load_all_to_cache
 		time_chosen_sum = 0
 		count_chosen = 0
 		time_watched_sum = 0
@@ -168,7 +196,6 @@ if __FILE__ == $PROGRAM_NAME
 		if OPTIONS[:interactive]
 			MALinder.new([id]).run
 		else
-			load_all_to_cache
 			res = CACHE.fetch(id)
 			choice = CHOICES[id.to_s][:choice] rescue '-'
 			if OPTIONS[:json]
@@ -188,26 +215,7 @@ if __FILE__ == $PROGRAM_NAME
 	elsif ARGV.length == 2
 		MALinder.new(*ARGV).run()
 	else
-		puts 'Commands:'
-		puts '  <year> <season>: run an interactive malinder Terminal UI, decide what you want'
-		puts '      season is one of: winter, spring, summer, fall'
-		puts '      controls: arrow keys, q to quit, 1 for nope, 2/a is ok, 3/y is want'
-		puts ''
-		puts '  stats [--by-season]: get some statistics'
-		puts '  show <id>: lookup an entry from cache'
-		puts '  search <name>: fuzzy search on "names" in the cache'
-		puts '  query <querysyntax>: search cache using expressions'
-		puts '      e.g.: (state == seen && year < 1992) || title has Gintama && genres all action,time_travel'
-		puts '  log <id/search> <status>: change the status of an anime'
-		puts '      adds the episode count if status is just seen'
-		puts '      adds "partial," if status is a number'
-		puts '      rewrites the entire log file!'
-		puts '  results [a_log] <b_log> [year season|querysyntax]: find out common wants'
-		puts '      limits by year and season if given'
-		puts '      e.g.: someguy.log 2013 summer'
-		puts '      e.g.: /tmp/some.log "(year <= 2019) && type != movie"'
-		puts ''
-		puts '  -i, --interactive may make it show results in the interactive Terminal UI'
-		puts '  --json may output json instead'
+		puts 'unknown command, or wrong parameters.', '', HELP_TEXT
+		exit 1
 	end
 end
