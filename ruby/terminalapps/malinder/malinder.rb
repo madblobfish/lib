@@ -2,14 +2,13 @@ require_relative 'malinder-base.rb'
 require_relative 'malinder-tui.rb'
 
 if __FILE__ == $PROGRAM_NAME
+	OPTIONS = {
+		interactive: ARGV.delete('--interactive') || ARGV.delete('-i'),
+		json: ARGV.delete('--json'),
+	}
 	GC.disable
-	if ARGV.first == 'results'
+	if ARGV.first == 'results' && (2..4).include?(ARGV.length)
 		ARGV.shift
-		if ARGV.empty?
-			puts 'give me two files to compare,'
-			puts '  or one if you got your own.'
-			exit
-		end
 		season = nil
 		if ARGV.length >= 3
 			season = {
@@ -101,14 +100,15 @@ if __FILE__ == $PROGRAM_NAME
 		end
 	elsif ARGV.first == 'query' || (ARGV.first == 'search' && ARGV.length >= 2)
 		mode = ARGV.shift # throw away first argument
-		interactive = ARGV.delete('--interactive') || ARGV.delete('-i')
 		if mode == 'search'
 			res = cache_query("names like '#{ARGV.join(' ')}'")
 		else
 			res = cache_query(ARGV.join(' '))
 		end
-		if interactive
+		if OPTIONS[:interactive]
 			MALinder.new(res.map{|a|a["id"]}.sort()).run()
+		elsif OPTIONS[:json]
+			puts JSON.pretty_generate(res)
 		else
 			puts res.map{|nime|
 				nime.fetch_values('id', 'year', 'season', 'state', 'timestamp', 'title', 'c1').compact
@@ -156,21 +156,27 @@ if __FILE__ == $PROGRAM_NAME
 				]
 			end
 		end
-	elsif ARGV.first == 'show'
-		load_all_to_cache
-		interactive = ARGV.delete('--interactive') || ARGV.delete('-i') 
-		anime = CACHE.fetch(ARGV[1].to_i)
-		if interactive
-			MALinder.new([ARGV[1].to_i]).run
+	elsif ARGV.first == 'show' && ARGV.length == 2
+		id = Integer(ARGV[1], 10)
+		if OPTIONS[:interactive]
+			MALinder.new([id]).run
 		else
-			puts CACHE.fetch(ARGV[1].to_i).sort.map{|(k,v)|
-				if k == 'genres'
-					[k,v.map{|k|k['name']}.sort.join(', ')].join(":\t")
-				else
-					[k,v].join(":\t")
-				end
-			}
-			puts '', "Choice: #{CHOICES[ARGV[1]][:choice] rescue '-'}"
+			load_all_to_cache
+			res = CACHE.fetch(id)
+			choice = CHOICES[id.to_s][:choice] rescue '-'
+			if OPTIONS[:json]
+				res['choice'] = choice
+				puts JSON.pretty_generate(res)
+			else
+				puts res.sort.map{|(k,v)|
+					if k == 'genres'
+						[k,v.map{|k|k['name']}.sort.join(', ')].join(":\t")
+					else
+						[k,v].join(":\t")
+					end
+				}
+				puts '', "Choice: #{choice}"
+			end
 		end
 	elsif ARGV.length == 2
 		MALinder.new(*ARGV).run()
@@ -194,6 +200,7 @@ if __FILE__ == $PROGRAM_NAME
 		puts '      e.g.: someguy.log 2013 summer'
 		puts '      e.g.: /tmp/some.log "(year <= 2019) && type != movie"'
 		puts ''
-		puts '  -i,--interactive may make it show results in the interactive Terminal UI'
+		puts '  -i, --interactive may make it show results in the interactive Terminal UI'
+		puts '  --json may output json instead'
 	end
 end
