@@ -27,10 +27,15 @@ def fetch_related(id)
 	if File.exists?(cached_file)
 		related = File.read(cached_file)
 	else
+		# backoff a bit to not run into ratelimits
+		return 'Ratelimited: internally' if Time.now - File.mtime("#{CACHE_DIR_RELATIONS}") >= 1
 		related = fetch("https://api.jikan.moe/v4/anime/#{id.to_i}/relations").body
 		File.write(cached_file, related)
 	end
 	JSON.parse(related).fetch('data')
+rescue RuntimeError => e
+	raise unless e.start_with?('429 - ')
+	'Ratelimited: got Error 429'
 end
 # fetch(API + 'anime/30230')
 # fetch(j['main_picture']['large'])
@@ -139,7 +144,11 @@ class MALinder < TerminalGame
 			paragraph += others.map{|name, choices| "#{name}: #{choices[anime['id'].to_s][:choice]}" }.join(separator)
 		end
 		related = fetch_related(anime['id'])
-		if related.any?
+		if related.is_a?(String)
+			paragraph += "\n\nRelated:\n  #{related}"
+		elsif related == []
+			paragraph += "\n\nRelated:\n  Nothing"
+		elsif related.any?
 			separator = "\n  "
 			paragraph += "\n\nRelated:" + separator
 			paragraph += related.map do |rel|
