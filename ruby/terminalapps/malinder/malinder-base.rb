@@ -61,7 +61,8 @@ IMAGE_CACHE = {}
 LOG_FILE = File.open(LOG_FILE_PATH, 'a+')
 LOG_FILE.sync = true
 def parse_choices(file)
-	Hash[file.each_line.drop(1).map do |l|
+	file = CONFIG_DIR + file unless File.exists?(file)
+	Hash[File.readlines(file).drop(1).map do |l|
 		id, y, s, c, ts, name, c1, c2, c3 = l.split("\t")
 		[id, {choice:c, ts: ts, c1: c1, c2: c2, c3: c3}]
 	end]
@@ -70,7 +71,7 @@ CHOICES = parse_choices(LOG_FILE)
 CHOICES_OTHERS = {}
 (Dir["#{CONFIG_DIR}choices*.log"] - [LOG_FILE_PATH]).map do |path|
 	name = path.delete_prefix(CONFIG_DIR + 'choices').delete_prefix('-').delete_suffix('.log')
-	CHOICES_OTHERS[name] = parse_choices(File.open(path))
+	CHOICES_OTHERS[name] = parse_choices(path)
 end
 MAL_PREFIX = 'https://myanimelist.net/anime/'
 MAL_MANGA_PREFIX = 'https://myanimelist.net/manga/'
@@ -114,7 +115,7 @@ end
 
 def compare(a,b)
 	[a,b].map do |csv|
-		csv.group_by{|_,_,_,d| d.split(',').first}
+		csv.map{|k,v|[k,v]}.group_by{|k,h| h[:choice].split(',').first}
 	end
 end
 

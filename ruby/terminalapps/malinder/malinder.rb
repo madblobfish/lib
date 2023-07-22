@@ -24,13 +24,9 @@ if __FILE__ == $PROGRAM_NAME
 			col_sep: "\t",
 			nil_value: '',
 		}
-		own = ARGV.length == 1 ? LOG_FILE_PATH : ARGV.first
-		own = CONFIG_DIR + own unless File.exists?(own) # allow relative paths
-		other = ARGV.last
-		other = CONFIG_DIR + other unless File.exists?(other) # allow relative paths
 		a,b = compare(
-			CSV.read(own, **csv_options),
-			CSV.read(other, **csv_options)
+			parse_choices(ARGV.length == 1 ? LOG_FILE_PATH : ARGV.first),
+			parse_choices(ARGV.last),
 		)
 		load_all_to_cache()
 		(a, aids),(b, bids) = [[a, []],[b, []]].map do |x, ids|
