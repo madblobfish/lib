@@ -1,0 +1,35 @@
+# please please please consider the following better alternatives please:
+#   - an actual trusted free ca like lets encrypt
+#   - https://github.com/letsencrypt/boulder
+#   - https://github.com/smallstep/certificates
+#   - https://github.com/hashicorp/vault
+LIFETIME := 2000
+KEYSIZE := 4096
+HOSTS := $(shell sed -e 's/$$/.cert/' hosts.txt)
+COMMONSUBJ := OU=Part of YOU/O=YOU/
+
+.PHONY: all verify distribute
+all: $(HOSTS)
+
+ca.pem:
+	openssl req -sha256 -nodes -x509 -newkey rsa:$(KEYSIZE) -keyout ca.key -out ca.pem -days $(LIFETIME) -subj '/CN=CA root/$(COMMONSUBJ)' -addext 'keyUsage= critical, digitalSignature, keyCertSign' -addext 'basicConstraints= critical, CA:TRUE, pathlen:0'
+
+%.cert: ca.pem
+	openssl req -sha256 -nodes -x509 -newkey rsa:$(KEYSIZE) -CA ca.pem -CAkey ca.key -keyout $(basename $@).key -out $(basename $@).cert -days $(LIFETIME) -subj '/CN=$(basename $@)/$(COMMONSUBJ)' -addext 'subjectAltName=DNS:$(basename $@)' -extensions v3_req -addext 'basicConstraints=critical,CA:FALSE' -addext 'extendedKeyUsage=critical, serverAuth, clientAuth'
+
+
+verify:
+	openssl verify -CAfile ca.pem $(HOSTS)
+
+cert-bundle:
+	cat $(HOSTS) ca.pem > cert-bundle
+
+distribute: cert-bundle $(shell sed -e 's/$$/.server/' hosts.txt)
+
+%.server:
+	cat $@.key | ssh $@ sudo sh -c '"cat > /etc/ssl/you-server.key"'
+	cat $@.cert | ssh $@ sudo sh -c '"cat > /etc/ssl/you-server.pem"'
+	cat cert-bundle | ssh $@ sudo sh -c '"cat > /etc/ssl/you-server.bundle"'
+
+%.revoke:
+	echo 'afaik not possible'
