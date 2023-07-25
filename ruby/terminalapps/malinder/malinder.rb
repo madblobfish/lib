@@ -183,7 +183,7 @@ if __FILE__ == $PROGRAM_NAME
 		print_percent['Tracked', CHOICES.size, CACHE.size]
 		if ARGV.include?('--by-season')
 			puts ''
-			CACHE.reject{|k,a| a['media_type'] == 'music'}.group_by{|k,v| v['start_season']}.sort{|a,b|a.first.values <=> b.first.values}.each do |season, nimes|
+			CACHE.reject{|k,a| a['media_type'] == 'music'}.group_by{|k,v| v.fetch('start_season', {})}.sort{|a,b|a.first.values <=> b.first.values}.each do |season, nimes|
 				print_percent[
 					season.values.join(' '),
 					nimes.count{|id,_|CHOICES.has_key?(id.to_s)},
