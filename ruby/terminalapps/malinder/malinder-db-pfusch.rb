@@ -36,7 +36,7 @@ def parse_csv(f)
         h.fetch('season', nil),
         h.fetch('state') do
           seencount, state = (h.fetch('seencount(state)').to_s.split('(').map{|x|x.chomp(')').split(',').first.strip} + ['partly']).first(2)
-          seencount = Integer(seencount, 10)
+          seencount = Integer(seencount.sub(/\[[^]]+\]/, ''), 10)
           "#{state},#{seencount}".gsub('partly,0','want').gsub('plonk','broken')
         end,
         h.fetch('ts', 10),
