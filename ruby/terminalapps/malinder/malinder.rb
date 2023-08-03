@@ -31,6 +31,7 @@ if __FILE__ == $PROGRAM_NAME
 		interactive: ARGV.delete('--interactive') || ARGV.delete('-i'),
 		no_default_filter: ARGV.delete('--no-default-filter'),
 		json: ARGV.delete('--json'),
+		force: ARGV.delete('--force'),
 	}
 	GC.disable
 	require_relative 'malinder-base.rb'
@@ -106,7 +107,7 @@ if __FILE__ == $PROGRAM_NAME
 			ARGV.last
 		end
 		if nime['num_episodes'].to_i < log_value.split(',',2).last.to_i
-			raise 'log episode higher than number of episodes'
+			raise 'log episode higher than number of episodes' unless OPTIONS[:force]
 		elsif nime['num_episodes'].to_s == log_value.split(',',2).last || log_value == 'seen'
 			log_value = 'seen,' + nime['num_episodes'].to_s
 			puts "was actually '#{log_value}', I fixed that for you ;)" unless log_value == 'seen'
