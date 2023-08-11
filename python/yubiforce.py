@@ -5,11 +5,6 @@ from yubikit.core.otp import OtpConnection, CommandRejectedError
 from yubikit.support import get_name, read_info
 from yubikit.yubiotp import YubiOtpSession, SLOT, UpdateConfiguration
 
-CHARSET = b'abcdefghijklmnopqrstuvwxyz0123456789'
-def guesstimator():
-	for guess in itertools.product(CHARSET, repeat=6):
-		yield guess
-
 def get_device(serial):
 	devs = device.list_all_devices()
 	for dev, nfo in devs:
@@ -26,6 +21,11 @@ session = YubiOtpSession(conn)
 if not session.get_config_state().is_configured(1):
 	raise Exception('nothing configured')
 
+CHARSET = b'abcdefghijklmnopqrstuvwxyz0123456789'
+def guesstimator():
+	for guess in itertools.product(CHARSET, repeat=6):
+		yield bytes(guess)
+
 iterator = guesstimator()
 try:
 	previous = tuple(bytes.fromhex(sys.argv[2]))
@@ -35,15 +35,14 @@ try:
 except IndexError:
 	pass
 
-for guess in iterator:
-	try:
-		session.delete_slot(
-			1,
-			bytes(guess)
-		)
-		print("\rgot it", guess)
-		break
-	except CommandRejectedError as e:
-		if str(e) != 'No data':
-			raise e
-		print("\rdid not work {}".format(guess), end='')
+try:
+	for guess in iterator:
+		try:
+			session.delete_slot(1, guess)
+			print("\rgot it", guess.hex())
+			break
+		except CommandRejectedError as e:
+			if str(e) != 'No data':
+				raise e
+except KeyboardInterrupt:
+	print("got until {}".format(guess.hex()), end='')
