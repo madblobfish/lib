@@ -2,6 +2,7 @@ import itertools
 import sys
 from ykman import device
 from yubikit.core.otp import OtpConnection, CommandRejectedError
+from yubikit.support import get_name, read_info
 from yubikit.yubiotp import YubiOtpSession, SLOT, UpdateConfiguration
 
 def guesstimator():
@@ -21,15 +22,17 @@ if not dev.supports_connection(OtpConnection):
 conn = dev.open_connection(OtpConnection)
 session = YubiOtpSession(conn)
 
+if not session.get_config_state().is_configured(1):
+	raise Exception('nothing configured')
 for guess in guesstimator():
 	try:
-		session.update_configuration(
-			SLOT(1),
-			UpdateConfiguration().append_cr(True).use_numeric(True).pacing(False, False),
-			None,
+		session.delete_slot(
+			1,
 			bytes(guess)
 		)
-		print(guess)
-		raise "the end :)"
-	except CommandRejectedError:
+		print("\rgot it", guess)
+		break
+	except CommandRejectedError as e:
+		if str(e) != 'No data':
+			raise e
 		print("\rdid not work {}".format(guess), end='')
