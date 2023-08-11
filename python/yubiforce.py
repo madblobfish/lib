@@ -6,7 +6,7 @@ from yubikit.support import get_name, read_info
 from yubikit.yubiotp import YubiOtpSession, SLOT, UpdateConfiguration
 
 def get_device(serial):
-	devs = device.list_all_devices()
+	devs = device.list_all_devices([OtpConnection])
 	for dev, nfo in devs:
 		if nfo.serial == int(serial):
 			return dev, nfo
