@@ -5,8 +5,9 @@ from yubikit.core.otp import OtpConnection, CommandRejectedError
 from yubikit.support import get_name, read_info
 from yubikit.yubiotp import YubiOtpSession, SLOT, UpdateConfiguration
 
+CHARSET = b'abcdefghijklmnopqrstuvwxyz0123456789'
 def guesstimator():
-	for guess in itertools.product(b'abcdefghijklmnopqrstuvwxyz0123456789', repeat=6):
+	for guess in itertools.product(CHARSET, repeat=6):
 		yield guess
 
 def get_device(serial):
@@ -24,7 +25,17 @@ session = YubiOtpSession(conn)
 
 if not session.get_config_state().is_configured(1):
 	raise Exception('nothing configured')
-for guess in guesstimator():
+
+iterator = guesstimator()
+try:
+	previous = tuple(bytes.fromhex(sys.argv[2]))
+	skip = sum(map(lambda x: tuple(CHARSET).index(x[1]) * len(CHARSET)**(5-x[0]), enumerate(previous)))
+	iterator = itertools.islice(iterator, skip, None)
+	print("Note: preemptied {}", skip)
+except IndexError:
+	pass
+
+for guess in iterator:
 	try:
 		session.delete_slot(
 			1,
