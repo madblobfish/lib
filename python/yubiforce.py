@@ -6,7 +6,7 @@ from yubikit.support import get_name, read_info
 from yubikit.yubiotp import YubiOtpSession, SLOT, UpdateConfiguration
 
 def guesstimator():
-	for guess in itertools.combinations_with_replacement(b'abcdefghijklmnopqrstuvwxyz0123456789', 6):
+	for guess in itertools.product(b'abcdefghijklmnopqrstuvwxyz0123456789', repeat=6):
 		yield guess
 
 def get_device(serial):
