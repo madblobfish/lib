@@ -37,6 +37,8 @@ except IndexError:
 
 try:
 	for guess in iterator:
+		if guess[-1:] == CHARSET[:1]:
+			print("\r currently at " + guess.hex(), end='')
 		try:
 			session.delete_slot(1, guess)
 			print("\rgot it", guess.hex())
@@ -45,4 +47,4 @@ try:
 			if str(e) != 'No data':
 				raise e
 except KeyboardInterrupt:
-	print("got until {}".format(guess.hex()), end='')
+	print("got until {}".format(guess.hex()))
