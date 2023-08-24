@@ -93,7 +93,7 @@ def load_all_to_cache()
 				v['state-' + name] = choice
 				v['choice-' + name] = choice.split(',').first
 			end
-			v['timestamp'] = old.fetch(:ts, date)
+			v['timestamp'] = old.fetch(:ts, date.to_i)
 			v['c1'] = old.fetch(:c1, nil)
 			v.merge!(v.fetch('start_season', {}))
 			v['genres'] = v['genres']&.map{|h| (h.is_a?(Hash) ? h['name']: h).downcase.tr(' ', '_')}
