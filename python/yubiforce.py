@@ -9,9 +9,9 @@ def get_device(serial):
 	devs = device.list_all_devices([OtpConnection])
 	for dev, nfo in devs:
 		if nfo.serial == int(serial):
-			return dev, nfo
+			return dev
 
-dev, nfo = get_device(sys.argv[1])
+dev = get_device(sys.argv[1])
 
 if not dev.supports_connection(OtpConnection):
 	raise "AAAHHHH MY OTP"
