@@ -157,7 +157,7 @@ if __FILE__ == $PROGRAM_NAME
 		time_watched_sum = 0
 		count_watched = 0
 		CHOICES.each do |id, v|
-			if anime = CACHE[id.to_i]
+			if anime = CACHE_FULL[id.to_i]
 				status, seen_eps = v[:choice].split(',', 2)
 				seen_eps ||= anime['num_episodes'] if status == 'seen'
 				if %w(paused partly broken seen).include?(status)
