@@ -125,3 +125,7 @@ def season_shortcuts(input)
 	raise "'#{input.inspect}' is not a season" unless MALinder::SEASON_SHORTCUTS.values.include?(s)
 	s
 end
+
+def choices_path_to_prefix(path_or_filename)
+	path_or_filename.rpartition('/').last.sub(/^choices-(.*).log$/, '\1')
+end

@@ -42,11 +42,13 @@ if __FILE__ == $PROGRAM_NAME
 	if ARGV.first == 'results' && (2..4).include?(ARGV.length)
 		ARGV.shift
 		season = nil
+		season_query = ''
 		if ARGV.length >= 3
 			season = {
 				'season' => season_shortcuts(ARGV.pop),
 				'year' => Integer(ARGV.pop, 10),
 			}
+			season_query = " && year == #{season['year']} && season == #{season['season']}"
 		end
 
 		require 'csv'
@@ -56,9 +58,11 @@ if __FILE__ == $PROGRAM_NAME
 			col_sep: "\t",
 			nil_value: '',
 		}
+		own_file = (ARGV.length == 1 ? LOG_FILE_PATH : ARGV.first)
+		other_file = ARGV.last
 		a,b = compare(
-			parse_choices(ARGV.length == 1 ? LOG_FILE_PATH : ARGV.first),
-			parse_choices(ARGV.last),
+			parse_choices(own_file),
+			parse_choices(other_file),
 		)
 		(a, aids),(b, bids) = [[a, []],[b, []]].map do |x, ids|
 			[x.transform_values do |a|
@@ -73,18 +77,28 @@ if __FILE__ == $PROGRAM_NAME
 		[a,b].map{|x|x.default = []}
 
 		res = {
-			'want:'=> (a['want'] & b['want']).sort,
-			'want/ok & ok/want:'=> ((a['okay'] & b['want']) + (a['want'] & b['okay'])).sort,
-			'okay:'=> (a['okay'] & b['okay']).sort,
-			'nope/want:'=> (a['nope'] & b['want']).sort,
-			'want/nope:'=> (a['want'] & b['nope']).sort,
-			'nil/*'=> (bids - (aids & bids)).sort,
-			'*/nil'=> (aids - (aids & bids)).sort,
+			'want/want'=> (a['want'] & b['want']).sort,
+			'want/ok'=> (a['want'] & b['okay']).sort,
+			'ok/want'=> (a['okay'] & b['want']).sort,
+			# 'want/ok & ok/want'=> ((a['okay'] & b['want']) + (a['want'] & b['okay'])).sort,
+			# 'okay'=> (a['okay'] & b['okay']).sort,
+			'nope/want'=> (a['nope'] & b['want']).sort,
+			'want/nope'=> (a['want'] & b['nope']).sort,
+			'-/*'=> (bids - (aids & bids)).sort,
+			'*/-'=> (aids - (aids & bids)).sort,
 		}
 		if OPTIONS[:json]
 			puts JSON.pretty_generate(res)
 		else
-			res.each{|k,v| puts '' if k == 'nil/*'; puts k, v}
+			prefixes = [own_file, other_file].map{|p| choices_path_to_prefix(p)}
+			res.each do |k,v|
+				puts '' if k == '-/*'
+				puts k.split('/').zip(prefixes)
+					.reject{|c,p|c == '*'}
+					.map{|c, p| LOG_FILE_PATH.end_with?(p+'.log') ? "choice == #{c}" : "choice-#{p} == #{c}"}
+					.join(' && ') + season_query
+				puts v
+			end
 		end
 	elsif ARGV.first == 'log' && ARGV.length == 3
 		ARGV.shift # throw away first argument
