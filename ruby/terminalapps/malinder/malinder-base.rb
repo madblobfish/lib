@@ -105,6 +105,8 @@ def load_all_to_cache()
 			next unless default_filter[v]
 			CACHE[v['id']] ||= v
 		end
+	rescue JSON::ParserError => e
+		raise "could not parse: #{s}"
 	end
 	# Ractor.make_shareable(CACHE)
 end
