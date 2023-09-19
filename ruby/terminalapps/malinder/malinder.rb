@@ -111,7 +111,7 @@ if __FILE__ == $PROGRAM_NAME
 		end
 		if nime.nil?
 			nime = {
-				'id': Integer(ARGV.first, 10),
+				'id' => Integer(ARGV.first, 10),
 				'start_season' => {'year'=>'', 'season'=>''}
 			}
 		end
