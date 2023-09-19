@@ -110,8 +110,8 @@ def load_all_to_cache()
 	end
 	# Ractor.make_shareable(CACHE)
 end
-def cache_query(query)
-	CACHE.values.query(query)
+def cache_query(query, all=False)
+	(all ? CACHE_FULL : CACHE).values.query(query)
 end
 
 def compare(a,b)

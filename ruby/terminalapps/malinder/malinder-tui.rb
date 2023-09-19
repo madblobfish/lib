@@ -81,7 +81,7 @@ class MALinder < TerminalGame
 
 		load_all_to_cache()
 		if year_or_ids.is_a?(Array)
-			@season = CACHE.fetch_values(*year_or_ids)
+			@season = CACHE_FULL.fetch_values(*year_or_ids)
 		else
 			year = year_or_ids
 			raise "season not given" if season == false

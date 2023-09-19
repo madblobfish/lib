@@ -151,10 +151,11 @@ if __FILE__ == $PROGRAM_NAME
 		end
 	elsif ARGV.first == 'query' || (ARGV.first == 'search' && ARGV.length >= 2)
 		mode = ARGV.shift # throw away first argument
+		all = ARGV.delete('--all')
 		if mode == 'search'
-			res = cache_query("names like '#{ARGV.join(' ')}'")
+			res = cache_query("names like '#{ARGV.join(' ')}'", all)
 		else
-			res = cache_query(ARGV.join(' '))
+			res = cache_query(ARGV.join(' '), all)
 		end
 		if OPTIONS[:interactive]
 			MALinder.new(res.map{|a|a["id"]}.sort()).run()
