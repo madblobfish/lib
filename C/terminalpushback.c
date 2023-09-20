@@ -1,3 +1,5 @@
+// on linux >= 6.2 ensure sysctl dev.tty.legacy_tiocsti=1
+
 #define _GNU_SOURCE
 #include <sys/ioctl.h>
 #include <unistd.h>
