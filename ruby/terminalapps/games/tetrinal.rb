@@ -175,6 +175,7 @@ end
 if ARGV.include?('--help')
   puts 'tetrinal takes an optional parameter which defines the speedup.'
   puts 'there are 3 values: none, time and stepped. stepped is the default'
+  exit
 end
 
 Tetrinal.new(speedup: ARGV.first).run if __FILE__ == $PROGRAM_NAME
