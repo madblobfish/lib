@@ -1,3 +1,5 @@
+require 'ipaddr'
+
 class IPAddr
   def size
     if self.ipv4?

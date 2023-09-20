@@ -1,3 +1,5 @@
+require 'ipaddr'
+
 class IPAddr
   require_relative 'highest'
   def next_to?(other)

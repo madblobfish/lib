@@ -1,3 +1,5 @@
+require 'ipaddr'
+
 class IPAddr
   alias :to_s_orig :to_s
   def to_s(b=nil)

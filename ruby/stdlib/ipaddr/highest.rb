@@ -1,4 +1,5 @@
 require 'ipaddr'
+
 class IPAddr
   def highest
     high = self.to_range.last
