@@ -7,3 +7,7 @@ class IPAddr
     self.to_range.last  >= other.to_range.last
   end
 end
+
+if __FILE__ == $PROGRAM_NAME
+	puts IPAddr.new(ARGV.first).include_block?(IPAddr.new(ARGV[1]))
+end
