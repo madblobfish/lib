@@ -16,8 +16,9 @@ class IPAddr
       return [self]
     elsif other.include?(self) && self.prefix == 32
       return [other]
+    elsif other.include?(self)
+      return [other]
     elsif self.include?(other)
-      return [other] if other.prefix > self.prefix
       return [self]
     else
       return [self, other]
@@ -25,9 +26,8 @@ class IPAddr
   end
 
   def self.merge(*input)
-    if input.empty? || input.one?
-      raise ArgumentError, "give me two or more IPAddr's!"
-    end
+    return [] if input.empty?
+    return input if input.one?
     ips = input
     merged = true
     while merged
