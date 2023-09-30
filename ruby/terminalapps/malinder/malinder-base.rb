@@ -110,7 +110,7 @@ def load_all_to_cache()
 	end
 	# Ractor.make_shareable(CACHE)
 end
-def cache_query(query, all=False)
+def cache_query(query, all=false)
 	(all ? CACHE_FULL : CACHE).values.query(query)
 end
 
