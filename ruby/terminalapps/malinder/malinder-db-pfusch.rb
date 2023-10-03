@@ -119,7 +119,7 @@ csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|
         raise "new case"
       end
     elsif c.map{|a| a.values_at(*a.each_index.to_a - [1,2,4,5])}.uniq.one?
-      stays = c.sort_by{|a| a.values_at(0,3,4,5,1,2).map.with_index{|i,v| v.nil? ? i==5 ? 99999 : 'ZZZZZZ' : v}}.first
+      stays = c.sort.first
       remainder = c - [stays]
       unless c.first == c.last
         STDERR.puts('removing lines due to same stuff: ' + remainder.inspect)
