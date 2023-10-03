@@ -108,8 +108,18 @@ csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|
     #STDERR.puts('removing: ' + (c - [stays]).inspect)
     #STDERR.puts('stays: ' + stays.inspect)
   elsif c.reduce(true){|o,a| o && a.values_at(0,3) == c.first.values_at(0,3)}
-    if c.map{|a| a.values_at(*a.each_index.to_a - [1,2,4,5])}.uniq.one?
-      stays = c.sort.first
+    if c.map{|a| a.values_at(*a.each_index.to_a - [1,2])}.uniq.one?
+      not_empty = c.reject{|a| a.values_at(1,2).compact.empty?}
+      if not_empty.group_by{|a| a.values_at(1,2)}.one?
+        remainder = c - [not_empty.first]
+        STDERR.puts('removing lines due to missing season information: ' + remainder.inspect)
+        STDERR.puts('stays: ' + not_empty.first.inspect)
+        csv -= remainder
+      else
+        raise "new case"
+      end
+    elsif c.map{|a| a.values_at(*a.each_index.to_a - [1,2,4,5])}.uniq.one?
+      stays = c.sort_by{|a| a.values_at(0,3,4,5,1,2).map.with_index{|i,v| v.nil? ? i==5 ? 99999 : 'ZZZZZZ' : v}}.first
       remainder = c - [stays]
       unless c.first == c.last
         STDERR.puts('removing lines due to same stuff: ' + remainder.inspect)
@@ -146,6 +156,7 @@ csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|
     STDERR.puts("Duplicates: #{c.count} of #{id}")
   end
 end
+
 # raise 'stop hammertime' # to test the merging
 unless OUTPUT_JSON
   out = "id\tyear\tseason\tstate\tts\tname\tc1\tc2\tc3\n"
