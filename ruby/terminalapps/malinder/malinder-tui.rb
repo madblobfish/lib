@@ -92,7 +92,10 @@ class MALinder < TerminalGame
 			raise 'missing json, run malinder.sh first' unless File.exists?(season_file)
 			@season = cache_query("year == #{year} && season == #{season} && choice == -")
 		end
-		raise 'empty (all marked or nothing here)' if @season.empty?
+		if @season.empty?
+			STDERR.puts('all marked or nothing here')
+			exit(0)
+		end
 		@current = 0
 	end
 	def size_change_handler;sync_draw{draw(true)};end #redraw on size change
