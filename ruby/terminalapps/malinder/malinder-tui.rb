@@ -57,7 +57,7 @@ def image(anime)
 		begin
 			image = fetch(url).body
 		rescue
-			raise "#{id}"
+			raise "Could not load image for: #{id}"
 		end
 		File.write(path, image)
 		IMAGE_CACHE[id] = Vips::Image.new_from_buffer(image, '')
@@ -105,9 +105,14 @@ class MALinder < TerminalGame
 		raise 'empty (all marked or nothing here)' if @season.empty?
 		anime = @season[@current]
 		if VIPS
-			current_img = image(anime)
-			scale_by = current_img.size.zip([@size_x/2, @size_y]).map{|want,have| want > have ? have/want.to_f : 1}.min
-			buffer = (scale_by == 1 ? current_img : current_img.resize(scale_by)).pngsave_buffer
+			begin
+				current_img = image(anime)
+				scale_by = current_img.size.zip([@size_x/2, @size_y]).map{|want,have| want > have ? have/want.to_f : 1}.min
+				buffer = (scale_by == 1 ? current_img : current_img.resize(scale_by)).pngsave_buffer
+			rescue RuntimeError => e
+				raise unless e.message.start_with?('Could not load image for: ')
+				current_img = nil
+			end
 		end
 		counter = " (#{@current+1}/#{@season.size})"
 		normal_title = text_color_bad_words((anime['title'].inspect + counter).center(@cols))
@@ -166,14 +171,16 @@ class MALinder < TerminalGame
 				[url_prefix + id.to_s, choice, rel['relation'], title].join("\t")
 			end.join(separator)
 		end
-		if VIPS
+		if VIPS && current_img
 			paragraph = break_lines(text_color_bad_words(paragraph), @cols/2+1)
+		elsif VIPS && current_img.nil?
+			paragraph += "\n\n\nCould not load image"
 		else
 			paragraph += "\n\n\nNote: ruby-vips not installed => graphics are not displayed"
 		end
 		print(paragraph.gsub(/\n(\s*\n)+/, "\n\n").gsub(/\n/, "\r\n"))
 		move_cursor(0,0)
-		if VIPS
+		if VIPS && current_img
 			imgid = kitty_graphics_img_load(buffer)
 			kitty_graphics_img_pixel_place_center(imgid, *current_img.size.map{|e| (e*scale_by).to_i}, (@size_x/4).to_i, 0)
 		end
