@@ -67,6 +67,7 @@ def image(anime)
 end
 
 class MALinder < TerminalGame
+	UNDO_BUFFER = []
 	SEASON_SHORTCUTS = {
 		'w'=> 'winter', 'sp'=> 'spring', 'su'=> 'summer', 'f'=> 'fall',
 		'1'=> 'winter', '2'=> 'spring', '3'=> 'summer', '4'=> 'fall',
@@ -196,6 +197,12 @@ class MALinder < TerminalGame
 			logchoice('okay')
 		when '3', 'y'
 			logchoice('want')
+		when 'u'
+			if undo = UNDO_BUFFER.pop
+				LOG_FILE.truncate(LOG_FILE.size() - undo[:bytes])
+				@season.insert(undo[:pos], undo[:anime])
+				@current = undo[:pos]
+			end
 		else
 			return
 		end
@@ -206,9 +213,14 @@ class MALinder < TerminalGame
 		anime = @season[@current]
 		return if CHOICES.has_key?(anime['id'].to_s)
 		which_season = anime['start_season'].fetch_values('year', 'season')
-		LOG_FILE.write("#{anime['id']}\t#{which_season.join("\t")}\t#{choice}\t#{Time.now.to_i}\t#{anime['title']}\n")
+		written_bytes = LOG_FILE.write("#{anime['id']}\t#{which_season.join("\t")}\t#{choice}\t#{Time.now.to_i}\t#{anime['title']}\n")
 		@season.delete_at(@current)
 		exit() if @season.empty?
+		UNDO_BUFFER << {
+			anime: anime,
+			bytes: written_bytes,
+			pos: @current,
+		}
 		@current %= @season.size
 	end
 
@@ -216,4 +228,3 @@ class MALinder < TerminalGame
 		text.gsub(BAD_WORDS_REGEX){|w| get_color_code([255,0,0]) + w + color_reset_code()}
 	end
 end
-
