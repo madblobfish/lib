@@ -55,6 +55,21 @@ configurable_default(:BAD_WORDS_REGEX, /\b#{ Regexp.union(BAD_WORDS).source }\b/
 configurable_default(:DEFAULT_FILTER, '!(media_type == music || genres has hentai)') # set to nil to disable
 
 # not configurable
+STATE_LEVEL = {
+  # initial
+  'want'=> 0, 'nope'=> 0, 'okay'=> 0,
+  # intermediate
+  'backlog'=> 1,
+  # progress
+  'partly'=> 2,
+  # stopped
+  'paused'=> 3,
+  'broken'=> 4, #'plonk'=> 4,
+  # done
+  'seen'=> 5,
+}
+STATE_ACTIVE = %w(partly paused broken)
+STATE_INACTIVE = STATE_LEVEL.keys - STATE_ACTIVE
 CACHE = {}
 CACHE_FULL = {}
 IMAGE_CACHE = {}

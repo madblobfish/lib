@@ -78,19 +78,7 @@ end
 csv
 
 YEAR_SEASON = {'winter'=>1, 'spring'=>2, 'summer'=>3, 'fall'=>4}
-STATE_LEVEL = {
-  # initial
-  'want'=> 0, 'nope'=> 0, 'okay'=> 0,
-  # intermediate
-  'backlog'=> 1,
-  # progress
-  'partly'=> 2,
-  # stopped
-  'paused'=> 3,
-  'broken'=> 4, #'plonk'=> 4,
-  # done
-  'seen'=> 5,
-}
+
 csv.sort_by!{|e| x = e.values_at(1,2,0,4,5); x[1] = YEAR_SEASON[x[1]]; x.map(&:to_s).map(&:downcase)}
 csv.uniq!
 csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|

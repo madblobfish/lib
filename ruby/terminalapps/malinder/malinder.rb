@@ -100,14 +100,19 @@ if __FILE__ == $PROGRAM_NAME
 				puts v
 			end
 		end
-	elsif ARGV.first == 'log' && ARGV.length == 3
+	elsif ARGV.first == 'log' && (ARGV.length == 3 || ARGV.length == 4)
+		custom = ARGV.pop.strip if ARGV.length == 4
 		ARGV.shift # throw away first argument
 		nime = begin
 			CACHE[Integer(ARGV.first, 10)]
 		rescue
-			res = cache_query("names like '#{ARGV.first}'")
-			raise 'not unique or not found, test with "search" first' unless res.one?
-			res.first.last
+			res = cache_query("names like '#{ARGV.first}'") rescue []
+			# raise 'not unique or not found, test with "search" first' unless res.one?
+			if res.one?
+				res.first.last
+			else
+				nil
+			end
 		end
 		if nime.nil?
 			nime = {
@@ -137,8 +142,13 @@ if __FILE__ == $PROGRAM_NAME
 					puts "already the state"
 					exit 0
 				end
-				e[3] = log_value
-				e.join("\t")
+				if STATE_ACTIVE.include?(log_value) # plain value, no details
+					e[3] = log_value + ',' + e[3].split(',',2)[1].to_s # keep status
+				else
+					e[3] = log_value
+				end
+				e[6] = custom if custom
+				e.join("\t").tr("\n",'') + "\n"
 			else
 				e
 			end
