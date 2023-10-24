@@ -35,7 +35,7 @@ if __FILE__ == $PROGRAM_NAME
     puts '  --play play once'
     puts '  --loop play forever'
     puts '  --loop-(start|end|length)-(byte|sample|sec|beat) <value> define when and how to loop, implies loop and play'
-    puts '  --bpm <bpm>  required vor the -beat variants from above'
+    puts '  --bpm <bpm> required for the -beat variants from above'
     exit
   end
   args = {}
