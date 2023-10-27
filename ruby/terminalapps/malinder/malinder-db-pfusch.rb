@@ -32,8 +32,8 @@ def parse_csv(f)
       id = h.fetch('id')&.to_s if h.fetch('id')&.to_s&.start_with?('imdb,')
       a = [
         id,
-        h.fetch('year', nil),
-        h.fetch('season', nil),
+        h.fetch('year', CACHE_FULL.fetch(id, {}).fetch('season_start', {})['year']),
+        h.fetch('season', CACHE_FULL.fetch(id, {}).fetch('season_start', {})['season']),
         h.fetch('state') do
           seencount, state = (h.fetch('seencount(state)').to_s.split('(').map{|x|x.chomp(')').split(',').first.strip} + ['partly']).first(2)
           seencount = Integer(seencount.sub(/\[[^\]]+\]/, '').sub(/\.(\d+)$/, ''), 10)
