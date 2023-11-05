@@ -18,6 +18,22 @@ HELP_TEXT << '      limits by year and season if given'
 HELP_TEXT << '      e.g.: someguy.log 2013 summer'
 HELP_TEXT << '      e.g.: /tmp/some.log "(year <= 2019) && type != movie"'
 HELP_TEXT << ''
+HELP_TEXT << '  edit [filename]'
+HELP_TEXT << '      runs "$EDITOR logfile" or the given file name'
+HELP_TEXT << ''
+HELP_TEXT << '  pull/push'
+HELP_TEXT << '      runs "git pull" or "git pull" in config folder'
+HELP_TEXT << '  diff [--cached]'
+HELP_TEXT << '      runs "git diff" in config folder, optionally shows added changes'
+HELP_TEXT << '  add'
+HELP_TEXT << '      runs "git add -p" in config folder'
+HELP_TEXT << '  restore'
+HELP_TEXT << '      runs "git add -p" in config folder'
+HELP_TEXT << '  commit [message]'
+HELP_TEXT << '      runs "git commit" in config folder, default message is the current day in iso8601 format'
+HELP_TEXT << '  log [--p]'
+HELP_TEXT << '      runs "git log" in config folder, optionally with diffs'
+HELP_TEXT << ''
 HELP_TEXT << '  -i, --interactive may make it show results in the interactive Terminal UI'
 HELP_TEXT << '  --json may output json instead'
 
@@ -238,6 +254,42 @@ if __FILE__ == $PROGRAM_NAME
 				}.compact
 				puts '', "Choice: #{choice}"
 			end
+		end
+
+	elsif ARGV.first == 'edit' && (1..2).include?(ARGV.length)
+		filename = ARGV.fetch(1, LOG_FILE_NAME)
+		filename = CONFIG_DIR + filename if filename.include?("/")
+		system(ENV.fetch('EDITOR', 'nano'), filename, exception: true)
+
+# git integration
+	elsif ARGV == ['add']
+		FileUtils.cd(CONFIG_DIR)
+		system('git', 'add', '-p', exception: true)
+	elsif ARGV == ['pull']
+		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'pull', '--ff-only', exception: true)
+	elsif ARGV == ['push']
+		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true)
+	elsif ARGV.first == 'commit' && (1..2).include?(ARGV.length)
+		require 'date'
+		message = ARGV.fetch(1, DateTime.now.strftime('%F'))
+		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'commit', '-m', message, exception: true)
+	elsif ARGV.first == 'diff' && (1..2).include?(ARGV.length)
+		FileUtils.cd(CONFIG_DIR)
+		if ARGV[1] == '--cached'
+			system('git', 'diff', '--cached', exception: true)
+		elsif ARGV.one?
+			system('git', 'diff', exception: true)
+		else
+			raise 'unknown argument'
+		end
+	elsif ARGV.first == 'log' && (1..2).include?(ARGV.length)
+		FileUtils.cd(CONFIG_DIR)
+		if ARGV[1] == '-p'
+			system('git', 'log', '-p', exception: true)
+		elsif ARGV.one?
+			system('git', 'log', exception: true)
+		else
+			raise 'unknown argument'
 		end
 	elsif ARGV.length == 2
 		MALinder.new(*ARGV).run()

@@ -42,7 +42,8 @@ FileUtils.mkdir_p(CACHE_DIR_IMAGES)
 FileUtils.mkdir_p(CACHE_DIR_RELATIONS)
 configurable_default(:DEFAULT_HEADERS, {}) # currently unused
 configurable_default(:LOG_SUFFIX, '-' + ENV['USER'])
-configurable_default(:LOG_FILE_PATH, "#{CONFIG_DIR}choices#{LOG_SUFFIX}.log")
+LOG_FILE_NAME = "choices#{LOG_SUFFIX}.log"
+configurable_default(:LOG_FILE_PATH, "#{CONFIG_DIR}#{LOG_FILE_NAME}")
 configurable_default(:BAD_WORDS,
 	%w(
 		mini idol cultivat mini chibi promotion game pokemon sport mecha machine limited trailer short season
