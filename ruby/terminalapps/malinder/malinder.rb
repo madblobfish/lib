@@ -258,7 +258,7 @@ if __FILE__ == $PROGRAM_NAME
 
 	elsif ARGV.first == 'edit' && (1..2).include?(ARGV.length)
 		filename = ARGV.fetch(1, LOG_FILE_NAME)
-		filename = CONFIG_DIR + filename if filename.include?("/")
+		filename = CONFIG_DIR + filename unless filename.include?("/")
 		system(ENV.fetch('EDITOR', 'nano'), filename, exception: true)
 
 # git integration
