@@ -173,7 +173,7 @@ module PulseSimple
         end
       raise 'loop end needs to be before beginning || buffer too small' if buffer_len <= 0
       buff = FFI::MemoryPointer.new(:float, buffer_len)
-      buff.write_bytes(buffer.byteslice(o.fetch(:loop_start_byte, 0), buffer_len))
+      buff.write_bytes(buffer.byteslice(o[:loop] ? o.fetch(:loop_start_byte, 0) : 0, buffer_len))
       begin
         raise "Error writing to PulseAudio: #{handle_err(err)}" unless PulseSimple.pa_simple_write(stream, buff, buffer_len, err) == 0
       end while o[:loop]
