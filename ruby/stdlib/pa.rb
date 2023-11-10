@@ -169,7 +169,7 @@ module PulseSimple
         elsif o[:loop_end_byte] && o[:loop]
           o[:loop_end_byte] - o.fetch(:loop_start_byte, 0)
         else
-          buffer.bytesize
+          o[:size] || buffer.bytesize # buffersize may be padded! the given size is what we trust
         end
       raise 'loop end needs to be before beginning || buffer too small' if buffer_len <= 0
       buff = FFI::MemoryPointer.new(:float, buffer_len)
