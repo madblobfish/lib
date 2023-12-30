@@ -33,6 +33,9 @@ def fetch_related(id)
 		File.write(cached_file, related)
 	end
 	JSON.parse(related).fetch('data')
+rescue SocketError => e
+	raise unless e.message.include?('(getaddrinfo: ')
+	'No internet, lol'
 rescue RuntimeError => e
 	raise unless e.start_with?('429 - ')
 	'Ratelimited: got Error 429'
