@@ -141,7 +141,7 @@ if __FILE__ == $PROGRAM_NAME
 		else
 			ARGV.last
 		end
-		if nime['num_episodes'] != 0 && nime['num_episodes'] < log_value.split(',',2).last.to_i
+		if nime.fetch('num_episodes', 0) != 0 && nime['num_episodes'] < log_value.split(',',2).last.to_i
 			raise 'log episode higher than number of episodes' unless OPTIONS[:force]
 		elsif nime['num_episodes'].to_s == log_value.split(',',2).last || log_value == 'seen'
 			log_value = 'seen,' + nime['num_episodes'].to_s
