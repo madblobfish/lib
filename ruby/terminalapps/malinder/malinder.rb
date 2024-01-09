@@ -269,10 +269,12 @@ if __FILE__ == $PROGRAM_NAME
 		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'pull', '--ff-only', exception: true)
 	elsif ARGV == ['push']
 		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true)
-	elsif ARGV.first == 'commit' && (1..2).include?(ARGV.length)
+	elsif ARGV.first == 'commit' && (1..3).include?(ARGV.length)
 		require 'date'
+		push = ARGV.delete('--push')
 		message = ARGV.fetch(1, DateTime.now.strftime('%F'))
 		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'commit', '-m', message, exception: true)
+		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true) if push
 	elsif ARGV.first == 'diff' && (1..2).include?(ARGV.length)
 		FileUtils.cd(CONFIG_DIR)
 		if ARGV[1] == '--cached'
