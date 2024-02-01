@@ -18,21 +18,14 @@ HELP_TEXT << '      limits by year and season if given'
 HELP_TEXT << '      e.g.: someguy.log 2013 summer'
 HELP_TEXT << '      e.g.: /tmp/some.log "(year <= 2019) && type != movie"'
 HELP_TEXT << ''
-HELP_TEXT << '  edit [filename]'
-HELP_TEXT << '      runs "$EDITOR logfile" or the given file name'
+HELP_TEXT << '  edit [filename]: runs "$EDITOR logfile" or the given file name'
 HELP_TEXT << ''
-HELP_TEXT << '  pull/push'
-HELP_TEXT << '      runs "git pull" or "git pull" in config folder'
-HELP_TEXT << '  diff [--cached]'
-HELP_TEXT << '      runs "git diff" in config folder, optionally shows added changes'
-HELP_TEXT << '  add'
-HELP_TEXT << '      runs "git add -p" in config folder'
-HELP_TEXT << '  restore'
-HELP_TEXT << '      runs "git add -p" in config folder'
-HELP_TEXT << '  commit [message]'
-HELP_TEXT << '      runs "git commit" in config folder, default message is the current day in iso8601 format'
-HELP_TEXT << '  log [--p]'
-HELP_TEXT << '      runs "git log" in config folder, optionally with diffs'
+HELP_TEXT << '  pull/push: runs "git pull" or "git pull" in config folder'
+HELP_TEXT << '  diff [--cached]: runs "git diff" in config folder, optionally shows added changes'
+HELP_TEXT << '  add: runs "git add -p" in config folder'
+HELP_TEXT << '  restore: runs "git add -p" in config folder'
+HELP_TEXT << '  commit [message]: runs "git commit" in config folder, default message is the current day in iso8601 format'
+HELP_TEXT << '  log [--p]: runs "git log" in config folder, optionally with diffs'
 HELP_TEXT << ''
 HELP_TEXT << '  -i, --interactive may make it show results in the interactive Terminal UI'
 HELP_TEXT << '  --json may output json instead'
@@ -163,7 +156,17 @@ if __FILE__ == $PROGRAM_NAME
 				else
 					e[3] = log_value
 				end
-				e[6] = custom if custom
+				if custom
+					e[6] = custom
+				else
+					if log_value.start_with?('seen')
+						if e.length == 7
+							e.delete(6)
+						else
+							e[6] = ''
+						end
+					end
+				end
 				e.join("\t").tr("\n",'') + "\n"
 			else
 				e
@@ -263,10 +266,16 @@ if __FILE__ == $PROGRAM_NAME
 
 # git integration
 	elsif ARGV == ['add']
-		FileUtils.cd(CONFIG_DIR)
-		system('git', 'add', '-p', exception: true)
+		Dir.chdir(CONFIG_DIR) do
+			system('git', 'add', '-p', exception: true)
+		end
 	elsif ARGV == ['pull']
-		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'pull', '--ff-only', exception: true)
+		Dir.chdir("#{CONFIG_DIR}sources/") do
+			system('git', 'pull', '--ff-only', exception: true)
+		end
+		Dir.chdir(CONFIG_DIR) do
+			system('git', 'pull', '--ff-only', exception: true)
+		end
 	elsif ARGV == ['push']
 		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true)
 	elsif ARGV.first == 'commit' && (1..3).include?(ARGV.length)
@@ -276,22 +285,24 @@ if __FILE__ == $PROGRAM_NAME
 		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'commit', '-m', message, exception: true)
 		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true) if push
 	elsif ARGV.first == 'diff' && (1..2).include?(ARGV.length)
-		FileUtils.cd(CONFIG_DIR)
-		if ARGV[1] == '--cached'
-			system('git', 'diff', '--cached', exception: true)
-		elsif ARGV.one?
-			system('git', 'diff', exception: true)
-		else
-			raise 'unknown argument'
+		Dir.chdir(CONFIG_DIR) do
+			if ARGV[1] == '--cached'
+				system('git', 'diff', '--cached', exception: true)
+			elsif ARGV.one?
+				system('git', 'diff', exception: true)
+			else
+				raise 'unknown argument'
+			end
 		end
 	elsif ARGV.first == 'log' && (1..2).include?(ARGV.length)
-		FileUtils.cd(CONFIG_DIR)
-		if ARGV[1] == '-p'
-			system('git', 'log', '-p', exception: true)
-		elsif ARGV.one?
-			system('git', 'log', exception: true)
-		else
-			raise 'unknown argument'
+		Dir.chdir(CONFIG_DIR) do
+			if ARGV[1] == '-p'
+				system('git', 'log', '-p', exception: true)
+			elsif ARGV.one?
+				system('git', 'log', exception: true)
+			else
+				raise 'unknown argument'
+			end
 		end
 	elsif ARGV.length == 2
 		MALinder.new(*ARGV).run()

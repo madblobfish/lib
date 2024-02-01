@@ -94,7 +94,9 @@ MAL_MANGA_PREFIX = 'https://myanimelist.net/manga/'
 
 def load_all_to_cache()
 	require_relative '../../stdlib/array/query'
-	system({'GIT_DIR'=> "#{CONFIG_DIR}sources/.git"}, 'git', 'fetch', exception: true) if AUTOPULL_SOURCES
+	Dir.chdir("#{CONFIG_DIR}sources/") do
+		system('git', 'pull', '--ff-only', exception: true)
+	end if AUTOPULL_SOURCES
 	default_filter = DEFAULT_FILTER.nil? ? lambda{|_|true} : Array::QueryParser.new.parse(DEFAULT_FILTER)
 	date = Time.now
 	Dir[CONFIG_DIR + 'sources/*'].map do |s|
