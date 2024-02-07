@@ -3,9 +3,10 @@
 # original by: Henryk Plötz
 # https://hackaday.io/project/5301-reverse-engineering-a-low-cost-usb-co-monitor/log/17909-all-your-base-are-belong-to-us
 
-import sys, time
+import sys, fcntl, time
 
-with open(sys.argv[1], mode="b", buffering=0) as fp:
+with open(sys.argv[1], mode="rb", buffering=0) as fp:
+    fcntl.ioctl(fp, 0xC0094806, b"\x00"*9)
     while True:
         data = fp.read(8)
         value = int.from_bytes(data[1:3])
