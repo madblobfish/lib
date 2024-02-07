@@ -2,7 +2,11 @@
 
 # original by: Henryk Plötz
 # https://hackaday.io/project/5301-reverse-engineering-a-low-cost-usb-co-monitor/log/17909-all-your-base-are-belong-to-us
-
+#
+# udev rules example to detect and gain access to the devices:
+#   ACTION=="remove", GOTO="co2mini_end"
+#   SUBSYSTEMS=="usb", KERNEL=="hidraw*", ATTRS{idVendor}=="04d9", ATTRS{idProduct}=="a052", GROUP="YOU", MODE="0660", SYMLINK+="co2mini%n", GOTO="co2mini_end"
+#   LABEL="co2mini_end"
 import sys, fcntl, time
 
 with open(sys.argv[1], mode="rb", buffering=0) as fp:
