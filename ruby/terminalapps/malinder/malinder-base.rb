@@ -46,7 +46,7 @@ LOG_FILE_NAME = "choices#{LOG_SUFFIX}.log"
 configurable_default(:LOG_FILE_PATH, "#{CONFIG_DIR}#{LOG_FILE_NAME}")
 configurable_default(:BAD_WORDS,
 	%w(
-		mini idol cultivat mini chibi promotion game pokemon sport mecha machine limited trailer short season
+		mini idol cultivat chibi promotion game pokemon sport mecha machine limited trailer short season
 		special extra harem hentai ecchi kids collaboration commercial precure reborn rebirth revive isekai
 		reincar sanrio compilation transformer
 		youku bilibili
