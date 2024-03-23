@@ -347,6 +347,7 @@ class TerminalGame
     print("\e[?1049l") # disable alternative screen buffer
     print("\e[?25h") # show cursor
     print("\e[?7h") # show overflow
+    print("\eP=2s\e\\") # end synchronized drawing
     STDIN.read_nonblock(100_000) rescue nil # clear stdin buffer
   end
 end
