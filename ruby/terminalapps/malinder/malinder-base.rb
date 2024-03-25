@@ -53,7 +53,7 @@ configurable_default(:BAD_WORDS,
 	)	+ ['love live', 'boys love', 'sailor moon', 'music film', 'music video']
 )
 configurable_default(:BAD_WORDS_REGEX, /\b#{ Regexp.union(BAD_WORDS).source }\b/i)
-configurable_default(:DEFAULT_FILTER, '!(media_type == music || genres has hentai)') # set to nil to disable
+configurable_default(:DEFAULT_FILTER, '!(media_type in music,cm,pv || genres has hentai)') # set to nil to disable
 
 # not configurable
 STATE_LEVEL = {
