@@ -17,8 +17,8 @@ with open(sys.argv[1], mode="rb", buffering=0) as fp:
 
         match data[0]:
             case 0x42:
-                print(f'co2sensor temp={value / 16.0 - 273.15}')
+                print(f'co2sensor temperature={value / 16.0 - 273.15}')
             case 0x44 | 0x41:
-                print(f'co2sensor humid={value}')
+                print(f'co2sensor humidity={value}')
             case 0x50:
                 print(f'co2sensor co2={value}')
