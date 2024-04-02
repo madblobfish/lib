@@ -225,7 +225,8 @@ class MALinder < TerminalGame
 		anime = @season[@current]
 		return if CHOICES.has_key?(anime['id'].to_s)
 		which_season = anime['start_season'].fetch_values('year', 'season')
-		written_bytes = LOG_FILE.write("#{anime['id']}\t#{which_season.join("\t")}\t#{choice}\t#{Time.now.to_i}\t#{anime['title']}\n")
+		title = anime['title'].include?('"') ? "\"#{anime['title'].sub('"', '""')}\"" : anime['title']
+		written_bytes = LOG_FILE.write("#{anime['id']}\t#{which_season.join("\t")}\t#{choice}\t#{Time.now.to_i}\t#{title}\n")
 		@season.delete_at(@current)
 		exit() if @season.empty?
 		UNDO_BUFFER << {
