@@ -167,7 +167,7 @@ if __FILE__ == $PROGRAM_NAME
 						end
 					end
 				end
-				e.join("\t").tr("\n",'') + "\n"
+				e.map{|v| v.include?('"') ? "\"#{v.sub('"', '""')}\"": v}.join("\t").tr("\n",'').rstrip + "\n"
 			else
 				e
 			end

@@ -28,17 +28,17 @@ def fetch_related(id)
 		related = File.read(cached_file)
 	else
 		# backoff a bit to not run into ratelimits
-		return 'Ratelimited: internally' if Time.now - File.mtime("#{CACHE_DIR_RELATIONS}") >= 1
+		return 'Ratelimited - internally' if Time.now - File.mtime("#{CACHE_DIR_RELATIONS}") >= 1
 		related = fetch("https://api.jikan.moe/v4/anime/#{id.to_i}/relations").body
 		File.write(cached_file, related)
 	end
-	JSON.parse(related).fetch('data')
+	JSON.parse(related).fetch('data').select{|e| e["entries"]&.any?}
 rescue SocketError => e
 	raise unless e.message.include?('(getaddrinfo: ')
 	'No internet, lol'
 rescue RuntimeError => e
 	raise unless e.start_with?('429 - ')
-	'Ratelimited: got Error 429'
+	'Ratelimited - got Error 429'
 end
 # fetch(API + 'anime/30230')
 # fetch(j['main_picture']['large'])
@@ -189,6 +189,8 @@ class MALinder < TerminalGame
 		end
 		# print("\r\n")
 		# kitty_graphics_img_display(imgid)
+	rescue
+		raise "current anime id: #{anime['id']}"
 	end
 
 	def input_handler(input)
