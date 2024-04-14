@@ -32,7 +32,7 @@ def fetch_related(id)
 		related = fetch("https://api.jikan.moe/v4/anime/#{id.to_i}/relations").body
 		File.write(cached_file, related)
 	end
-	JSON.parse(related).fetch('data').select{|e| e["entries"]&.any?}
+	JSON.parse(related).fetch('data').map{|e| e["entries"] = e["entry"]; e}.select{|e| e["entries"]&.any?}
 rescue SocketError => e
 	raise unless e.message.include?('(getaddrinfo: ')
 	'No internet, lol'
