@@ -104,7 +104,7 @@ csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|
         STDERR.puts('stays: ' + not_empty.first.inspect)
         csv -= remainder
       else
-        raise "new case"
+        raise "new case #{c}"
       end
     elsif c.map{|a| a.values_at(*a.each_index.to_a - [1,2,4,5])}.uniq.one?
       stays = c.sort.first
