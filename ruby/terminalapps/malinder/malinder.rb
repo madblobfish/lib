@@ -236,6 +236,32 @@ if __FILE__ == $PROGRAM_NAME
 				]
 			end
 		end
+	elsif ARGV.first == 'relations' && (ARGV.length == 2 || (ARGV.length == 3 && ARGV.include?('--recurse')))
+		id = Integer(ARGV[1], 10)
+		res = CACHE_FULL.fetch(id)
+		related = fetch_related(id)
+		if ARGV.include?('--recurse')
+			seen = [id]
+			while search = related.flat_map{|a| a['entry']}.select{|a| a['type'] == 'anime' && ! seen.include?(a['mal_id'])}.first
+				rel = fetch_related(search['mal_id'], true)
+				if rel == 'Ratelimited: internally'
+					STDERR.puts('Results do not yet include all related')
+					break
+				end
+				related += rel
+				seen << search['mal_id']
+			end
+		end
+		if OPTIONS[:prefetch]
+			prefetch(res.map{|a|a["id"]}.sort())
+		elsif OPTIONS[:interactive]
+			ids = related.flat_map{|a| a['entry']}.map{|a| a['mal_id']}
+			rejected = ids.reject{|id| CACHE_FULL.has_key?(id)}
+			STDERR.puts('ids not available: ', rejected)
+			MALinder.new((ids - rejected).uniq).run
+		else
+			puts related
+		end
 	elsif ARGV.first == 'show' && ARGV.length == 2
 		id = Integer(ARGV[1], 10)
 		if OPTIONS[:interactive]
