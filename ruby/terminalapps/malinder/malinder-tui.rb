@@ -208,12 +208,31 @@ class MALinder < TerminalGame
 			@current = @season.size-1 if @current < 0
 		when "\e", 'q' #quit
 			exit()
-		when '1' #, 'q' # commented out because annoying
+		when 'r'
+			related = fetch_related(@season[@current]['id'], true)
+			return if related.is_a?(String)
+			already_seen = UNDO_BUFFER.map{|e| e[:anime]['id'] }
+			animes = related.flat_map{|r|
+				r['entry']
+					.reject{|e| e['type'] != 'anime'}
+					.reject{|e| @season.map{|a|a['id']}.include?(e['mal_id'])}
+					.reject{|e| CHOICES.has_key?(e['mal_id'].to_s)}
+					.reject{|e| already_seen.include?(e['mal_id'])}
+					.map{|e| CACHE_FULL[e['mal_id']]}
+			}.compact
+			if animes.empty?
+				print("\rnothing found or already in choices")
+				return
+			end
+			@season.insert(@current, *animes)
+		when '1'
 			logchoice('nope')
-		when '2', 'a'
+		when '2'
 			logchoice('okay')
-		when '3', 'y'
+		when '3'
 			logchoice('want')
+		when "\e[15~"
+			# empty, this triggers the redraw below this block
 		when 'u'
 			if undo = UNDO_BUFFER.pop
 				LOG_FILE.truncate(LOG_FILE.size() - undo[:bytes])
