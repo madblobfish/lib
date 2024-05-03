@@ -50,10 +50,13 @@ configurable_default(:BAD_WORDS,
 		special extra harem hentai ecchi kids collaboration commercial precure reborn rebirth revive isekai
 		reincar sanrio compilation limited trailer short season
 		youku bilibili
-	)	+ ['love live', 'boys love', 'sailor moon', 'music film', 'music video']
+	)	+ [
+		'love live', 'boys love', 'sailor moon', 'music film', 'music video', 'variety program',
+		'martial art'
+	]
 )
 configurable_default(:BAD_WORDS_REGEX, /\b#{ Regexp.union(BAD_WORDS).source }\b/i)
-configurable_default(:DEFAULT_FILTER, '!(media_type in music,cm,pv || genres has hentai)') # set to nil to disable
+configurable_default(:DEFAULT_FILTER, '!(media_type in music,cm,pv || genres has hentai) && !(num_episodes == 1 && average_episode_duration <= 1000) && average_episode_duration >= 300') # set to nil to disable
 
 # not configurable
 STATE_LEVEL = {
