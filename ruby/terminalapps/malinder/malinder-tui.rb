@@ -20,7 +20,7 @@ def fetch(url, **stuff)
 	raise "#{ret.code} - #{url}" if ret.code != '200'
 	return ret
 end
-def fetch_related(id)
+def fetch_related(id, sleeps=false)
 	return [] if id.to_s.start_with?('imdb,')
 	return [] if id.to_i == 0
 	cached_file = CACHE_DIR_RELATIONS + id.to_i.to_s + '.json'
@@ -28,7 +28,12 @@ def fetch_related(id)
 		related = File.read(cached_file)
 	else
 		# backoff a bit to not run into ratelimits
-		return 'Ratelimited - internally' if Time.now - File.mtime("#{CACHE_DIR_RELATIONS}") >= 1
+		age = Time.now - File.mtime("#{CACHE_DIR_RELATIONS}")
+		if sleeps && age <= 1 && age >= 0
+			sleep(1 - age)
+		elsif age >= 1
+			return 'Ratelimited - internally'
+		end
 		related = fetch("https://api.jikan.moe/v4/anime/#{id.to_i}/relations").body
 		File.write(cached_file, related)
 	end
