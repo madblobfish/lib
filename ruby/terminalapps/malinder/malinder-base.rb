@@ -86,11 +86,15 @@ def parse_choices(file)
 		[id, {choice:c, ts: ts, c1: c1, c2: c2, c3: c3}]
 	end]
 end
+
+def choices_path_to_prefix(path_or_filename)
+	path_or_filename.rpartition('/').last.sub(/^choices-(.*).log$/, '\1')
+end
+
 CHOICES = parse_choices(LOG_FILE)
 CHOICES_OTHERS = {}
 (Dir["#{CONFIG_DIR}choices*.log"] - [LOG_FILE_PATH]).map do |path|
-	name = path.delete_prefix(CONFIG_DIR + 'choices').delete_prefix('-').delete_suffix('.log')
-	CHOICES_OTHERS[name] = parse_choices(path)
+	CHOICES_OTHERS[choices_path_to_prefix(path)] = parse_choices(path)
 end
 MAL_PREFIX = 'https://myanimelist.net/anime/'
 MAL_MANGA_PREFIX = 'https://myanimelist.net/manga/'
@@ -145,8 +149,4 @@ def season_shortcuts(input)
 	s = MALinder::SEASON_SHORTCUTS.fetch(input, input)
 	raise "'#{input.inspect}' is not a season" unless MALinder::SEASON_SHORTCUTS.values.include?(s)
 	s
-end
-
-def choices_path_to_prefix(path_or_filename)
-	path_or_filename.rpartition('/').last.sub(/^choices-(.*).log$/, '\1')
 end
