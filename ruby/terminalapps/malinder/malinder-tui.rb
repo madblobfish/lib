@@ -169,6 +169,7 @@ class MALinder < TerminalGame
 				id = rel['entry'].first['mal_id']
 				cache = CACHE[id]
 				choice = CHOICES.fetch(id.to_s, {}).fetch(:choice, '-')
+				choice = '-' if rel['entry'].first['type'] != 'anime'
 				title = rel['entry'].first['name']
 				if cache
 					title = cache.fetch('alternative_titles', {})['en'] rescue nil
