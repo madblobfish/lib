@@ -232,7 +232,7 @@ class MALinder < TerminalGame
 					.reject{|e| @season.map{|a|a['id']}.include?(e['mal_id'])}
 					.reject{|e| CHOICES.has_key?(e['mal_id'].to_s)}
 					.reject{|e| already_seen.include?(e['mal_id'])}
-			}.uniq.map{|e| CACHE_FULL[e['mal_id']]}.compact
+			}.uniq.map{|e| CACHE[e['mal_id']]}.compact
 			if animes.empty?
 				print("\rnothing found or already in choices")
 				return
