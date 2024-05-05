@@ -166,18 +166,31 @@ class MALinder < TerminalGame
 			separator = "\n  "
 			paragraph += "\n\nRelated:" + separator
 			paragraph += related.map do |rel|
-				id = rel['entry'].first['mal_id']
-				cache = CACHE[id]
-				choice = CHOICES.fetch(id.to_s, {}).fetch(:choice, '-')
-				choice = '-' if rel['entry'].first['type'] != 'anime'
-				title = rel['entry'].first['name']
-				if cache
-					title = cache.fetch('alternative_titles', {})['en'] rescue nil
-					title ||= cache['title']
+				rel['entry'].map do |r|
+					id = r['mal_id']
+					cache = CACHE[id]
+					title = r['name']
+					# color pattern:
+					## yellow when not in CACHE
+					## redish/orange when default filterd (in full cache)
+					## white when in CACHE
+					## gray when not an anime
+					color = [180,180,0]
+					color = [200,100,60] if CACHE_FULL.has_key?(id)
+					if cache
+						title = cache.fetch('alternative_titles', {})['en'] rescue nil
+						title ||= cache['title']
+						color = [255] * 3
+					end
+					choice = CHOICES.fetch(id.to_s, {}).fetch(:choice, '-')
+					if r['type'] != 'anime'
+						choice = '-'
+						color = [150] * 3
+					end
+					url_prefix = MAL_PREFIX
+					url_prefix = MAL_MANGA_PREFIX if r['type'] == 'manga'
+					[get_color_code(color) + url_prefix + id.to_s, choice, rel['relation'], title + color_reset_code].join("\t")
 				end
-				url_prefix = MAL_PREFIX
-				url_prefix = MAL_MANGA_PREFIX if rel['entry'].first['type'] == 'manga'
-				[url_prefix + id.to_s, choice, rel['relation'], title].join("\t")
 			end.join(separator)
 		end
 		if VIPS && current_img
