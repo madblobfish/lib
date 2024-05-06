@@ -113,7 +113,7 @@ if __FILE__ == $PROGRAM_NAME
 		custom = ARGV.pop.strip if ARGV.length == 4
 		ARGV.shift # throw away first argument
 		nime = begin
-			CACHE[Integer(ARGV.first, 10)]
+			CACHE_FULL[Integer(ARGV.first, 10)]
 		rescue
 			res = cache_query("names like '#{ARGV.first}'") rescue []
 			# raise 'not unique or not found, test with "search" first' unless res.one?
