@@ -42,7 +42,7 @@ rescue SocketError => e
 	raise unless e.message.include?('(getaddrinfo: ')
 	'No internet, lol'
 rescue RuntimeError => e
-	raise unless e.start_with?('429 - ')
+	raise unless e.message.start_with?('429 - ')
 	'Ratelimited - got Error 429'
 end
 # fetch(API + 'anime/30230')
