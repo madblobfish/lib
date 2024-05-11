@@ -28,10 +28,10 @@ class Duration
   def to_i; @sec.to_i; end
   def to_f; @sec.to_f; end
   def to_s
-    [@sec.negative? ? "-" : nil, SIZES_AND_FACTORS.map do |name, calc|
+    [@sec.negative? ? '-' : nil, SIZES_AND_FACTORS.map do |name, calc|
       [name.to_s, calc[0][@sec.abs].to_s]
     end.map do |name, size|
-      size << name unless size == "0"
+      size << name unless size == '0'
     end].join
   end
   alias :inspect :to_s
@@ -41,7 +41,7 @@ class Duration
     sec = 0
     while not duration.empty?
       duration.gsub!(/^(\d+)(\D+)/,'')
-      raise "can't parse" unless $1 and $2
+      raise 'can\'t parse' unless $1 and $2
       sec += SIZES_AND_FACTORS[$2.to_sym][1][$1.to_i]
     end
     self.new(positive ? sec : -sec)
@@ -49,7 +49,7 @@ class Duration
 end
 
 class Time
-  alias :"old_minus" :"-"
+  alias :old_minus :-
   def -(other)
     return self.old_minus(other) unless other.is_a?(Time)
     Duration.new((self.to_f - other.to_f))
@@ -59,20 +59,20 @@ end
 # tests
 a = Time.now()
 b = a + 10
-raise "implementation error" unless (a - b).to_s == "-10s"
-raise "implementation error" unless (a - b).abs.to_s == "10s"
-raise "implementation error" unless (b - a).to_s == "10s"
-raise "implementation error" unless Duration.parse(a = "-1y4s2msec").to_s == a
-raise "implementation error" unless Duration.parse(a).to_f == -31536004.002
+raise 'implementation error' unless (a - b).to_s == '-10s'
+raise 'implementation error' unless (a - b).abs.to_s == '10s'
+raise 'implementation error' unless (b - a).to_s == '10s'
+raise 'implementation error' unless Duration.parse(a = '-1y4s2msec').to_s == a
+raise 'implementation error' unless Duration.parse(a).to_f == -31536004.002
 
 if __FILE__ == $PROGRAM_NAME
   # script mode
   if ARGV.empty?
-    puts "needs a number or two dates"
+    puts 'needs a number or two dates'
     exit
-  elsif ARGV.first == "--stopthing"
+  elsif ARGV.first == '--stopthing'
     begin
-      puts "starting timer, interrupt to output duration"
+      puts 'starting timer, interrupt to output duration'
       start = Time.now()
       sleep
     rescue Interrupt
