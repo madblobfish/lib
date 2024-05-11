@@ -219,7 +219,7 @@ if __FILE__ == $PROGRAM_NAME
 			LOG_FILE.write("#{nime['id']}\t#{nime['start_season'].fetch_values('year', 'season').join("\t")}\t#{log_value}\t#{Time.now.to_i}\t#{nime['title']}\n")
 			puts 'created new entry'
 		end
-	elsif ARGV.first == 'query' || (ARGV.first == 'search' && ARGV.length >= 2)
+	elsif (ARGV.first == 'query' || ARGV.first == 'search') && ARGV.length >= 2
 		mode = ARGV.shift # throw away first argument
 		query = ARGV.join(' ')
 		query = "names like '#{query}'" if mode == 'search'
