@@ -145,22 +145,27 @@ class MALinder < TerminalGame
 			@current = @season.size-1 if @current < 0
 		when "\e", 'q' #quit
 			exit()
-		when 'r'
+		when 'r', 'R'
 			related = fetch_related(@season[@current]['id'], true)
 			return if related.is_a?(String)
-			already_seen = UNDO_BUFFER.map{|e| e[:anime]['id'] }
+			already_seen = UNDO_BUFFER.select{|e| e[:type]==:log}.map{|e| e[:anime]['id'] }
 			animes = related.flat_map{|r|
 				r['entry']
 					.reject{|e| e['type'] != 'anime'}
 					.reject{|e| @season.map{|a|a['id']}.include?(e['mal_id'])}
-					.reject{|e| CHOICES.has_key?(e['mal_id'].to_s)}
+					.reject{|e| CHOICES.has_key?(e['mal_id'].to_s) if input == 'r'}
 					.reject{|e| already_seen.include?(e['mal_id'])}
-			}.uniq.map{|e| CACHE[e['mal_id']]}.compact
+			}.uniq.map{|e| (input == 'r' ? CACHE : CACHE_FULL)[e['mal_id']]}.compact
 			if animes.empty?
 				print("\rnothing found or already in choices")
 				return
 			end
 			@season.insert(@current, *animes)
+			UNDO_BUFFER << {
+				animes: animes,
+				type: :related,
+				pos: @current,
+			}
 		when '1'
 			logchoice('nope')
 		when '2'
@@ -171,9 +176,17 @@ class MALinder < TerminalGame
 			# empty, this triggers the redraw below this block
 		when 'u'
 			if undo = UNDO_BUFFER.pop
-				LOG_FILE.truncate(LOG_FILE.size() - undo[:bytes])
-				@season.insert(undo[:pos], undo[:anime])
-				@current = undo[:pos]
+				case undo[:type]
+				when :log
+					LOG_FILE.truncate(LOG_FILE.size() - undo[:bytes])
+					@season.insert(undo[:pos], undo[:anime])
+					@current = undo[:pos]
+				when :related
+					undo[:animes].length.times{@season.delete_at(undo[:pos])}
+					@current = undo[:pos]
+				else
+					print("\rthis is a bug!")
+				end
 			end
 		else
 			return
@@ -191,6 +204,7 @@ class MALinder < TerminalGame
 		exit() if @season.empty?
 		UNDO_BUFFER << {
 			anime: anime,
+			type: :log,
 			bytes: written_bytes,
 			pos: @current,
 		}
