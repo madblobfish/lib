@@ -221,11 +221,9 @@ if __FILE__ == $PROGRAM_NAME
 		end
 	elsif ARGV.first == 'query' || (ARGV.first == 'search' && ARGV.length >= 2)
 		mode = ARGV.shift # throw away first argument
-		if mode == 'search'
-			res = cache_query("names like '#{ARGV.join(' ')}'", OPTIONS[:all])
-		else
-			res = cache_query(ARGV.join(' '), OPTIONS[:all])
-		end
+		query = ARGV.join(' ')
+		query = "names like '#{query}'" if mode == 'search'
+		res = cache_query(query, OPTIONS[:all])
 		output_or_process(
 			lambda{res.map{|a|a["id"]}.sort()},
 			res,
