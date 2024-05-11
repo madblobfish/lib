@@ -16,9 +16,7 @@ require_optional(__dir__ + '/../../stdlib/duration'){
 			@secs = secs
 			@secs
 		end
-		def to_s
-			@secs.to_s
-		end
+		def to_s;@secs.to_s;end
 	end
 }
 
@@ -103,6 +101,13 @@ end
 MAL_PREFIX = 'https://myanimelist.net/anime/'
 MAL_MANGA_PREFIX = 'https://myanimelist.net/manga/'
 
+IDS_IN_RELATED_CACHE = Dir.children(CACHE_DIR_RELATIONS).map{|s|s.rpartition('.').first.to_i}.to_set
+IDS_IN_IMAGE_CACHE = Dir.children(CACHE_DIR_IMAGES).map{|s|s.rpartition('.').first.to_i}.to_set
+IDS_IN_CACHE = IDS_IN_RELATED_CACHE & IDS_IN_IMAGE_CACHE
+def anime_files_in_cache?(id)
+	IDS_IN_CACHE.include?(id.to_i)
+end
+
 def load_all_to_cache()
 	require_relative '../../stdlib/array/query'
 	Dir.chdir("#{CONFIG_DIR}sources/") do
@@ -127,6 +132,7 @@ def load_all_to_cache()
 			v.merge!(v.fetch('start_season', {}))
 			v['genres'] = v['genres']&.map{|h| (h.is_a?(Hash) ? h['name']: h).downcase.tr(' ', '_')}
 			v['names'] = [v['title'], *v['alternative_titles']&.values.flatten].reject{|n| n == ''}
+			v['incache'] = anime_files_in_cache?(v['id'])
 			# v['names'] = [v['title'], *v.fetch('alternative_titles', {})&.values.flatten]
 
 			CACHE_FULL[v['id']] ||= v
@@ -178,7 +184,7 @@ def fetch_related(id, sleeps=false)
 		age = Time.now - File.mtime("#{CACHE_DIR_RELATIONS}")
 		if sleeps
 			sleep(x = 1 - [age.to_f, 0].max + 0.1) if age.to_f <= 1
-		elsif age >= 1
+		elsif age.to_f >= 1
 			return 'Ratelimited - internally'
 		end
 		related = fetch("https://api.jikan.moe/v4/anime/#{id.to_i}/relations").body

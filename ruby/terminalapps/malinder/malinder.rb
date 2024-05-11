@@ -110,7 +110,7 @@ if __FILE__ == $PROGRAM_NAME
 		require 'date'
 		message = ARGV.fetch(1, DateTime.now.strftime('%F'))
 		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'commit', '-m', message, exception: true)
-		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true) if OPTIONS['push']
+		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true) if OPTIONS[:push]
 	elsif ARGV.first == 'diff' && ARGV.length == 1
 		Dir.chdir(CONFIG_DIR) do
 			cmd = 'git', 'diff'
