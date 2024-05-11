@@ -196,7 +196,7 @@ class MALinder < TerminalGame
 		if VIPS && current_img
 			paragraph = break_lines(text_color_bad_words(paragraph), @cols/2+1)
 		elsif VIPS && current_img.nil?
-			paragraph += "\n\n\nCould not load image"
+			paragraph = "#{break_lines(text_color_bad_words(paragraph), @cols)}\n\n\nCould not load image"
 		else
 			paragraph += "\n\n\nNote: ruby-vips not installed => graphics are not displayed"
 		end
