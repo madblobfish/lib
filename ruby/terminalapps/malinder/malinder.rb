@@ -6,7 +6,7 @@ HELP_TEXT << '      controls: arrow keys, q to quit, 1 for nope, 2/a is ok, 3/y 
 HELP_TEXT << ''
 HELP_TEXT << '  stats [--by-season]: get some statistics'
 HELP_TEXT << '  show <id>: lookup an entry from cache'
-HELP_TEXT << '  search <name>: fuzzy search on "names" in the cache'
+HELP_TEXT << '  search <name> [--all]: fuzzy search on "names" in the cache'
 HELP_TEXT << '  query <querysyntax>: search cache using expressions'
 HELP_TEXT << '      e.g.: (state == seen && year < 1992) || title has Gintama && genres all action,time_travel'
 HELP_TEXT << '  log <id/search> <status>: change the status of an anime'
@@ -25,10 +25,31 @@ HELP_TEXT << '  diff [--cached]: runs "git diff" in config folder, optionally sh
 HELP_TEXT << '  add: runs "git add -p" in config folder'
 HELP_TEXT << '  restore: runs "git add -p" in config folder'
 HELP_TEXT << '  commit [message]: runs "git commit" in config folder, default message is the current day in iso8601 format'
-HELP_TEXT << '  log [--p]: runs "git log" in config folder, optionally with diffs'
+HELP_TEXT << '  log [-p]: runs "git log" in config folder, optionally with diffs'
 HELP_TEXT << ''
 HELP_TEXT << '  -i, --interactive may make it show results in the interactive Terminal UI'
+HELP_TEXT << '  --prefetch may make it load and cache images and related information'
 HELP_TEXT << '  --json may output json instead'
+HELP_TEXT << ''
+HELP_TEXT << '  -u, --log-suffix allows setting the user'
+HELP_TEXT << '  --no-default-filter disables filtering using DEFAULT_FILTER config option'
+
+def output_or_process(id_list, data, formatted_text)
+	case OPTIONS
+	in {prefetch: a} if a
+		raise 'prefetch not supported' if id_list.nil?
+		prefetch((id_list.call rescue id_list))
+	in {interactive: a} if a
+		raise 'interactive not supported' if id_list.nil?
+		MALinder.new((id_list.call rescue id_list)).run
+	in {json: a} if a
+		puts JSON.pretty_generate((data.call rescue data))
+	when formatted_text
+		puts((formatted_text.call rescue formatted_text))
+	else
+		raise 'I believe this is a bug'
+	end
+end
 
 if __FILE__ == $PROGRAM_NAME
 	if ARGV.include?('--help') || ARGV.empty?
@@ -36,12 +57,31 @@ if __FILE__ == $PROGRAM_NAME
 		exit 0
 	end
 
+	def pars_arg(const, flag)
+		if ARGV.include?(flag)
+			Object.const_set(const, ARGV.delete_at(ARGV.index(flag) + 1))
+			ARGV.delete(flag)
+		end
+	end
+	pars_arg(:LOG_SUFFIX, '--log-suffix')
+	pars_arg(:LOG_SUFFIX, '-u')
+	raise 'wat yo doin?!' if Object.const_defined?(:LOG_SUFFIX) && LOG_SUFFIX.nil?
 	OPTIONS = {
-		interactive: ARGV.delete('--interactive') || ARGV.delete('-i'),
-		no_default_filter: ARGV.delete('--no-default-filter'),
-		json: ARGV.delete('--json'),
+		all: ARGV.delete('--all'),
+		by_season: ARGV.delete('--by-season'),
+		cached: ARGV.delete('--cached'),
 		force: ARGV.delete('--force'),
+		interactive: ARGV.delete('--interactive') || ARGV.delete('-i'),
+		json: ARGV.delete('--json'),
+		no_default_filter: ARGV.delete('--no-default-filter'),
+		prefetch: ARGV.delete('--prefetch'),
+		push: ARGV.delete('--push'),
+		recurse: ARGV.delete('--recurse'),
 	}
+	bad_args = ARGV.select{|a| a.start_with?('-')}
+	raise 'unknown argument(s): ' + bad_args.join(', ') if bad_args.any?
+
+	DEFAULT_FILTER = nil if OPTIONS[:no_default_filter]
 	GC.disable
 	require_relative 'malinder-base.rb'
 	require_relative 'malinder-tui.rb'
@@ -96,19 +136,18 @@ if __FILE__ == $PROGRAM_NAME
 			'-/*'=> (bids - (aids & bids)).sort,
 			'*/-'=> (aids - (aids & bids)).sort,
 		}
-		if OPTIONS[:json]
-			puts JSON.pretty_generate(res)
-		else
+		output_or_process(nil, res, lambda{
 			prefixes = [own_file, other_file].map{|p| choices_path_to_prefix(p)}
-			res.each do |k,v|
-				puts '' if k == '-/*'
-				puts k.split('/').zip(prefixes)
+			res.map do |k,v|
+				r = []
+				r << '' if k == '-/*'
+				r << k.split('/').zip(prefixes)
 					.reject{|c,p|c == '*'}
 					.map{|c, p| LOG_FILE_PATH.end_with?(p+'.log') ? "choice == #{c}" : "choice-#{p} == #{c}"}
 					.join(' && ') + season_query
-				puts v
+				r << v
 			end
-		end
+		})
 	elsif ARGV.first == 'log' && (ARGV.length == 3 || ARGV.length == 4)
 		custom = ARGV.pop.strip if ARGV.length == 4
 		ARGV.shift # throw away first argument
@@ -180,21 +219,20 @@ if __FILE__ == $PROGRAM_NAME
 		end
 	elsif ARGV.first == 'query' || (ARGV.first == 'search' && ARGV.length >= 2)
 		mode = ARGV.shift # throw away first argument
-		all = ARGV.delete('--all')
 		if mode == 'search'
-			res = cache_query("names like '#{ARGV.join(' ')}'", all)
+			res = cache_query("names like '#{ARGV.join(' ')}'", OPTIONS[:all])
 		else
-			res = cache_query(ARGV.join(' '), all)
+			res = cache_query(ARGV.join(' '), OPTIONS[:all])
 		end
-		if OPTIONS[:interactive]
-			MALinder.new(res.map{|a|a["id"]}.sort()).run()
-		elsif OPTIONS[:json]
-			puts JSON.pretty_generate(res)
-		else
-			puts res.map{|nime|
-				nime.fetch_values('id', 'year', 'season', 'state', 'timestamp', 'title', 'c1').compact
-			}.sort_by(&:first).map{|a| a.join("\t")}
-		end
+		output_or_process(
+			lambda{res.map{|a|a["id"]}.sort()},
+			res,
+			lambda{
+				res.map{|nime|
+					nime.fetch_values('id', 'year', 'season', 'state', 'timestamp', 'title', 'c1').compact
+				}.sort_by(&:first).map{|a| a.join("\t")}
+			}
+		)
 	elsif ARGV.first == 'stats'
 		time_chosen_sum = 0
 		count_chosen = 0
@@ -226,7 +264,7 @@ if __FILE__ == $PROGRAM_NAME
 		print_percent['Watched', count_watched, count_chosen]
 		print_percent['Watched time', time_watched_sum, time_chosen_sum]
 		print_percent['Tracked', CHOICES.size, CACHE.size]
-		if ARGV.include?('--by-season')
+		if OPTIONS[:by_season]
 			puts ''
 			CACHE.reject{|k,a| a['media_type'] == 'music'}.group_by{|k,v| v.fetch('start_season', {})}.sort{|a,b|a.first.values <=> b.first.values}.each do |season, nimes|
 				print_percent[
@@ -236,11 +274,11 @@ if __FILE__ == $PROGRAM_NAME
 				]
 			end
 		end
-	elsif ARGV.first == 'relations' && (ARGV.length == 2 || (ARGV.length == 3 && ARGV.include?('--recurse')))
+	elsif ARGV.first == 'relations' && ARGV.length == 2
 		id = Integer(ARGV[1], 10)
 		res = CACHE_FULL.fetch(id)
 		related = fetch_related(id)
-		if ARGV.include?('--recurse')
+		if OPTIONS[:recurse]
 			seen = [id]
 			while search = related.flat_map{|a| a['entry']}.select{|a| a['type'] == 'anime' && ! seen.include?(a['mal_id'])}.first
 				rel = fetch_related(search['mal_id'], true)
@@ -252,28 +290,18 @@ if __FILE__ == $PROGRAM_NAME
 				seen << search['mal_id']
 			end
 		end
-		if OPTIONS[:prefetch]
-			prefetch(res.map{|a|a["id"]}.sort())
-		elsif OPTIONS[:interactive]
-			ids = related.flat_map{|a| a['entry']}.map{|a| a['mal_id']}
-			rejected = ids.reject{|id| CACHE_FULL.has_key?(id)}
-			STDERR.puts('ids not available: ', rejected)
-			MALinder.new((ids - rejected).uniq).run
-		else
-			puts related
-		end
+		output_or_process(
+			lambda{related.map{|a|a["id"]}.sort()},
+			related,
+			'well... use --json or --interactive here for now' # no clue how to present this
+		)
 	elsif ARGV.first == 'show' && ARGV.length == 2
 		id = Integer(ARGV[1], 10)
-		if OPTIONS[:interactive]
-			MALinder.new([id]).run
-		else
-			res = CACHE_FULL.fetch(id)
-			choice = CHOICES[id.to_s][:choice] rescue '-'
-			if OPTIONS[:json]
-				res['choice'] = choice
-				puts JSON.pretty_generate(res)
-			else
-				puts res.sort.map{|(k,v)|
+		output_or_process(
+			[id],
+			lambda{CACHE_FULL.fetch(id)},
+			lambda{
+				ret = CACHE_FULL.fetch(id).sort.map{|(k,v)|
 					next if %w(choice state names start_season).include?(k)
 					if k == 'genres'
 						[k,v.join(', ')].join(":\t")
@@ -281,9 +309,9 @@ if __FILE__ == $PROGRAM_NAME
 						[k,v].join(":\t")
 					end
 				}.compact
-				puts '', "Choice: #{choice}"
-			end
-		end
+				ret << ['', "Choice: #{CHOICES[id.to_s][:choice] rescue '-'}"]
+			}
+		)
 
 	elsif ARGV.first == 'edit' && (1..2).include?(ARGV.length)
 		filename = ARGV.fetch(1, LOG_FILE_NAME)
@@ -306,19 +334,14 @@ if __FILE__ == $PROGRAM_NAME
 		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true)
 	elsif ARGV.first == 'commit' && (1..3).include?(ARGV.length)
 		require 'date'
-		push = ARGV.delete('--push')
 		message = ARGV.fetch(1, DateTime.now.strftime('%F'))
 		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'commit', '-m', message, exception: true)
-		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true) if push
-	elsif ARGV.first == 'diff' && (1..2).include?(ARGV.length)
+		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true) if OPTIONS['push']
+	elsif ARGV.first == 'diff' && ARGV.length == 1
 		Dir.chdir(CONFIG_DIR) do
-			if ARGV[1] == '--cached'
-				system('git', 'diff', '--cached', exception: true)
-			elsif ARGV.one?
-				system('git', 'diff', exception: true)
-			else
-				raise 'unknown argument'
-			end
+			cmd = 'git', 'diff'
+			cmd << '--cached' if OPTIONS[:cached]
+			system(*cmd, exception: true)
 		end
 	elsif ARGV.first == 'log' && (1..2).include?(ARGV.length)
 		Dir.chdir(CONFIG_DIR) do
@@ -330,8 +353,18 @@ if __FILE__ == $PROGRAM_NAME
 				raise 'unknown argument'
 			end
 		end
+
 	elsif ARGV.length == 2
-		MALinder.new(*ARGV).run()
+		OPTIONS[:interactive] = true # this command forces interactive use
+		year = Integer(ARGV.first, 10) # raises an exception if year is not integer
+		season = season_shortcuts(ARGV.last)
+		# for checking and better error messages
+		raise 'missing json, run malinder.sh first' unless File.exists?("#{CONFIG_DIR}sources/#{year}-#{season}.json")
+		output_or_process(
+			lambda{cache_query("year == #{year} && season == #{season} && choice == -").map{|a| a['id']} },
+			nil, nil
+		)
+
 	else
 		puts 'unknown command, or wrong parameters.', '', HELP_TEXT
 		exit 1

@@ -59,6 +59,10 @@ configurable_default(:BAD_WORDS_REGEX, /\b#{ Regexp.union(BAD_WORDS).source }\b/
 configurable_default(:DEFAULT_FILTER, '!(media_type in music,cm,pv || genres has hentai) && !(num_episodes == 1 && average_episode_duration <= 1000) && average_episode_duration >= 300') # set to nil to disable
 
 # not configurable
+SEASON_SHORTCUTS = {
+	'w'=> 'winter', 'sp'=> 'spring', 'su'=> 'summer', 'f'=> 'fall',
+	'1'=> 'winter', '2'=> 'spring', '3'=> 'summer', '4'=> 'fall',
+}
 STATE_LEVEL = {
   # initial
   'want'=> 0, 'nope'=> 0, 'okay'=> 0,
@@ -149,4 +153,79 @@ def season_shortcuts(input)
 	s = MALinder::SEASON_SHORTCUTS.fetch(input, input)
 	raise "'#{input.inspect}' is not a season" unless MALinder::SEASON_SHORTCUTS.values.include?(s)
 	s
+end
+
+def fetch(url, **stuff)
+	headers = stuff.fetch(:headers, {})
+	content = stuff[:content]
+
+	uri = URI.parse(url)
+	ret = Net::HTTP.start(uri.hostname, uri.port, use_ssl: stuff.fetch(:use_ssl, uri.scheme == 'https')) do |http|
+		verb = stuff[:verb] || content.nil? ? 'GET' : 'POST'
+		http.send_request(verb, uri, content, headers)
+	end
+	raise "#{ret.code} - #{url}" if ret.code != '200'
+	return ret
+end
+def fetch_related(id, sleeps=false)
+	return [] if id.to_s.start_with?('imdb,')
+	return [] if id.to_i == 0
+	cached_file = CACHE_DIR_RELATIONS + id.to_i.to_s + '.json'
+	if File.exists?(cached_file)
+		related = File.read(cached_file)
+	else
+		# backoff a bit to not run into ratelimits
+		age = Time.now - File.mtime("#{CACHE_DIR_RELATIONS}")
+		if sleeps
+			sleep(x = 1 - [age.to_f, 0].max + 0.1) if age.to_f <= 1
+		elsif age >= 1
+			return 'Ratelimited - internally'
+		end
+		related = fetch("https://api.jikan.moe/v4/anime/#{id.to_i}/relations").body
+		File.write(cached_file, related)
+	end
+	JSON.parse(related).fetch('data').map{|e| e["entries"] = e["entry"]; e}.select{|e| e["entries"]&.any?}
+rescue SocketError => e
+	raise unless e.message.include?('(getaddrinfo: ')
+	'No internet, lol'
+rescue RuntimeError => e
+	raise unless e.message.start_with?('429 - ')
+	'Ratelimited - got Error 429'
+end
+# fetch(API + 'anime/30230')
+# fetch(j['main_picture']['large'])
+
+def image(anime)
+	id = anime['id']
+	return IMAGE_CACHE[id] if IMAGE_CACHE.has_key?(id)
+	path = CACHE_DIR_IMAGES + id.to_i.to_s + '.png'
+	if File.exists?(path)
+		begin
+			IMAGE_CACHE[id] = Vips::Image.new_from_file(path)
+			return IMAGE_CACHE[id]
+		rescue
+			nil
+		end
+	end
+	if anime['main_picture']
+		url = anime['main_picture'].fetch('large', anime['main_picture'].fetch('medium'))
+		begin
+			image = fetch(url).body
+		rescue
+			raise "Could not load image for: #{id}"
+		end
+		File.write(path, image)
+		IMAGE_CACHE[id] = Vips::Image.new_from_buffer(image, '')
+	else
+		IMAGE_CACHE[id] = Vips::Image.text("No Image\n:(")
+	end
+end
+
+def prefetch(list)
+	puts "prefetching #{list.count} animes... this can take up to #{Duration.new(list.count)}"
+	list.each do |a|
+		a = CACHE_FULL[a] if a.is_a?(Integer)
+		fetch_related(a['id'], true)
+		image(a)
+	end
 end
