@@ -82,10 +82,57 @@ if __FILE__ == $PROGRAM_NAME
 	}
 	bad_args = ARGV.select{|a| a.start_with?('-')}
 	raise 'unknown argument(s): ' + bad_args.join(', ') if bad_args.any?
-
 	DEFAULT_FILTER = nil if OPTIONS[:no_default_filter]
-	GC.disable
 	require_relative 'malinder-base.rb'
+
+	# makes commands faster which do not need cached data
+	didcommand = true
+	if ARGV.first == 'edit' && (1..2).include?(ARGV.length)
+		filename = ARGV.fetch(1, LOG_FILE_NAME)
+		filename = CONFIG_DIR + filename unless filename.include?("/")
+		system(ENV.fetch('EDITOR', 'nano'), filename, exception: true)
+
+	# git integration
+	elsif ARGV == ['add']
+		Dir.chdir(CONFIG_DIR) do
+			system('git', 'add', '-p', exception: true)
+		end
+	elsif ARGV == ['pull']
+		Dir.chdir("#{CONFIG_DIR}sources/") do
+			system('git', 'pull', '--ff-only', exception: true)
+		end
+		Dir.chdir(CONFIG_DIR) do
+			system('git', 'pull', '--ff-only', exception: true)
+		end
+	elsif ARGV == ['push']
+		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true)
+	elsif ARGV.first == 'commit' && (1..3).include?(ARGV.length)
+		require 'date'
+		message = ARGV.fetch(1, DateTime.now.strftime('%F'))
+		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'commit', '-m', message, exception: true)
+		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true) if OPTIONS['push']
+	elsif ARGV.first == 'diff' && ARGV.length == 1
+		Dir.chdir(CONFIG_DIR) do
+			cmd = 'git', 'diff'
+			cmd << '--cached' if OPTIONS[:cached]
+			system(*cmd, exception: true)
+		end
+	elsif ARGV.first == 'log' && (1..2).include?(ARGV.length)
+		Dir.chdir(CONFIG_DIR) do
+			if ARGV[1] == '-p'
+				system('git', 'log', '-p', exception: true)
+			elsif ARGV.one?
+				system('git', 'log', exception: true)
+			else
+				raise 'unknown argument'
+			end
+		end
+	else
+		didcommand = false
+	end
+	exit 0 if didcommand
+
+	GC.disable
 	require_relative 'malinder-tui.rb'
 	load_all_to_cache
 	GC.enable
@@ -312,47 +359,6 @@ if __FILE__ == $PROGRAM_NAME
 				ret << ['', "Choice: #{CHOICES[id.to_s][:choice] rescue '-'}"]
 			}
 		)
-
-	elsif ARGV.first == 'edit' && (1..2).include?(ARGV.length)
-		filename = ARGV.fetch(1, LOG_FILE_NAME)
-		filename = CONFIG_DIR + filename unless filename.include?("/")
-		system(ENV.fetch('EDITOR', 'nano'), filename, exception: true)
-
-# git integration
-	elsif ARGV == ['add']
-		Dir.chdir(CONFIG_DIR) do
-			system('git', 'add', '-p', exception: true)
-		end
-	elsif ARGV == ['pull']
-		Dir.chdir("#{CONFIG_DIR}sources/") do
-			system('git', 'pull', '--ff-only', exception: true)
-		end
-		Dir.chdir(CONFIG_DIR) do
-			system('git', 'pull', '--ff-only', exception: true)
-		end
-	elsif ARGV == ['push']
-		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true)
-	elsif ARGV.first == 'commit' && (1..3).include?(ARGV.length)
-		require 'date'
-		message = ARGV.fetch(1, DateTime.now.strftime('%F'))
-		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'commit', '-m', message, exception: true)
-		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true) if OPTIONS['push']
-	elsif ARGV.first == 'diff' && ARGV.length == 1
-		Dir.chdir(CONFIG_DIR) do
-			cmd = 'git', 'diff'
-			cmd << '--cached' if OPTIONS[:cached]
-			system(*cmd, exception: true)
-		end
-	elsif ARGV.first == 'log' && (1..2).include?(ARGV.length)
-		Dir.chdir(CONFIG_DIR) do
-			if ARGV[1] == '-p'
-				system('git', 'log', '-p', exception: true)
-			elsif ARGV.one?
-				system('git', 'log', exception: true)
-			else
-				raise 'unknown argument'
-			end
-		end
 
 	elsif ARGV.length == 2
 		OPTIONS[:interactive] = true # this command forces interactive use
