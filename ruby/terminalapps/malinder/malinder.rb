@@ -44,10 +44,12 @@ def output_or_process(id_list, data, formatted_text)
 		MALinder.new((id_list.call rescue id_list)).run
 	in {json: a} if a
 		puts JSON.pretty_generate((data.call rescue data))
-	in formatted_text
-		puts((formatted_text.call rescue formatted_text))
 	else
-		raise 'I believe this is a bug'
+		if formatted_text
+			puts((formatted_text.call rescue formatted_text))
+		else
+			raise 'I believe this is a bug'
+		end
 	end
 end
 
