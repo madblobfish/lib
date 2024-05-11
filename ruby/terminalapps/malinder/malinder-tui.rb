@@ -18,12 +18,9 @@ class MALinder < TerminalGame
 		@require_kitty_graphics = true
 #		@show_overflow = true
 
+		raise 'not supported' unless year_or_ids.is_a?(Array)
 		load_all_to_cache()
-		if year_or_ids.is_a?(Array)
-			@season = CACHE_FULL.fetch_values(*year_or_ids)
-		else
-			raise 'AHHH'
-		end
+		@season = CACHE_FULL.fetch_values(*year_or_ids)
 		if @season.empty?
 			STDERR.puts('all marked or nothing here')
 			exit(0)

@@ -150,8 +150,8 @@ def compare(a,b)
 end
 
 def season_shortcuts(input)
-	s = MALinder::SEASON_SHORTCUTS.fetch(input, input)
-	raise "'#{input.inspect}' is not a season" unless MALinder::SEASON_SHORTCUTS.values.include?(s)
+	s = SEASON_SHORTCUTS.fetch(input, input)
+	raise "'#{input.inspect}' is not a season" unless SEASON_SHORTCUTS.values.include?(s)
 	s
 end
 
