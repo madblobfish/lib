@@ -1,6 +1,7 @@
 require 'fileutils'
 require 'json'
 require 'net/http'
+require 'set'
 
 def require_optional(name)
 	require name
@@ -183,7 +184,7 @@ def fetch_related(id, sleeps=false)
 		# backoff a bit to not run into ratelimits
 		age = Time.now - File.mtime("#{CACHE_DIR_RELATIONS}")
 		if sleeps
-			sleep(x = 1 - [age.to_f, 0].max + 0.1) if age.to_f <= 1
+			sleep(1 - [age.to_f, 0].max + 0.1) if age.to_f <= 1
 		elsif age.to_f <= 1
 			return 'Ratelimited - internally'
 		end
