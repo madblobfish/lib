@@ -202,29 +202,21 @@ end
 # fetch(API + 'anime/30230')
 # fetch(j['main_picture']['large'])
 
-def image(anime)
+def image(anime, nofetch=false)
 	id = anime['id']
 	return IMAGE_CACHE[id] if IMAGE_CACHE.has_key?(id)
-	path = CACHE_DIR_IMAGES + id.to_i.to_s + '.png'
+	path = "#{CACHE_DIR_IMAGES}#{id.to_i}.png"
 	if File.exists?(path)
-		begin
-			IMAGE_CACHE[id] = Vips::Image.new_from_file(path)
-			return IMAGE_CACHE[id]
-		rescue
-			nil
-		end
+		(return IMAGE_CACHE[id] = Vips::Image.new_from_file(path)) rescue nil
 	end
-	if anime['main_picture']
-		url = anime['main_picture'].fetch('large', anime['main_picture'].fetch('medium'))
-		begin
-			image = fetch(url).body
-		rescue
-			raise "Could not load image for: #{id}"
-		end
+	return %w(medium large).any?{|k| anime.fetch('main_picture', {}).has_key?(k)} if nofetch
+	return IMAGE_CACHE[id] = Vips::Image.text("No Image\n:(") unless anime['main_picture']
+	begin
+		image = fetch(anime['main_picture'].fetch('large', anime['main_picture']['medium'])).body
 		File.write(path, image)
 		IMAGE_CACHE[id] = Vips::Image.new_from_buffer(image, '')
-	else
-		IMAGE_CACHE[id] = Vips::Image.text("No Image\n:(")
+	rescue
+		raise "Could not load image for: #{id}"
 	end
 end
 
