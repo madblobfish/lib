@@ -54,6 +54,7 @@ class MALinder < TerminalGame
 		paragraph = anime['synopsis'] + "\n"
 		paragraph += "\nType: #{anime['media_type']}" if anime['media_type']
 		paragraph += "\nSource: #{anime['source']}" if anime['source']
+		paragraph += "\nStatus: #{anime['status']}" if anime['status']
 		paragraph += "\nStart: #{anime['start_date']}" if anime['start_date']
 		paragraph += "\nEpisodes: #{anime['num_episodes']}" if anime['num_episodes'] and anime['num_episodes'] != 0
 		paragraph += "\nDuration: #{Duration.new(anime['average_episode_duration']).to_s}" if anime['average_episode_duration']
