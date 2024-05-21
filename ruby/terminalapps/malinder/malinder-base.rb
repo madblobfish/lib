@@ -3,6 +3,25 @@ require 'json'
 require 'net/http'
 require 'set'
 
+def fetch(url, **stuff)
+	headers = stuff.fetch(:headers, {})
+	content = stuff[:content]
+
+	uri = URI.parse(url)
+	ret = Net::HTTP.start(uri.hostname, uri.port, use_ssl: stuff.fetch(:use_ssl, uri.scheme == 'https')) do |http|
+		verb = stuff[:verb] || content.nil? ? 'GET' : 'POST'
+		http.send_request(verb, uri, content, headers)
+	end
+	raise "#{ret.code} - #{url}" if ret.code != '200'
+	return ret
+end
+def is_offline?()
+	fetch('https://fefe.de')
+	false
+rescue
+	true
+end
+
 def require_optional(name)
 	require name
 	true
@@ -112,7 +131,7 @@ end
 def load_all_to_cache()
 	require_relative '../../stdlib/array/query'
 	Dir.chdir("#{CONFIG_DIR}sources/") do
-		system('git', 'pull', '--ff-only', exception: true)
+		system('git', 'pull', '--ff-only', exception: true) unless is_offline?
 	end if AUTOPULL_SOURCES
 	default_filter = DEFAULT_FILTER.nil? ? lambda{|_|true} : Array::QueryParser.new.parse(DEFAULT_FILTER)
 	date = Time.now
@@ -162,18 +181,6 @@ def season_shortcuts(input)
 	s
 end
 
-def fetch(url, **stuff)
-	headers = stuff.fetch(:headers, {})
-	content = stuff[:content]
-
-	uri = URI.parse(url)
-	ret = Net::HTTP.start(uri.hostname, uri.port, use_ssl: stuff.fetch(:use_ssl, uri.scheme == 'https')) do |http|
-		verb = stuff[:verb] || content.nil? ? 'GET' : 'POST'
-		http.send_request(verb, uri, content, headers)
-	end
-	raise "#{ret.code} - #{url}" if ret.code != '200'
-	return ret
-end
 def fetch_related(id, sleeps=false)
 	return [] if id.to_s.start_with?('imdb,')
 	return [] if id.to_i == 0

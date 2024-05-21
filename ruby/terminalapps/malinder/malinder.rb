@@ -326,14 +326,18 @@ if __FILE__ == $PROGRAM_NAME
 		res = CACHE_FULL.fetch(id)
 		related = fetch_related(id)
 		if OPTIONS[:recurse]
+			offline = is_offline?
 			seen = [id]
 			while search = related.flat_map{|a| a['entry']}.select{|a| a['type'] == 'anime' && ! seen.include?(a['mal_id'])}.first
-				rel = fetch_related(search['mal_id'], true)
-				if rel == 'Ratelimited: internally'
+				rel = fetch_related(search['mal_id'], !offline)
+				if rel == 'No internet, lol'
+					print '.'
+				elsif rel == 'Ratelimited: internally'
 					STDERR.puts('Results do not yet include all related')
 					break
+				else
+					related += rel
 				end
-				related += rel
 				seen << search['mal_id']
 			end
 		end
