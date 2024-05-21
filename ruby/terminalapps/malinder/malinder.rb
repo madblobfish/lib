@@ -38,15 +38,15 @@ def output_or_process(id_list, data, formatted_text)
 	case OPTIONS
 	in {prefetch: a} if a
 		raise 'prefetch not supported' if id_list.nil?
-		prefetch((id_list.call rescue id_list))
+		prefetch((id_list.is_a?(Proc) ? id_list.call : id_list))
 	in {interactive: a} if a
 		raise 'interactive not supported' if id_list.nil?
-		MALinder.new((id_list.call rescue id_list)).run
+		MALinder.new((id_list.is_a?(Proc) ? id_list.call : id_list)).run
 	in {json: a} if a
-		puts JSON.pretty_generate((data.call rescue data))
+		puts JSON.pretty_generate((data.is_a?(Proc) ? data.call : data))
 	else
 		if formatted_text
-			puts((formatted_text.call rescue formatted_text))
+			puts((formatted_text.is_a?(Proc) ? formatted_text.call : formatted_text))
 		else
 			raise 'I believe this is a bug'
 		end
