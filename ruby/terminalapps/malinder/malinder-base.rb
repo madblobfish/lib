@@ -47,7 +47,7 @@ configurable_default(:BAD_WORDS,
 	%w(
 		mini idol cultivat chibi promotion game pokemon pokémon sport mecha machine transformer
 		special extra harem hentai ecchi kids collaboration commercial precure reborn rebirth revive isekai
-		reincar sanrio compilation limited trailer short season recap
+		reincar sanrio compilation limited trailer short season recap sect sponsor promote
 		youku bilibili
 	)	+ [
 		'love live', 'boys love', 'sailor moon', 'music film', 'music video', 'variety program',
