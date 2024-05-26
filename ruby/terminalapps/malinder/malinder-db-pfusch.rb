@@ -5,6 +5,8 @@ if ARGV.include?('--help')
   puts 'give me files to merge and cleanup, the configured logfile is always input'
   puts 'inputs can be relative paths to the config directory'
   puts 'Tipp: write stdout somewhere else, only then override after checking the diff or so'
+  puts '--nocurrent do not load the configured logfile'
+  puts '--gitmerge integration as git custom merge driver: see readme!'
   puts '--json output json instead'
   puts '--inplace override the choices file, only for non json'
   puts '-v be more loud'
@@ -15,6 +17,16 @@ end
 OUTPUT_JSON = ARGV.delete('--json')
 INPLACE = ARGV.delete('--inplace')
 VERBOSE = ARGV.delete('-v')
+NOCURRENT = ARGV.delete('--nocurrent')
+GITMERGE = ARGV.delete('--gitmerge')
+if GITMERGE
+  raise "nope" unless NOCURRENT
+  raise "nope" unless INPLACE
+  input = IO.popen(['git', 'merge-file', '--', ARGV[0], ARGV[1], ARGV[2]]).read
+  raise 'error in git-merge-file' if input.nil? && $? >= 128
+  ARGV.pop; ARGV.pop # get rid of trailing files
+  raise 'aahh' unless ARGV.one? # sanity check of above
+end
 
 CSV_OPTS = {
   col_sep: "\t",
@@ -53,7 +65,8 @@ def parse_csv(f)
 end
 
 load_all_to_cache()
-csv = parse_csv(LOG_FILE_PATH)
+csv = []
+csv = parse_csv(LOG_FILE_PATH) unless NOCURRENT
 ARGV.each{|f| csv += parse_csv(f)}
 csv.map! do |r|
   if e = CACHE_FULL[r[0].to_i]
@@ -155,7 +168,7 @@ unless OUTPUT_JSON
     STDERR.puts('', 'TOOL IS maybe still UnSaVE! diff the result to check or accept to loose some things!')
   end
   if INPLACE
-    File.write(LOG_FILE_PATH, out)
+    File.write(NOCURRENT ? ARGV.first : LOG_FILE_PATH, out)
   else
     puts out
   end

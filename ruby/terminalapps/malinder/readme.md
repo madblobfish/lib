@@ -32,6 +32,22 @@ LOG_SUFFIX = '-yourname'
 ```
 To share or distribute `malinder` logs, it is recommended to set up your sources directory or the entire config directory as a git repository.
 
+### git automerge of choices-\*.log files
+
+Write the following into your git-config, e.g. `.git/config`:
+```ini
+[merge "malinder"]
+	name = malinder db-pfush
+	driver = ruby /path/to/malinder/malinder-db-pfusch.rb --nocurrent --gitmerge --inplace %A %O %B
+	recursive = text
+```
+And this into `.gitattributes`:
+```
+choices-*.log merge=malinder
+```
+
+Then merges will be automatically handled.
+
 ## Quickstart
 ```bash
 gem install ffi ruby-vips
