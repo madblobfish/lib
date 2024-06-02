@@ -3,6 +3,11 @@
 
 TTY_CLEAN_STATE = `stty -g` if STDIN.tty?
 
+class TerminalGameException < StandardError
+end
+class TerminalGameEnd < TerminalGameException
+end
+
 class TerminalGame
   module Term
     def clear
@@ -175,6 +180,9 @@ class TerminalGame
         end
       end
       @read_thread.join
+    rescue TerminalGameEnd => e
+      return_to_tty()
+      puts e.message
     ensure
       return_to_tty()
     end
@@ -264,8 +272,9 @@ class TerminalGame
   end
   def kitty_graphics_img_pixel_place(id, x, y, **opts)
     raise 'requires @require_kitty_graphics=true' unless require_kitty_graphics
-    x = 0 if x < 0
-    y = 0 if y < 0
+    # STDERR.puts([id, x,y, opts].to_s)
+    # x = 0 if x < 0
+    # y = 0 if y < 0
     cursor_save
     pixel_per_cell_x = @size_x.to_f / @cols.to_i
     pixel_per_cell_y = @size_y.to_f / @rows.to_i
@@ -273,16 +282,15 @@ class TerminalGame
     pos_cell_y = (y / pixel_per_cell_y).floor
     if pos_cell_x < 0
       pos_cell_x = 0
-      opts[:img_x] = opts[:img_x].to_f + x.abs
-      opts[:cell_x] = 0
+      opts[:img_x] = x.abs
+      # opts[:cell_x] = 0
     else
       # pos_cell_x = @cols if pos_cell_x <= @cols
       opts[:cell_x] = (x % pixel_per_cell_x).floor
     end
     if pos_cell_y < 0
+      opts[:img_y] = y.abs
       pos_cell_y = 0
-      opts[:img_y] = opts[:img_y].to_f + y.abs
-      opts[:cell_y] = 0
     else
       # pos_cell_y = @rows if pos_cell_y <= @rows
       opts[:cell_y] = (y % pixel_per_cell_y).floor
