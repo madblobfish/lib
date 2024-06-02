@@ -30,7 +30,7 @@ class MALinder < TerminalGame
 	def size_change_handler;sync_draw{draw(true)};end #redraw on size change
 
 	def draw(redraw=false)
-		raise 'empty (all marked or nothing here)' if @season.empty?
+		raise TerminalGameEnd, 'empty (all marked or nothing here)' if @season.empty?
 		anime = @season[@current]
 		counter = " (#{@current+1}/#{@season.size})"
 		normal_title = text_color_bad_words((anime['title'].inspect + counter).center(@cols))

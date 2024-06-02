@@ -64,7 +64,7 @@ class Maze < TerminalGame
   end
 
   def die(text='won')
-    raise <<~bla
+    raise TerminalGameEnd, <<~bla
       #{text}
       Miswalk: #{@miswalk}
       Backwalk: #{@backwalk}

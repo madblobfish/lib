@@ -46,7 +46,7 @@ class TTS < TerminalGame
       @score += 100
       @field.delete(next_pos)
     end
-    raise "Ur ded (Score: #{@score})" if @field.has_key?(next_pos)
+    raise TerminalGameEnd, "Ur ded (Score: #{@score})" if @field.has_key?(next_pos)
     @field[next_pos] = @len
     @current_pos = next_pos
   end

@@ -21,12 +21,12 @@ class Minesweep < TerminalGame
         @first_click = false
         (@size.times.to_a.product(@size.times.to_a) - [pos]).shuffle.take(@mines).each{|x,y|@map[[x,y]] = '*'}
       end
-      raise 'ur ded' if @map[pos] == '*'
+      raise TerminalGameEnd, 'ur ded' if @map[pos] == '*'
       uncover(*pos) if @map[pos] == '#'
     end
     @map[pos] = {'#'=>'X', '*'=>'*!', 'X'=>'#', '*!'=>'*'}.fetch(@map[pos], @map[pos]) if button_id == 2 # right click
     draw()
-    raise 'win' if @map.none?{|k,v|%w(# * X).include?(v)}
+    raise TerminalGameEnd, 'win' if @map.none?{|k,v|%w(# * X).include?(v)}
   end
   def uncover(x,y)
     odd = x.odd?? [[1,-1],[-1,-1]] : [[1,1],[-1,1]]

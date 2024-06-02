@@ -118,7 +118,7 @@ class Tetrinal < TerminalGame
       y
     end.sort.each{|ymax| @board.transform_keys!{|y,x| [y <= ymax ? y+1 : y, x]}}
     @score += [0, 100, 250, 500, 1500][rows_removed]
-    raise "you lost (Score: #{@score})" if current_tile_stuck
+    raise TerminalGameEnd, "you lost (Score: #{@score})" if current_tile_stuck
   end
 
   def block_to_str(block)

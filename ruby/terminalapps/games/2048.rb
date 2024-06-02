@@ -1,10 +1,9 @@
 require_relative '../lib/gamelib.rb'
 
-class FourThousandFourtyEightError < StandardError;end
-class GameOver < FourThousandFourtyEightError;end
-class GameWin < FourThousandFourtyEightError;end
-class InvalidMove < FourThousandFourtyEightError;end
-class ImplementationError < FourThousandFourtyEightError;end
+class GameOver < TerminalGameEnd;end
+class GameWin < TerminalGameEnd;end
+class InvalidMove < TerminalGameEnd;end
+class ImplementationError < TerminalGameEnd;end
 
 class FourThousandFourtyEight < TerminalGame
   attr :field, :size, :win_num

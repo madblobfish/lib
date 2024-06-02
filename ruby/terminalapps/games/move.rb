@@ -24,7 +24,7 @@ class Move < TerminalGame
   def check_win
     flat = @map.flatten
     flat.delete(0)
-    raise "win in #{@moves}" if flat == flat.sort
+    raise TerminalGameEnd, "win in #{@moves}" if flat == flat.sort
   end
 
   def draw

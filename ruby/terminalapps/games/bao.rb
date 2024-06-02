@@ -19,7 +19,7 @@ module SymbolExt
   end
 end
 
-class BaoError < StandardError;end
+class BaoError < TerminalGameEnd;end
 class GameOver < BaoError;end
 class InvalidMove < BaoError;end
 class ImplementationError < BaoError;end
