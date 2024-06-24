@@ -17,7 +17,7 @@ module OpenSSL
         if self.authorityKeyIdentifier && !opts[:no_cache]
           FileUtils.mkdir_p("#{ENV['HOME']}/.cache/certs")
           cached_parent = "#{ENV['HOME']}/.cache/certs/cert_#{self.authorityKeyIdentifier}.crt"
-          if File.exists?(cached_parent)
+          if File.exist?(cached_parent)
             parent = OpenSSL::X509::Certificate.new(File.read(cached_parent))
             return parent unless parent.nil?
           end

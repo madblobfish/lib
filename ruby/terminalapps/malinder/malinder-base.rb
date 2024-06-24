@@ -102,7 +102,7 @@ IMAGE_CACHE = {}
 LOG_FILE = File.open(LOG_FILE_PATH, 'a+')
 LOG_FILE.sync = true
 def parse_choices(file)
-	file = CONFIG_DIR + file unless File.exists?(file)
+	file = CONFIG_DIR + file unless File.exist?(file)
 	Hash[File.readlines(file).drop(1).map do |l|
 		id, y, s, c, ts, name, c1, c2, c3 = l.split("\t")
 		[id, {choice:c, ts: ts, c1: c1, c2: c2, c3: c3}]
@@ -185,7 +185,7 @@ def fetch_related(id, sleeps=false)
 	return [] if id.to_s.start_with?('imdb,')
 	return [] if id.to_i == 0
 	cached_file = CACHE_DIR_RELATIONS + id.to_i.to_s + '.json'
-	if File.exists?(cached_file)
+	if File.exist?(cached_file)
 		related = File.read(cached_file)
 	else
 		# backoff a bit to not run into ratelimits
@@ -213,7 +213,7 @@ def image(anime, nofetch=false)
 	id = anime['id']
 	return IMAGE_CACHE[id] if IMAGE_CACHE.has_key?(id)
 	path = "#{CACHE_DIR_IMAGES}#{id.to_i}.png"
-	if File.exists?(path)
+	if File.exist?(path)
 		(return IMAGE_CACHE[id] = Vips::Image.new_from_file(path)) rescue nil
 	end
 	return %w(medium large).any?{|k| anime.fetch('main_picture', {}).has_key?(k)} if nofetch

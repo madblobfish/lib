@@ -369,7 +369,7 @@ if __FILE__ == $PROGRAM_NAME
 		year = Integer(ARGV.first, 10) # raises an exception if year is not integer
 		season = season_shortcuts(ARGV.last)
 		# for checking and better error messages
-		raise 'missing json, run malinder.sh first' unless File.exists?("#{CONFIG_DIR}sources/#{year}-#{season}.json")
+		raise 'missing json, run malinder.sh first' unless File.exist?("#{CONFIG_DIR}sources/#{year}-#{season}.json")
 		output_or_process(
 			lambda{cache_query("year == #{year} && season == #{season} && choice == -").map{|a| a['id']} },
 			nil, nil
