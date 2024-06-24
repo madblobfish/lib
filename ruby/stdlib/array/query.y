@@ -192,7 +192,7 @@ raise 'ahhhhhhhhhhhhhhhhhh' unless x.query('d Like "hi"') == x.select{|h| h['d']
     x.query(str)
     raise ('ahn'+ 'o'*i) + ': ' + str
   rescue Racc::ParseError => e
-    raise ('ahhn'+ 'o'*i) + ': ' + str unless e.to_s.start_with?("\nparse error on value")
+    raise ('ahhn'+ 'o'*i) + ': ' + str unless e.to_s.strip.start_with?("parse error on value")
   rescue RuntimeError => e
     raise ('ahhn'+ 'o'*i) + ': ' + str unless e.to_s.start_with?('could not tokenize ')
   end
