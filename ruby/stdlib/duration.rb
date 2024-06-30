@@ -79,7 +79,7 @@ if __FILE__ == $PROGRAM_NAME
       puts Time.now() - start
     end
   elsif ARGV.one?
-    puts Duration.new(ARGV[0].to_i)
+    puts Duration.new(ARGV[0].to_f)
   else ARGV.length == 2
     require 'date'
     puts DateTime.parse(ARGV[1]).to_time - DateTime.parse(ARGV[0]).to_time
