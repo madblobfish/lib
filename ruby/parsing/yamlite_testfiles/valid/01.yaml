@@ -1,0 +1,28 @@
+---
+yamliteproperties:
+  mixed_root_entry: "a \0 b"
+  yaml_like_syntax: true
+  comments: true # see
+  strict_indentation:
+    - "mixed tabs and spaces error"
+    - "same size is enforced"
+    - "newlines are also enforced abd counted"
+  datatypes:
+    list:
+    dict:
+    simple:
+      string:
+        quote_types: "\""
+        escape_char: "\\"
+        multiline_strings: "yu
+p"
+        other_special_string_notations: false
+      number:
+        minus_float: 1
+        minus_float: 1.1
+        minus_int: -1
+        minus_float: -1.2
+  missing_yaml_magic:
+    serialization:
+    references:
+    json: false # there is no json syntax here

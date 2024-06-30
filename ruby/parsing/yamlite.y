@@ -1,7 +1,8 @@
 class YAMLite
 rule
   # root
-  target: list EOF | dict EOF | eof
+  target: document | NEWLINE document { result = val[1] }
+  document: list EOF | dict EOF | eof
 
   eof: EOF | NEWLINE EOF
 
@@ -24,6 +25,7 @@ rule
   simple_value: SPACE BOOL newline { result = val[1] }
     | SPACE NUMBER newline { result = val[1] }
     | SPACE STRING newline { result = val[1] }
+    | newline { result = nil }
   value: simple_value
     | newline INDENT list DEDENT { result = val[2] }
     | newline INDENT dict DEDENT { result = val[2] }
@@ -35,6 +37,8 @@ end
 ---- header
 # Experimental strict parser for a subset of yaml
 #
+# it does not pass a single file from https://github.com/yaml/yaml-test-suite
+#
 # generated using: racc yamlite.y -o yamlite.rb
 # $debug = true
 ---- inner
@@ -42,6 +46,7 @@ end
 
   end
   def parse(str)
+    # raise "not utf8" if str.force_encoding("UTF-8").valid_encoding?
     @q = []
     row = 1
     column = 0
@@ -52,13 +57,23 @@ end
     until str.empty?
       case str
       when start_of_file && /\A---/
-        row += 1
+        # row += 1
+        column += 3
         # ignore
-      when (@q.last || []).first != :INDENT && /\A #[^\n]+/
-        # inline comment, ignore
-      when (@q.last || []).first == :INDENT && /\A#[^\n]+/
-        # comment, ignore
-      when /\A\n(\t+)/
+      when /\A(\n? *)#([^\n]+)/
+        row += 1 if $1.include?("\n")
+        # if @q.last == :NEWLINE
+        #   @q.pop
+        # else
+        #   @q.push [:COMMENT, $2, row, $1.length + 1]
+        # end
+        # ignore
+      # what did this try to archive?
+      # when (@q.last || []).first != :INDENT && /\A #[^\n]+/
+      #   # inline comment, ignore
+      # when (@q.last || []).first == :INDENT && /\A#[^\n]+/
+      #   # comment, ignore
+      when /\A\n([\t ]+)/
         if indent_type.nil?
           indent_type = $1.chr
         end
@@ -91,9 +106,16 @@ end
       when /\A(-?)([0-9_]+)/
         @q.push [:NUMBER, ($1 == '-' ? -1 : 1) * Integer($2.tr('_', ''), 10), row, column]
         column += $1.length + $2.length
-      when /\A"((?:[^"]|\\")+)"/
-        @q.push [:STRING, $1, row, column]
+      when /\A"((?:[^"\\]|\\.)+)"/
         column += 2 + $1.length
+        escapes = {
+          '\\"' => '"',
+          '\\\\' => '\\',
+          '\\0' => "\0",
+        }
+        escapes.default_proc = proc{|a,b| raise "invalid escape #{b}" }
+        @q.push [:STRING, $1.gsub(/\\./, escapes){|m| raise mescapes[m]} , row, column]
+        /\A"((?:[^"\\]|\\.)+)"/ =~ str # secretly fixing $'
       when /\A /
         @q.push [:SPACE, ' ', row, column]
         column += 1
@@ -104,11 +126,19 @@ end
         row += 1
         column = 0
         @q.push [:NEWLINE, '', row, column]
-      when /\A([a-z0-9_-]+)/
+        # peek for indentation and clear if no indent
+        if str.match?(/\A\n[^ \t\n\z]/) && indent_level > 0
+          indent_level.times{@q.push [:DEDENT, 'faked', row, column]}
+          indent_level = 0
+          indent_string = ''
+        end
+      when /\A([a-zA-Z0-9_.-]+)/
         @q.push [:DICT_KEY, $1, row, column]
         column += $1.length
+      when /\A\r/
+        raise "line-feed (\\r) not allowed"
       else
-        raise "could not tokenize '#{str}'"
+        raise "could not tokenize #{row}:#{column} '#{str.lines.take(5).join().rstrip}'"
       end
       start_of_file = false
       str = $'
@@ -132,6 +162,26 @@ end
 ---- footer
 
 if __FILE__ == $PROGRAM_NAME
-  p YAMLite.new().parse(File.read(ARGV.first))
+  if ARGV.empty? || ARGV == ['--help']
+    puts 'give me a file to parse, i output errors or json then'
+  elsif ARGV == ['--selftest']
+    ARGV = []
+    require 'minitest'
+    class TestMeme < Minitest::Test
+      def test_asdf
+        yl = YAMLite.new()
+        Dir[__dir__ + '/yamlite_testfiles/valid/*.yaml'].each do |f|
+          yl.parse(File.read(f))
+        end
+        Dir[__dir__ + '/yamlite_testfiles/bad/*.yaml'].each do |f|
+          assert_raises{yl.parse(File.read(f))}
+        end
+      end
+    end
+    Minitest.autorun()
+  else
+    require 'json'
+    puts JSON.pretty_generate(YAMLite.new().parse(File.read(ARGV.first)))
+  end
 end
 # $debug = false
