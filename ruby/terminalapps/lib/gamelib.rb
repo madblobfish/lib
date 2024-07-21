@@ -304,6 +304,7 @@ class TerminalGame
     raise 'requires @require_kitty_graphics=true' unless require_kitty_graphics
     options = {img_x:0, img_y:0, width:0, height:0, columns:0, rows:0, cell_x:0, cell_y:0, z:0, cursor_move:1}.merge(opts)
     args = {img_x:'x', img_y:'y', width:'w', height:'h', cell_x:'X', cell_y:'Y', columns:'c', rows:'r', z:'z', cursor_move:'C'}
+    options.transform_values!{|v| v.to_i}
     raise 'AH' unless id.is_a?(Integer)
     str = '_Ga=p,q=1,i=' + id.to_s
     str += args.map{|k,v| k != :z && options[k] <= 0 ? nil : ",#{v}=#{options[k]}" }.compact.join
