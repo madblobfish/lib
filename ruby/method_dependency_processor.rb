@@ -10,7 +10,6 @@ require 'ruby_parser'
 require 'sexp_processor'
 require 'ostruct'
 require 'pp'
-require 'active_support/core_ext/object/blank'
 gem 'optsparser_generator'#, '=2.6'
 require 'optsparser_generator'
 
@@ -34,7 +33,7 @@ class MethodDependencyProcessor < MethodBasedSexpProcessor
       # puts 'type two'
       @results << [signature_to_def_name(signature), "#{exp[1][1]}##{exp[2]}"]
     elsif method_name != '#none' && (exp[1][0] == :lvar || exp[1][0] == :ivar)
-      if @variable_tracking[exp[1][1]] && !@variable_tracking[exp[1][1]].blank?
+      if @variable_tracking[exp[1][1]] && @variable_tracking[exp[1][1]] != ''
         @results << [signature_to_def_name(signature), "#{@variable_tracking[exp[1][1]]}##{exp[2]}"]
         # pp @results.last
       end
@@ -90,6 +89,14 @@ class MethodDependencyProcessor < MethodBasedSexpProcessor
     puts csv
   end
 
+  def to_dot
+    puts "digraph {"
+    filter_results.each do |r|
+      puts "\"#{r.join('" -> "')}\""
+    end
+    puts "}"
+  end
+
   def to_cypher
     name = 'a'
     query = ''
@@ -133,7 +140,7 @@ end
 options = OpenStruct.new
 options.output = 'csv'
 options.output__help = 'defines the output format [csv,cypher,print]'
-options.output__values = %w(csv cypher print)
+options.output__values = %w(csv cypher print dot)
 options.no_filter = false
 options.no_filter__help = 'filter the results'
 options.subsitute_new = true
@@ -166,6 +173,8 @@ when 'csv'
   mdp.to_csv
 when 'cypher'
   mdp.to_cypher
+when 'dot'
+  mdp.to_dot
 when 'print'
   mdp.print_results
 end
