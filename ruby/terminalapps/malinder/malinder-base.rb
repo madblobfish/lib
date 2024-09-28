@@ -8,7 +8,7 @@ def fetch(url, **stuff)
 	content = stuff[:content]
 
 	uri = URI.parse(url)
-	ret = Net::HTTP.start(uri.hostname, uri.port, use_ssl: stuff.fetch(:use_ssl, uri.scheme == 'https')) do |http|
+	ret = Net::HTTP.start(uri.hostname, uri.port, use_ssl: stuff.fetch(:use_ssl, uri.scheme == 'https'), open_timeout: 3) do |http|
 		verb = stuff[:verb] || content.nil? ? 'GET' : 'POST'
 		http.send_request(verb, uri, content, headers)
 	end
