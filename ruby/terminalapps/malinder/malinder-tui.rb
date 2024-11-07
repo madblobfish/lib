@@ -1,5 +1,12 @@
 require_relative 'malinder-base.rb'
 
+require_optional(__dir__ + '/../../stdlib/string/contains_japanese?'){
+	class String
+		def contains_japanese?
+			true
+		end
+	end
+}
 require_optional(__dir__ + '/../lib/gamelib'){
 	class TerminalGame
 		def run
@@ -45,7 +52,13 @@ class MALinder < TerminalGame
 			if anime['alternative_titles']['ja']
 				print("\r\n")
 				overlength = anime['alternative_titles']['ja'].gsub(/[0-9a-z\/+_-]/i, '').length
-				print(text_color_bad_words((anime['alternative_titles']['ja']).center(@cols - overlength)))
+				unless anime['alternative_titles']['ja'].contains_japanese?
+					bold()
+					print(get_color_code([255,255,0]) + anime['alternative_titles']['ja'].center(@cols - overlength))
+					print(color_reset_code())
+				else
+					print(text_color_bad_words(anime['alternative_titles']['ja'].center(@cols - overlength)))
+				end
 			end
 		else
 			print(normal_title)
