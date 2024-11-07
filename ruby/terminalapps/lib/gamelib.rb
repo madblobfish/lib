@@ -30,6 +30,12 @@ class TerminalGame
     def size_query
       print "\e[14t"
     end
+    def bold(enable = true)
+      print bold_code(enable)
+    end
+    def bold_code(enable = true)
+      "\e[#{enable ? '' : '2'}1m"
+    end
     def color(color = 15, mode = :fg)
       print get_color_code(color, mode)
     end
