@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="style.css" type="text/css">
+	<script type="text/javascript" src="code.js" defer></script>
+	<title>Malinder List</title>
+	<link rel="icon" href="favicon.svg">
+</head>
+<body>
+<div id="content">
+
+<div class="grid">
+	<table id="legend">
+		<tr><td class="state-seen"><label>Seen<input type="checkbox" checked></label></td></tr>
+		<tr><td class="state-partly"><label>Partly seen<input type="checkbox" checked></label></td></tr>
+		<tr><td class="state-paused"><label>Paused<input type="checkbox" checked></label></td></tr>
+		<tr><td class="state-broken"><label>Stopped watching<input type="checkbox" checked></label></td></tr>
+		<tr><td class="state-want"><label>"Want to watch (at least one Episode)"<input type="checkbox" checked></label></td></tr>
+		<tr><td class="state-backlog"><label>Backlog, low priority watch list<input type="checkbox" checked></label></td></tr>
+		<tr><td class="state-okay"><label>Okay to watch<input type="checkbox"></label></td></tr>
+		<tr><td class="state-nope"><label>Do not plan to watch<input type="checkbox"></label></td></tr>
+	</table>
+	<div>
+		<input id="reset" type="button" value="RESET">
+		<table><tr><th data-field="state">Sort by State <span></span></th></tr></table>
+		<label>Hide non MAL<input type="checkbox" id="nonmal" checked></label><br>
+		<input type="search" id="regex" placeholder="regex"><input id="filter" type="button" value="🔍">
+	</div>
+</div>
+
+
+<table id="maintable">
+	<thead><tr>
+		<th data-field="special">Spe<wbr>cial <span></span></th>
+		<th data-unique data-field="name">Name <span></span></th>
+		<th data-field="season">Season <span></span></th>
+		<th data-unique data-field="rank">MAL Rank <span></span></th>
+		<th data-field="episodes">Episo<wbr>des <span></span></th>
+		<th data-field="runtime">Runtime <span></span></th>
+	</tr></thead>
+	<tbody id="tbl"></tbody>
+</table>
+</div>
+</body>
+</html>
