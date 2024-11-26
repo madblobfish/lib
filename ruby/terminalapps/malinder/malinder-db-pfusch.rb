@@ -97,7 +97,7 @@ csv.uniq!
 csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|
   next if id == nil # ignore the nil group, you're on your own for now
   stages = c.group_by{|c|STATE_LEVEL.fetch(c[3].split(',').first)} rescue (raise c.inspect)
-  seencount = c.group_by{|c|c[3].split(',').last.to_i}
+  seencount = c.group_by{|c|c[3].split(',').last.to_f}
   if c.count == 2 && (c.first == c.last[..5] || c.first[..5] == c.last)
     stays = c.max{|a,b| a.length <=> b.length}
       STDERR.puts('removing lines due to being same, except end: ' + (c - [stays]).inspect)
