@@ -1,3 +1,4 @@
+require 'csv'
 require 'fileutils'
 require 'json'
 require 'net/http'
@@ -82,17 +83,17 @@ SEASON_SHORTCUTS = {
 	'1'=> 'winter', '2'=> 'spring', '3'=> 'summer', '4'=> 'fall',
 }
 STATE_LEVEL = {
-  # initial
-  'want'=> 0, 'nope'=> 0, 'okay'=> 0,
-  # intermediate
-  'backlog'=> 1,
-  # progress
-  'partly'=> 2,
-  # stopped
-  'paused'=> 3,
-  'broken'=> 4, #'plonk'=> 4,
-  # done
-  'seen'=> 5,
+	# initial
+	'want'=> 0, 'nope'=> 0, 'okay'=> 0,
+	# intermediate
+	'backlog'=> 1,
+	# progress
+	'partly'=> 2,
+	# stopped
+	'paused'=> 3,
+	'broken'=> 4, #'plonk'=> 4,
+	# done
+	'seen'=> 5,
 }
 STATE_ACTIVE = %w(partly paused broken)
 STATE_INACTIVE = STATE_LEVEL.keys - STATE_ACTIVE
@@ -101,12 +102,43 @@ CACHE_FULL = {}
 IMAGE_CACHE = {}
 LOG_FILE = File.open(LOG_FILE_PATH, 'a+')
 LOG_FILE.sync = true
+
+CSV_OPTS = {
+	col_sep: "\t",
+}
+CSV_OPTS[:skip_lines] = /^(#|$|<<+|==+|>>+|\|\|+)/ unless RUBY_VERSION.start_with?('2.')
+def read_choices(file)
+	file = CONFIG_DIR + file unless File.exist?(file) # allow relative paths
+	headers = %w(id year season state ts name c1 c2 c3)
+	headers = true if File.read(file, 20).start_with?("id\t", "seencount(state)\t")
+	CSV.read(file, **CSV_OPTS, headers: headers).map do |r|
+		r = r.to_h
+		r['id'] = r['id'].rpartition('/').last.to_i.to_s if r['id'].start_with?('https://')
+		r['ts'] = r.fetch('ts', 10).to_i
+		r['name'] = r.fetch('name', nil)
+		r['c1'] = r.fetch('c1', r.fetch(nil, nil))
+		r['c2'] = r.fetch('c2', nil)
+		r['c3'] = r.fetch('c3', nil)
+		r['year'] = r.fetch('year', CACHE_FULL.fetch(r['id'], {}).fetch('season_start', {})['year'])&.to_i
+		r['season'] = r.fetch('season', CACHE_FULL.fetch(r['id'], {}).fetch('season_start', {})['season'])
+		r['state'] = r.fetch('state') do
+			seencount, state = (r.fetch('seencount(state)').to_s.split('(').map{|x|x.chomp(')').split(',').first.strip} + ['partly']).first(2)
+			seencount = Integer(seencount.sub(/\[[^\]]+\]/, '').sub(/\.(\d+)$/, ''), 10)
+			seencount_fac = $1 ? ".#{Integer($1)}" : ''
+			"#{state},#{seencount}#{seencount_fac}".gsub('partly,0','want').gsub('plonk','broken')
+		end
+		# r['choice'] = r['state'].split(',', 2).first
+		r.delete('choice')
+		r
+	end.compact
+end
 def parse_choices(file)
-	file = CONFIG_DIR + file unless File.exist?(file)
-	Hash[File.readlines(file).drop(1).map do |l|
-		id, y, s, c, ts, name, c1, c2, c3 = l.split("\t")
-		[id, {choice:c, ts: ts, c1: c1, c2: c2, c3: c3}]
-	end]
+	out = {}
+	read_choices(file).each_with_index do |c, i|
+		raise 'duplicate entry, run db-pfusch, row: ' + i if out[c[0]]
+		out[c['id']] = c
+	end
+	return out
 end
 
 def choices_path_to_prefix(path_or_filename)
@@ -140,15 +172,16 @@ def load_all_to_cache()
 			# unified cache internal representation
 			v = blah['node']
 			old = CHOICES.fetch(v['id'].to_s, {})
-			v['state'] = old.fetch(:choice, '-')
+			v['state'] = old.fetch('state', '-')
 			v['choice'] = v['state'].split(',').first
+			v['choices_related'] = fetch_related(v['id']).flat_map{|rel| rel['entry'].select{|r| r['type'] == 'anime'}.map{|r| CHOICES.fetch(r['mal_id'].to_s, {}).fetch('state', '-')}} rescue ['ratelimited']
 			CHOICES_OTHERS.each do |name, c|
-				choice = c.fetch(v['id'].to_s, {}).fetch(:choice, '-')
+				choice = c.fetch(v['id'].to_s, {}).fetch('state', '-')
 				v['state-' + name] = choice
 				v['choice-' + name] = choice.split(',').first
 			end
-			v['timestamp'] = old.fetch(:ts, date.to_i)
-			v['c1'] = old.fetch(:c1, nil)
+			v['timestamp'] = old.fetch('ts', date.to_i)
+			v['c1'] = old.fetch('c1', nil)
 			v.merge!(v.fetch('start_season', {}))
 			v['genres'] = v['genres']&.map{|h| (h.is_a?(Hash) ? h['name']: h).downcase.tr(' ', '_')}
 			v['names'] = [v['title'], *v['alternative_titles']&.values.flatten].reject{|n| n == ''}
@@ -171,7 +204,7 @@ end
 
 def compare(a,b)
 	[a,b].map do |csv|
-		csv.map{|k,v|[k,v]}.group_by{|k,h| h[:choice].split(',').first}
+		csv.map{|k,v|[k,v]}.group_by{|k,h| h['choice'].split(',').first}
 	end
 end
 

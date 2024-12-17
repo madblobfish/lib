@@ -28,48 +28,13 @@ if GITMERGE
   raise 'aahh' unless ARGV.one? # sanity check of above
 end
 
-CSV_OPTS = {
-  col_sep: "\t",
-  converters: :integer,
-}
-CSV_OPTS[:skip_lines] = /^(#|$|<<+|==+|>>+|\|\|+)/ unless RUBY_VERSION.start_with?('2.')
-def parse_csv(f)
-  f = CONFIG_DIR + f unless File.exist?(f) # allow relative paths
-  header = File.new(f).readline
-  if header.start_with?("id\t", "seencount(state)\t")
-    STDERR.puts("reading with headers: #{f}") if VERBOSE
-    (CSV.read(f, **CSV_OPTS, headers: true).map do |r|
-      h = r.to_h
-      id = h.fetch('id')&.to_s&.split('/')&.last&.to_i
-      id = h.fetch('id')&.to_s if h.fetch('id')&.to_s&.start_with?('imdb,')
-      a = [
-        id,
-        h.fetch('year', CACHE_FULL.fetch(id, {}).fetch('season_start', {})['year']),
-        h.fetch('season', CACHE_FULL.fetch(id, {}).fetch('season_start', {})['season']),
-        h.fetch('state') do
-          seencount, state = (h.fetch('seencount(state)').to_s.split('(').map{|x|x.chomp(')').split(',').first.strip} + ['partly']).first(2)
-          seencount = Integer(seencount.sub(/\[[^\]]+\]/, '').sub(/\.(\d+)$/, ''), 10)
-          seencount_fac = $1 ? ".#{Integer($1)}" : ''
-          "#{state},#{seencount}#{seencount_fac}".gsub('partly,0','want').gsub('plonk','broken')
-        end,
-        h.fetch('ts', 10),
-        h.fetch('name',nil),
-        h.fetch('c1',h.fetch(nil, nil)), h.fetch('c2',nil), h.fetch('c3',nil),
-      ] rescue (raise "#{h}")
-      a.reverse.drop_while(&:nil?).reverse
-    end.compact)
-  else
-    STDERR.puts("reading: #{f}") if VERBOSE
-    CSV.read(f, **CSV_OPTS)
-  end
-end
-
 load_all_to_cache()
 csv = []
-csv = parse_csv(LOG_FILE_PATH) unless NOCURRENT
-ARGV.each{|f| csv += parse_csv(f)}
-csv.map! do |r|
-  if e = CACHE_FULL[r[0].to_i]
+csv = read_choices(LOG_FILE_PATH) unless NOCURRENT
+ARGV.each{|f| csv += read_choices(f)}
+csv.map! do |entry|
+  r = entry.fetch_values(*%w(id year season state ts name c1 c2 c3))
+  if e = CACHE_FULL[entry['id'].to_i]
     s = e['start_season'].fetch_values('year','season') rescue []
     r[1] ||= s.first
     r[2] ||= s.last
@@ -92,8 +57,8 @@ csv
 
 YEAR_SEASON = {'winter'=>1, 'spring'=>2, 'summer'=>3, 'fall'=>4}
 
-csv.sort_by!{|e| x = e.values_at(1,2,0,4,5); x[1] = YEAR_SEASON[x[1]]; x.map(&:to_s).map(&:downcase)}
 csv.uniq!
+csv.sort_by!{|e| x = e.values_at(1,2,0,4,5); x[1] = YEAR_SEASON[x[1]]; x.map(&:to_s).map(&:downcase)}
 csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|
   next if id == nil # ignore the nil group, you're on your own for now
   stages = c.group_by{|c|STATE_LEVEL.fetch(c[3].split(',').first)} rescue (raise c.inspect)

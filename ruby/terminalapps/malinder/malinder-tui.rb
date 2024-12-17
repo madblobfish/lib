@@ -74,12 +74,12 @@ class MALinder < TerminalGame
 		paragraph += "\nScore: #{anime['mean']}" if anime['mean']
 		paragraph += "\nGenres: #{anime['genres'].join(', ')}" if anime['genres']
 		paragraph += "\n\nLink: #{MAL_PREFIX}#{anime['id']}"
-		paragraph += "\n\nCHOICE: #{CHOICES[anime['id'].to_s][:choice]}" if CHOICES.has_key?(anime['id'].to_s)
+		paragraph += "\n\nState: #{CHOICES[anime['id'].to_s]['state']}" if CHOICES.has_key?(anime['id'].to_s)
 		others = CHOICES_OTHERS.select{|name, choices| choices.has_key?(anime['id'].to_s)}
 		if others.any?
 			separator = "\n  "
 			paragraph += "\n\nOthers:" + separator
-			paragraph += others.map{|name, choices| "#{name}: #{choices[anime['id'].to_s][:choice]}" }.join(separator)
+			paragraph += others.map{|name, choices| "#{name}: #{choices[anime['id'].to_s]['state']}" }.join(separator)
 		end
 		related = fetch_related(anime['id'])
 		if related.is_a?(String)
@@ -106,7 +106,7 @@ class MALinder < TerminalGame
 						title ||= cache['title']
 						color = [255] * 3
 					end
-					choice = CHOICES.fetch(id.to_s, {}).fetch(:choice, '-')
+					choice = CHOICES.fetch(id.to_s, {}).fetch('state', '-')
 					if r['type'] != 'anime'
 						choice = '-'
 						color = [150] * 3
