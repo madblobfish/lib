@@ -126,7 +126,7 @@ end
 # raise 'stop hammertime' # to test the merging
 unless OUTPUT_JSON
   out = "id\tyear\tseason\tstate\tts\tname\tc1\tc2\tc3\n"
-  out += CSV.generate(col_sep: "\t"){|o| csv.each{|r| o << r}}
+  out += CSV.generate(col_sep: "\t"){|o| csv.each{|r| o << r.reverse.drop_while(&:nil?).reverse}}
   if File.read(LOG_FILE_PATH) == out
     STDERR.puts('', 'files do not diff :)')
   else
