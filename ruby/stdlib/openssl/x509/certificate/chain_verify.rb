@@ -1,7 +1,6 @@
 require 'openssl'
 require_relative 'expired?'
 require_relative 'self_signed?'
-require_relative 'cert_on_symantec_blacklist'
 
 module OpenSSL
   module X509
@@ -10,12 +9,6 @@ module OpenSSL
         errors = []
         errors << 'last cert in chain not selfsigned' unless chain.last.self_signed?
         errors << 'a cert in the chain is expired' if chain.map(&:expired?).count(true) >= 1
-
-        unless opts[:no_check_symantec_blacklist]
-          if chain.map(&:cert_on_symantec_blacklist).count(true) >= 1
-            errors << 'a cert is on the symantec blacklist!'
-          end
-        end
 
         File.write('/tmp/ca.pem', chain.last.to_pem)
         File.write('/tmp/cert.pem', chain.first.to_pem)
