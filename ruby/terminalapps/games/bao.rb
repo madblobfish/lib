@@ -1,4 +1,5 @@
 # see https://en.wikipedia.org/wiki/Bao_(mancala_game)
+require_relative '../lib/gamelib'
 
 module SymbolExt
   refine Symbol do

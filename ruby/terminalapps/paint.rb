@@ -1,4 +1,4 @@
-require_relative '../lib/gamelib'
+require_relative 'lib/gamelib'
 
 def BMP_to_arr(buffer)
   a = buffer.b
@@ -36,7 +36,7 @@ def arr_to_BMP(arr)
 end
 
 class MSPaint < TerminalGame
-  def initialize(img_path='/home/asd/Bilder/screenshot-2020-07-19-11:42:56.png')
+  def initialize(img_path)
     require 'open3'
     buffer, status = Open3.capture2('convert', img_path, 'bmp:-')
     raise 'could not import image' unless status == 0

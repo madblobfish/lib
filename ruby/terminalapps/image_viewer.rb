@@ -86,7 +86,7 @@ class ImageViewer < TerminalGame
     if @draw_status_line
       move_cursor(@rows,0)
       f = current_filename.inspect
-      f += " (#{@images_cycle}/#{@images.size})" if @images.size > 1
+      f += " (#{@images_cycle + 1}/#{@images.size})" if @images.size > 1
       f += ' %.0f%%' % (scale_by*@zoom*100) if @images.size > 1
       f += ' Paused' if @roate_stopped
       print(' '*((@cols-f.length)/2)) rescue nil

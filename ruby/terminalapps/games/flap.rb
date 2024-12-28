@@ -1,5 +1,17 @@
 require_relative '../lib/gamelib.rb'
 
+begin
+	require_relative __dir__ + '/../../stdlib/duration.rb'
+rescue
+	class Duration
+		def initialize(secs)
+			@secs = secs
+			@secs
+		end
+		def to_s;@secs.to_s;end
+	end
+end
+
 class BirdGame < TerminalGame
   BG_HEIGHT = 576
   def initialize
@@ -30,10 +42,11 @@ class BirdGame < TerminalGame
     draw
   end
   def loose(reason)
-    raise TerminalGameEnd, "you lost: #{reason}, #{@points}p - #{@timer/@fps}s"
+    raise TerminalGameEnd, "you lost: #{reason}, #{@points}p - #{Duration.new(@timer/@fps).to_s}"
   end
   def check_loose
-    loose('YU DED') if @bird[:pos][1] > 500 || @bird[:pos][1] < -10
+    loose('you flew to heaven') if @bird[:pos][1] < -10
+    loose('you fell to hell') if @bird[:pos][1] > 500
     # collisions
     passing_this_loop = false
     @objects.select{|o|o[:background]}.any? do |o|
@@ -58,7 +71,7 @@ class BirdGame < TerminalGame
   def draw(thing=true)
     pixel_per_cell_x = @size_x.to_f / @cols.to_i
     move_cursor(0,0)
-    print "you surived #{@points} pipes, #{@timer/@fps}s"
+    print "you surived #{@points} pipes, #{Duration.new(@timer/@fps).to_s}#{' ' * 11}"
     # bg
     kitty_graphics_img_clear(:by_z, -2)
     (@size_x.to_i/(BG_HEIGHT/2) + 1).times do |x|
