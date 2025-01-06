@@ -34,20 +34,7 @@ csv = read_choices(LOG_FILE_PATH) unless NOCURRENT
 ARGV.each{|f| csv += read_choices(f)}
 csv.map! do |entry|
   r = entry.fetch_values(*%w(id year season state ts name c1 c2 c3))
-  if e = CACHE_FULL[entry['id'].to_i]
-    s = e['start_season'].fetch_values('year','season') rescue []
-    r[1] ||= s.first
-    r[2] ||= s.last
-    r[3] = "#{r[3]},#{e['num_episodes']}" if r[3] == 'seen'
-    if ['', nil].include?(r[5])
-      title_en = e.fetch('alternative_titles', {}).fetch('en')
-      if ['', nil].include?(title_en)
-        r[5] = e['title']
-      else
-        r[5] = title_en
-      end
-    end
-  else
+  unless CACHE_FULL[entry['id'].to_i]
     STDERR.puts('ID Lookupfail: ' + r[0].to_s) unless r[0].nil? or r[0].to_s.start_with?('imdb,')
   end
   r
@@ -78,8 +65,8 @@ csv.compact.group_by(&:first).select{|k, v|v.size > 1}.each do |id, c|
       not_empty = c.reject{|a| a.values_at(1,2).compact.empty?}
       if not_empty.group_by{|a| a.values_at(1,2)}.one?
         remainder = c - [not_empty.first]
-        STDERR.puts('removing lines due to missing season information: ' + remainder.inspect)
-        STDERR.puts('stays: ' + not_empty.first.inspect)
+        # STDERR.puts('removing lines due to missing season information: ' + remainder.inspect)
+        # STDERR.puts('stays: ' + not_empty.first.inspect)
         csv -= remainder
       else
         raise "new case #{c}"
@@ -140,7 +127,8 @@ unless OUTPUT_JSON
 else
   require 'json'
   configurable_default(:JSON_IGNORE, [])
-  puts JSON.generate(csv.map do |r|
+  headers = %w(id year season state ts name favorite num_episodes average_episode_duration rank mean title_en title_ja)
+  body = csv.map do |r|
     next if JSON_IGNORE.include?(r[5])
     if e = CACHE_FULL[r[0].to_i]
       r[6] = e['num_episodes']
@@ -154,6 +142,10 @@ else
       r[6] = nil
       r[7] = nil
     end
-    r
-  end.compact)
+    r.reverse.drop_while(&:nil?).reverse
+  end.compact
+  puts JSON.generate({
+    head: headers,
+    anime: body,
+  })
 end
