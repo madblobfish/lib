@@ -112,23 +112,26 @@ def read_choices(file)
 	headers = %w(id year season state ts name c1 c2 c3)
 	headers = true if File.read(file, 20).start_with?("id\t", "seencount(state)\t")
 	CSV.read(file, **CSV_OPTS, headers: headers).map do |r|
-		r = r.to_h
-		cached_entry = CACHE_FULL.fetch(r['id'], {})
+		r = r.to_h.reject{|k,v| v.nil?}
 		r['id'] = r['id'].rpartition('/').last.to_i.to_s if r['id'].start_with?('https://')
+		id = Integer(r['id'], 10) rescue r['id']
+		cached_entry = CACHE_FULL.fetch(id, {})
 		r['ts'] = r.fetch('ts', 10).to_i
 		r['name'] = r.fetch('name', nil)
 		r['c1'] = r.fetch('c1', r.fetch(nil, nil))
 		r['c2'] = r.fetch('c2', nil)
 		r['c3'] = r.fetch('c3', nil)
-		r['year'] = r.fetch('year', cached_entry.fetch('season_start', {})['year'])&.to_i
-		r['season'] = r.fetch('season', cached_entry.fetch('season_start', {})['season'])
+		r['year'] = r.fetch('year', cached_entry.fetch('year', nil))
+		r['year'] = Integer(r['year'], 10) rescue r['year']
+		r['season'] = r.fetch('season', cached_entry.fetch('season', nil))
+		r['state']&.chomp!(',')
 		r['state'] = r.fetch('state') do
 			seencount, state = (r.fetch('seencount(state)').to_s.split('(').map{|x|x.chomp(')').split(',').first.strip} + ['partly']).first(2)
 			seencount = Integer(seencount.sub(/\[[^\]]+\]/, '').sub(/\.(\d+)$/, ''), 10)
 			seencount_fac = $1 ? ".#{Integer($1)}" : ''
 			"#{state},#{seencount}#{seencount_fac}".gsub('partly,0','want').gsub('plonk','broken')
 		end
-		if r['state'] == 'seen' && cached_entry && cached_entry['num_episodes'] != 0
+		if r['state'] == 'seen' && cached_entry&.any? && cached_entry['num_episodes'] != 0
 			r['state'] += ",#{cached_entry['num_episodes']}"
 		end
 		if ['', nil].include?(r['name'])
