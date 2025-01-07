@@ -20,13 +20,13 @@ class MALinder < TerminalGame
 	def inspect #reduce size of errors
 		'#<MALinder>'
 	end
-	def initialize(year_or_ids, season=false)
+	def initialize(year_or_ids, season=false, cache_preloaded=true)
 		@fps = :manual
 		@require_kitty_graphics = true
 #		@show_overflow = true
 
 		raise 'not supported' unless year_or_ids.is_a?(Array)
-		load_all_to_cache()
+		load_all_to_cache() unless cache_preloaded
 		@season = CACHE_FULL.fetch_values(*year_or_ids)
 		if @season.empty?
 			STDERR.puts('all marked or nothing here')
