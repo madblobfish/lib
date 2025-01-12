@@ -76,7 +76,7 @@ configurable_default(:BAD_WORDS,
 	]
 )
 configurable_default(:BAD_WORDS_REGEX, /\b#{ Regexp.union(BAD_WORDS).source }\b/i)
-configurable_default(:DEFAULT_FILTER, '!(media_type in music,cm,pv || genres has hentai) && !(num_episodes == 1 && average_episode_duration <= 1000) && (average_episode_duration >= 300 || average_episode_duration == 0)') # set to nil to disable
+configurable_default(:DEFAULT_FILTER, '!(media_type in music,cm,pv || genres in hentai) && !(num_episodes == 1 && average_episode_duration <= 1000) && (average_episode_duration >= 300 || average_episode_duration == 0)') # set to nil to disable
 
 # not configurable
 SEASON_SHORTCUTS = {

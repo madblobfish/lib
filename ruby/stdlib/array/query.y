@@ -22,9 +22,13 @@ rule
       # puts "num #{val}" if $debug
       result = lambda{|h| h[val[0]].to_f.send(val[1].to_sym, val[2].to_f) }
     }
+    | 'has' val {
+      # puts "has #{val}" if $debug
+      result = lambda{|h| !(!h.has_key?(val[1]) || h[val[1]].nil? || h[val[1]] == '' ) }
+    }
     | VALUE SPACE 'has' val {
       # puts "has #{val}" if $debug
-      result = lambda{|h| (h[val[0]].map(&:to_s) rescue h[val[0]].to_s).include?(val[3]) rescue false}
+      raise 'this syntax is deprecated use "field like regex"'
     }
     | VALUE SPACE 'in' val {
       # puts "in #{val}" if $debug
@@ -147,6 +151,7 @@ x = [
   {'a' => '1', 'b' => '2', 'c' => '3.4', 'd' => ['a', 'c']},
   {'a' => '1', 'b' => '2', 'c' => '4', 'd' => ['a', 'アあ']},
   {'a' => '1', 'b' => '2', 'c' => '4', 'd' => 'asd'},
+  {'e' => '1', 'c' => '', 'd' => ''},
 ]
 raise 'ah' unless x.query('!a == 1') == x.select{|h| h['a'] != '1'}
 raise 'ahh' unless x.query('(!(!(a==1))&& b == 2)') == x.select{|h| h['a'] == '1' && h['b'] == '2'}
@@ -156,9 +161,9 @@ raise 'ahhhh' unless x.query('c == 1 || b == 2 && c != 4') == x.select{|h| h['c'
 raise 'ahhhhh' unless x.query('c == 1 || b == 2 && c != 4') == x.select{|h| h['c'] == '1' || (h['b'] == '2' && h['c'] != '4')}
 raise 'ahhhhhh' unless x.query('(c == 1 || b == 2) && c != 4') == x.select{|h| (h['c'] == '1' || h['b'] == '2') && h['c'] != '4'}
 raise 'ahhhhhhh' unless x.query('b != 2 || (c == 1 || b == 2) && c != 4') == x.select{|h| h['b'] != '2' || (h['c'] == '1' || h['b'] == '2') && h['c'] != '4'}
-raise 'ahhhhhhhh' unless x.query('d has d') == x.select{|h| [Array, String].include?(h['d'].class) && h['d'].include?('d')}
-raise 'ahhhhhhhhh' unless x.query('!(d has b)') == x.select{|h| ! h['d'].include?('b')}
-raise 'ahhhhhhhhhh' unless x.query('d has asd') == x.select{|h| h['d'].class == String && h['d'] == 'asd'}
+# raise 'ahhhhhhhh' unless x.query('d has d') == x.select{|h| [Array, String].include?(h['d'].class) && h['d'].include?('d')}
+# raise 'ahhhhhhhhh' unless x.query('!(d has b)') == x.select{|h| ! h['d'].include?('b')}
+# raise 'ahhhhhhhhhh' unless x.query('d has asd') == x.select{|h| h['d'].class == String && h['d'] == 'asd'}
 raise 'ahhhhhhhhhhh' unless x.query('c > 3') == x.select{|h| h['c'].to_f > 3}
 raise 'ahhhhhhhhhhhh' unless x.query('c > 3.3') == x.select{|h| h['c'].to_f > 3.3}
 raise 'ahhhhhhhhhhhhh' unless x.query('(c > 2) || (c < 9)') == x.select{|h| h['c'].to_f > 2 || h['c'].to_f < 9}
@@ -171,6 +176,8 @@ raise 'ahhhhhhhhhhhhhhhhhb' unless x.query('d like HI') == x.select{|h| h['d'].a
 raise 'ahhhhhhhhhhhhhhhhhc' unless x.query('d Like HI') == x.select{|h| h['d'].any?{|v| v.match?(/^HI/)} rescue false}
 raise 'ahhhhhhhhhhhhhhhhhd' unless x.query('d Like hi') == x.select{|h| h['d'].any?{|v| v.match?(/^hi/)} rescue false}
 raise 'ahhhhhhhhhhhhhhhhhh' unless x.query('d Like "hi"') == x.select{|h| h['d'].any?{|v| v.match?(/^hi/)} rescue false}
+raise 'ahhhhhhhhhhhhhhhhhhh' unless x.query('has e') == x.select{|h| h.has_key?('e')}
+raise 'ahhhhhhhhhhhhhhhhhhhh' unless x.query('has d') == x.select{|h| !(h['d'].nil? || h['d'] == '')}
 [
   'c++',
   '(c) > 3',
@@ -187,6 +194,9 @@ raise 'ahhhhhhhhhhhhhhhhhh' unless x.query('d Like "hi"') == x.select{|h| h['d']
   'a > b > c',
   'a like (a)',
   'a like [a]',
+  'd has d',
+  '!(d has b)',
+  'd has asd',
 ].each_with_index do |str, i|
   begin
     x.query(str)
@@ -194,7 +204,7 @@ raise 'ahhhhhhhhhhhhhhhhhh' unless x.query('d Like "hi"') == x.select{|h| h['d']
   rescue Racc::ParseError => e
     raise ('ahhn'+ 'o'*i) + ': ' + str unless e.to_s.strip.start_with?("parse error on value")
   rescue RuntimeError => e
-    raise ('ahhn'+ 'o'*i) + ': ' + str unless e.to_s.start_with?('could not tokenize ')
+    raise ('ahhn'+ 'o'*i) + ': ' + str unless e.to_s.start_with?('could not tokenize ') || e.to_s.start_with?('this syntax is deprecated use "field like regex"')
   end
 end
 # $debug = false
