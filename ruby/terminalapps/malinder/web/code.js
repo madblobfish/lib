@@ -10,13 +10,12 @@ const states = {
 	"okay":-2,
 	"nope":-3,
 }
+const fav_order = '⭐🩵💩'.split('')
 
 let search_input = document.getElementById("regex"),
     mal_input = document.getElementById("nonmal"),
     table = document.getElementById('tbl'),
-    anime = [],
-    fav = [],
-    poo = []
+    anime = []
 
 function getSortFields(){
 	let list = []
@@ -85,7 +84,7 @@ function storeFilterState(state = getFilterState()){
 }
 
 function generateTable(state = getFilterState()){
-	tmp_anime = [...anime]
+	tmp_anime = [...anime['anime']]
 	tmp_anime = tmp_anime.filter((a)=>{
 		// console.log(`${a[3]} vs ${state['states'].join(', ')}`); 
 		return !!! state['states'].find((s)=>{return a[3].split(',', 2)[0] == s.substr(6)})
@@ -105,7 +104,7 @@ function generateTable(state = getFilterState()){
 		tmp_anime = tmp_anime.filter((a) => regexp.test(a[5] ?? '') || regexp.test(a[11] ?? '') || regexp.test(a[12] ?? ''))
 		// tmp_anime = tmp_anime.filter(function(a){return regexp.test(a[5] ?? '')});
 	}
-	console.log(`filtered ${anime.length - tmp_anime.length} of total: ${anime.length} (left: ${tmp_anime.length})`)
+	console.log(`filtered ${anime['anime'].length - tmp_anime.length} of total: ${anime['anime'].length} (left: ${tmp_anime.length})`)
 
 	if(state['sort'] != ''){
 		state['sort'].split(',').reverse().forEach((s)=>{
@@ -143,8 +142,10 @@ function generateTable(state = getFilterState()){
 					return ar>br?-1:ar<br?1:0
 				},
 				'special': (a,b)=>{
-					a = fav.indexOf(a[0]) != -1 ? 2 : (poo.indexOf(a[0]) != -1 ? 1 : 0)
-					b = fav.indexOf(b[0]) != -1 ? 2 : (poo.indexOf(b[0]) != -1 ? 1 : 0)
+					a = fav_order.indexOf(anime['symbols'][a[0]]?.substr(0, 1))
+					b = fav_order.indexOf(anime['symbols'][b[0]]?.substr(0, 1))
+					if(a !== -1){a = fav_order.length - a}
+					if(b !== -1){b = fav_order.length - b}
 				    return a<b?1:a>b?-1:0
 				},
 			}
@@ -175,10 +176,9 @@ function generateTable(state = getFilterState()){
 
 		// tr.id=tmp_anime[i][0];
 
-		if(fav.indexOf(tmp_anime[i][0]) != -1){
-			td_special.innerText = '⭐'
-		}else if(poo.indexOf(tmp_anime[i][0]) != -1){
-			td_special.innerText = '💩'
+		let symbol = anime['symbols'][tmp_anime[i][0]]
+		if(symbol){
+			td_special.innerText = symbol
 		}
 		tr.appendChild(td_special);
 
@@ -235,10 +235,7 @@ function inputEventHandler(){
 }
 
 fetch('/data.json?nocache='+Math.random()).then((r) => r.text()).then((t)=>{
-	let d = JSON.parse(t)
-	anime = d[0]
-	fav = d[1]
-	poo = d[2]
+	anime = JSON.parse(t)
 	generateTable()
 })
 loadFilterState()

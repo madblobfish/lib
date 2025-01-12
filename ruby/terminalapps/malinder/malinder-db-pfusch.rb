@@ -144,8 +144,10 @@ else
     end
     r.reverse.drop_while(&:nil?).reverse
   end.compact
+
   puts JSON.generate({
     head: headers,
     anime: body,
+    symbols: FAVORITES
   })
 end

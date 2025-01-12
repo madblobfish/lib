@@ -63,6 +63,7 @@ configurable_default(:DEFAULT_HEADERS, {}) # currently unused
 configurable_default(:LOG_SUFFIX, '-' + ENV['USER'])
 LOG_FILE_NAME = "choices#{LOG_SUFFIX}.log"
 configurable_default(:LOG_FILE_PATH, "#{CONFIG_DIR}#{LOG_FILE_NAME}")
+configurable_default(:FAV_FILE_PATH, "#{CONFIG_DIR}favorites#{LOG_SUFFIX}.txt")
 configurable_default(:BAD_WORDS,
 	%w(
 		mini idol cultivat chibi promotion game pokemon pokémon sport mecha machine transformer
@@ -99,6 +100,7 @@ STATE_ACTIVE = %w(partly paused broken)
 STATE_INACTIVE = STATE_LEVEL.keys - STATE_ACTIVE
 CACHE = {}
 CACHE_FULL = {}
+FAVORITES = Hash[File.readlines(FAV_FILE_PATH, chomp: true).map{|l| l.split("\t", 3)[0..1] }]
 IMAGE_CACHE = {}
 LOG_FILE = File.open(LOG_FILE_PATH, 'a+')
 LOG_FILE.sync = true
