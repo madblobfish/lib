@@ -44,6 +44,8 @@ def output_or_process(id_list, data, formatted_text)
 		MALinder.new((id_list.is_a?(Proc) ? id_list.call : id_list)).run
 	in {json: a} if a
 		puts JSON.pretty_generate((data.is_a?(Proc) ? data.call : data))
+	in {text: a} if a
+		puts((formatted_text.is_a?(Proc) ? formatted_text.call : formatted_text))
 	else
 		if formatted_text
 			puts((formatted_text.is_a?(Proc) ? formatted_text.call : formatted_text))
@@ -78,6 +80,7 @@ if __FILE__ == $PROGRAM_NAME
 		no_default_filter: ARGV.delete('--no-default-filter'),
 		prefetch: ARGV.delete('--prefetch'),
 		push: ARGV.delete('--push'),
+		text: ARGV.delete('--text'),
 		recurse: ARGV.delete('--recurse'),
 	}
 	bad_args = ARGV.select{|a| a.start_with?('-')}
