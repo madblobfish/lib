@@ -48,6 +48,7 @@ td,th{padding:2px}
 progress{width:100%!important;display:block}
 a label{color:#000; text-align:center; display:block}
 a label:hover{color:#000}
+td a{display:block}
 th span{font-family:Sort Indicators; font-size:14pt; float:left}
 
 .state-seen{background:#6cf96c;/*#4f4*/}
