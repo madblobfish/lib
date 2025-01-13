@@ -12,10 +12,11 @@ const states = {
 }
 const fav_order = '⭐🩵💩'.split('')
 
-let search_input = document.getElementById("regex"),
-    mal_input = document.getElementById("nonmal"),
-    table = document.getElementById('tbl'),
-    anime = []
+let anime = []
+let searchKeyUpUpdateTimeout = -1
+let mal_input = document.getElementById("nonmal")
+let search_input = document.getElementById("regex")
+let table = document.getElementById('tbl')
 
 function getSortFields(){
 	let list = []
@@ -233,6 +234,7 @@ function generateTable(state = getFilterState()){
 }
 
 function inputEventHandler(){
+	searchKeyUpUpdateTimeout = -1
 	storeFilterState()
 }
 
@@ -286,8 +288,14 @@ window.addEventListener('hashchange', ()=>{
 	loadFilterState()
 	generateTable()
 })
-search_input.addEventListener('keyup', inputEventHandler)
+
 search_input.addEventListener("search", inputEventHandler)
+search_input.addEventListener('keyup', ()=>{
+	if(searchKeyUpUpdateTimeout !== -1){
+		window.clearTimeout(searchKeyUpUpdateTimeout)
+	}
+	searchKeyUpUpdateTimeout = window.setTimeout(inputEventHandler, 150)
+})
 
 // I'm sorry no eval here
 function eval(str){let a = str.split("+", 2); return +a[0] + (a[1]||0)}
