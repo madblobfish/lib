@@ -94,6 +94,14 @@ function storeFilterState(state = getFilterState()){
 	document.location.hash = JSON.stringify(state)
 }
 
+function format_name(anime){
+	let ret = ((anime[11] || anime[5])??'').toString()
+	if(anime[12]){
+		ret += ' / ' + anime[12]
+	}
+	return ret
+}
+
 function generateTable(state = getFilterState()){
 	tmp_anime = [...anime['anime']]
 	tmp_anime = tmp_anime.filter((a)=>{
@@ -127,9 +135,7 @@ function generateTable(state = getFilterState()){
 					return a>b?-1:a<b?1:0
 				},
 				'name': (a,b)=>{
-					a=(a[5]??'').toString(),
-					b=(b[5]??'').toString()
-					return Math.max(-1,Math.min(1,a.localeCompare(b, 'en', {sensitivity: 'base'})))
+					return Math.max(-1,Math.min(1,format_name(a).localeCompare(format_name(b), 'en', {sensitivity: 'base'})))
 				},
 				'season': (a,b)=>{
 					if(a[1] == b[1]){
@@ -148,8 +154,8 @@ function generateTable(state = getFilterState()){
 				    return a<b?-1:a>b?1:0
 				},
 				'runtime': (a,b)=>{
-					ar = a[7] * a[6]
-					br = b[7] * b[6]
+					ar = a[7]&&a[6] ? a[7]/60.0 * a[6] : -10;
+					br = b[7]&&b[6] ? b[7]/60.0 * b[6] : -10
 					return ar>br?-1:ar<br?1:0
 				},
 				'special': (a,b)=>{
@@ -201,10 +207,8 @@ function generateTable(state = getFilterState()){
 		if((''+tmp_anime[i][0]).match('imdb,')){
 			a.href = "https://www.imdb.com/title/" + tmp_anime[i][0].split(',', 2)[1];
 		}
-		a.innerText=tmp_anime[i][11] || tmp_anime[i][5];
-		if(tmp_anime[i][12]){
-			a.innerText += ' / ' + tmp_anime[i][12]
-		}
+		a.innerText=format_name(tmp_anime[i])
+
 		if(seen&&ep&&seen.split(',', 2)[1]){
 			if(!seen.match('\\?|m')){
 				progress.innerText=seen.split(',', 2)[1]+" / "+ep;
@@ -230,9 +234,8 @@ function generateTable(state = getFilterState()){
 		tr.appendChild(td_eps);
 
 		if(tpe&&ep){
-			tpe1=(tpe/60)*ep;
-			td_time.innerText=tpe1>=300?Math.round(tpe1/60).toFixed(1)+"S":tpe1.toFixed(1)+'m';
-			tpe=undefined;
+			let tpe1=(tpe/60.0)*ep;
+			td_time.innerText=tpe1>=120?(tpe1/60.0).toFixed(1)+"h":tpe1.toFixed(1)+'m';
 		}
 		tr.appendChild(td_time);
 
