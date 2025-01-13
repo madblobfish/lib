@@ -130,6 +130,7 @@ else
   headers = %w(id year season state ts name favorite num_episodes average_episode_duration rank mean title_en title_ja)
   body = csv.map do |r|
     next if JSON_IGNORE.include?(r[5])
+    next if JSON_IGNORE.include?(r[0].to_s)
     if e = CACHE_FULL[r[0].to_i]
       r[6] = e['num_episodes']
       r[7] = e['average_episode_duration']
