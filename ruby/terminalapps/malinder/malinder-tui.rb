@@ -136,6 +136,11 @@ class MALinder < TerminalGame
 				raise unless e.message.start_with?('Could not load image for: ')
 			end
 		end
+		if anime['symbols']
+			move_cursor(0,0)
+			print(anime['symbols'])
+		end
+
 		# print("\r\n")
 		# kitty_graphics_img_display(imgid)
 	rescue

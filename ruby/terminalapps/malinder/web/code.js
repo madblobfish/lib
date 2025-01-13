@@ -35,7 +35,9 @@ function loadFilterState(){
 	}
 	try {
 		let input = JSON.parse(decodeURI(document.location.hash.substr(1)))
-		search_input.value = input['regex']
+		if(search_input !== document.activeElement){
+			search_input.value = input['regex']
+		}
 		mal_input.checked = input['mal']
 		document.querySelectorAll(`#legend input[type="checkbox"]`).forEach((e)=>e.checked = true)
 		input['states'].forEach((s)=>{

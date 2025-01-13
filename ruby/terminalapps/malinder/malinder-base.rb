@@ -202,6 +202,9 @@ def load_all_to_cache()
 			v['genres'] = v['genres']&.map{|h| (h.is_a?(Hash) ? h['name']: h).downcase.tr(' ', '_')}
 			v['names'] = [v['title'], *v['alternative_titles']&.values.flatten].reject{|n| n == ''}
 			v['incache'] = anime_files_in_cache?(v['id'])
+			if FAVORITES.has_key?(v['id'].to_s)
+				v['symbols'] = FAVORITES[v['id'].to_s]
+			end
 			# v['names'] = [v['title'], *v.fetch('alternative_titles', {})&.values.flatten]
 
 			CACHE_FULL[v['id']] ||= v
