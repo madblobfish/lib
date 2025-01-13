@@ -11,6 +11,11 @@ const states = {
 	"nope":-3,
 }
 const fav_order = '⭐🩵💩'.split('')
+const sort_indicators = {
+	"asc":'',
+	"desc":'',
+	"unsorted":'',
+}
 
 let anime = []
 let searchKeyUpUpdateTimeout = -1
@@ -44,10 +49,13 @@ function loadFilterState(){
 		input['states'].forEach((s)=>{
 			document.querySelector(`#legend td.${s} input[type="checkbox"]`).checked = false
 		})
+		document.querySelectorAll(`th[data-field]`).forEach((e)=>{
+			e.children[0].innerText = sort_indicators['unsorted']
+		})
 		input['sort'].split(',').forEach((s,i)=>{
 			if(s == ''){return}
 			let elem = document.querySelector(`th[data-field="${s.split('-', 2).at(-1)}"]`)
-			elem.children[elem.children.length -1].innerText = s.indexOf('-') == -1 ? '⇊' : '⇈'
+			elem.children[0].innerText = s.indexOf('-') == -1 ? sort_indicators['desc'] : sort_indicators['asc']
 			elem.id = 'sort-' + i
 		})
 		// console.log('loaded state')
@@ -68,7 +76,7 @@ function getFilterState(){
 	})
 	getSortFields().forEach((e)=>{
 		let field = e.getAttribute('data-field')
-		if(e.children[e.children.length-1].innerText == '⇈'){
+		if(e.children[0].innerText == sort_indicators['asc']){
 			field = '-' + field
 		}
 		sort += field + ','
@@ -246,21 +254,21 @@ loadFilterState()
 
 document.querySelectorAll('th[data-field]').forEach((e)=>{
 	e.addEventListener('click', (evt)=>{
-		let span = e.children[e.children.length -1],
+		let span = e.children[0],
 		    text = span.innerText
-		if(text == '⇈'){
-			span.innerText = ''
-		}else if(text == '⇊'){
-			span.innerText = '⇈'
+		if(text == sort_indicators['asc']){
+			span.innerText = sort_indicators['unsorted']
+		}else if(text == sort_indicators['desc']){
+			span.innerText = sort_indicators['asc']
 		}else{
-			span.innerText = '⇊'
+			span.innerText = sort_indicators['desc']
 		}
 
 		let list = getSortFields()
 		if(e.getAttribute('data-unique') == ''){
 			list.forEach((elem)=>{
 				if(e != elem){
-					elem.children[elem.children.length -1].innerText = ''
+					elem.children[0].innerText = sort_indicators['unsorted']
 					elem.removeAttribute('id')
 				}
 			})
@@ -269,7 +277,7 @@ document.querySelectorAll('th[data-field]').forEach((e)=>{
 		list.unshift(e)
 		list = [...new Set(list)]
 		list.forEach((elem)=>{elem.removeAttribute('id')})
-		if(span.innerText == ''){
+		if(span.innerText == sort_indicators['unsorted']){
 			list.shift()
 		}
 		for(var i = 0; i < list.length; i++){
