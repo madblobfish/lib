@@ -298,12 +298,14 @@ if __FILE__ == $PROGRAM_NAME
 				end
 				unless %w(nope okay).include?(status)
 					eps = anime['num_episodes']
-					eps = seen_eps unless status == 'broken'
+					eps = seen_eps if status == 'broken'
 					time_chosen_sum += eps.to_i * anime.fetch('average_episode_duration', 0)
 					count_chosen += 1
 				end
 			else
-				STDERR.puts 'could not resolve: ' + id unless id.start_with?('imdb,')
+				unless id.start_with?('imdb,') || v['state'] == 'nope'
+					STDERR.puts 'could not resolve: ' + id
+				end
 			end
 		end
 		CHOICES.map{|k,v|v['state'].split(',').first}.group_by{|e|e}.map{|a,b|[a,b.count]}.map{|e| puts e.join(': ') }
