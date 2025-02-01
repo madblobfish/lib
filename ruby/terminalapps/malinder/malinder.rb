@@ -290,7 +290,7 @@ if __FILE__ == $PROGRAM_NAME
 		count_watched = 0
 		CHOICES.each do |id, v|
 			if anime = CACHE_FULL[id.to_i]
-				status, seen_eps = v['state'].split(',', 2)
+				status, seen_eps, seen_time = v['state'].split(',', 3)
 				seen_eps ||= anime['num_episodes'] if status == 'seen'
 				if %w(paused partly broken seen).include?(status)
 					time_watched_sum += seen_eps.to_i * anime.fetch('average_episode_duration', 0)
@@ -308,7 +308,7 @@ if __FILE__ == $PROGRAM_NAME
 				end
 			end
 		end
-		CHOICES.map{|k,v|v['state'].split(',').first}.group_by{|e|e}.map{|a,b|[a,b.count]}.map{|e| puts e.join(': ') }
+		CHOICES.map{|k,v|v['state'].split(',').first}.group_by{|e|e}.map{|a,b|[a,b.count]}.sort_by{|k,v|v}.map{|e| puts e.join(': ') }
 		puts ''
 		print_percent = lambda do |name, part, full|
 			puts("%s ratio:\t%2.2f%% (%d of %d)" % [name, part*100.0/full, part, full])
