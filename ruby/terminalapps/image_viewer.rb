@@ -116,16 +116,16 @@ class ImageViewer < TerminalGame
       @zoom /= 1.5
     when "+"
       @zoom *= 1.5
-    when "q"
+    when "q", "\e" # escape
       exit()
-    when " " #space
+    when " " # space
       @roate_stopped = ! @roate_stopped
-    when "\e[C" #right
+    when "\e[C" # right
       @images_cycle += 1
       @images_cycle %= @images.size
       @zoom_pos = [0,0]
       @zoom = 1
-    when "\e[D" #left
+    when "\e[D" # left
       @images_cycle -= 1
       @images_cycle = @images.size-1 if @images_cycle < 0
       @zoom_pos = [0,0]
