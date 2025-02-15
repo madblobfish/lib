@@ -3,8 +3,21 @@ require 'fileutils'
 require 'json'
 require 'net/http'
 require 'set'
+require 'socket'
+
+OFFLINE =
+	begin
+		Socket.tcp("1.1.1.1", 53){}
+		true if ENV['OFFLINE']
+		false
+	rescue Errno::ENETUNREACH
+		true
+	rescue
+		false
+	end
 
 def fetch(url, **stuff)
+	raise "offline" if OFFLINE
 	headers = stuff.fetch(:headers, {})
 	content = stuff[:content]
 
@@ -255,7 +268,7 @@ rescue SocketError => e
 	raise unless e.message.include?('(getaddrinfo: ')
 	'No internet, lol'
 rescue RuntimeError => e
-	raise unless e.message.start_with?('429 - ')
+	raise unless e.message.start_with?('429 - ') or e.message == 'offline'
 	'Ratelimited - got Error 429'
 end
 # fetch(API + 'anime/30230')
