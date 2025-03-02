@@ -81,7 +81,7 @@ class MALinder < TerminalGame
 			paragraph += "\n\nOthers:" + separator
 			paragraph += others.map{|name, choices| "#{name}: #{choices[anime['id'].to_s]['state']}" }.join(separator)
 		end
-		related = fetch_related(anime['id'])
+		related = fetch_related(anime['id']) rescue ''
 		if related.is_a?(String)
 			paragraph += "\n\nRelated:\n  #{related}"
 		elsif related == []
