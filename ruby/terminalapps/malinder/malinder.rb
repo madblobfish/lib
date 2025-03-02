@@ -223,6 +223,7 @@ if __FILE__ == $PROGRAM_NAME
 		log_value = if (Integer(ARGV.last, 10) rescue false)
 			'partly,' + ARGV.last
 		else
+			raise "unknown anime state (want,okay,...)" unless STATE_LEVEL.keys.include?(ARGV.last.split(',', 1).first)
 			ARGV.last
 		end
 		if nime.fetch('num_episodes', 0) != 0 && nime['num_episodes'] < log_value.split(',',2).last.to_i
