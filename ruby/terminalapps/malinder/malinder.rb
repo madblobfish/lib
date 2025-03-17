@@ -317,6 +317,7 @@ if __FILE__ == $PROGRAM_NAME
 		print_percent['Watched', count_watched, count_chosen]
 		print_percent['Watched time', time_watched_sum, time_chosen_sum]
 		print_percent['Tracked', CHOICES.size, CACHE.size]
+		print_percent['Filtered Cache vs full Cache', CACHE.size, CACHE_FULL.size]
 		if OPTIONS[:by_season]
 			puts ''
 			CACHE.reject{|k,a| a['media_type'] == 'music'}.group_by{|k,v| v.fetch('start_season', {})}.sort{|a,b|a.first.values <=> b.first.values}.each do |season, nimes|
