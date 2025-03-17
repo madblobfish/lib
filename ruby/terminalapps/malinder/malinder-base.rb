@@ -121,7 +121,7 @@ LOG_FILE.sync = true
 CSV_OPTS = {
 	col_sep: "\t",
 }
-CSV_OPTS[:skip_lines] = /^(#|$|<<+|==+|>>+|\|\|+)/ unless RUBY_VERSION.start_with?('2.')
+CSV_OPTS[:skip_lines] = /^(#|$|<<+|==+|>>+|\|\|+)/
 def read_choices(file)
 	file = CONFIG_DIR + file if File.exist?(CONFIG_DIR + file) # allow relative paths
 	headers = %w(id year season state ts name c1 c2 c3)
