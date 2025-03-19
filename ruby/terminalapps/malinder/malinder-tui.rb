@@ -70,7 +70,10 @@ class MALinder < TerminalGame
 		paragraph += "\nStatus: #{anime['status']}" if anime['status']
 		paragraph += "\nStart: #{anime['start_date']}" if anime['start_date']
 		paragraph += "\nEpisodes: #{anime['num_episodes']}" if anime['num_episodes'] and anime['num_episodes'] != 0
-		paragraph += "\nDuration: #{Duration.new(anime['average_episode_duration']).to_s}" if anime['average_episode_duration']
+		if anime['average_episode_duration']
+			paragraph += "\nDuration: #{Duration.new(anime['average_episode_duration']).to_s}"
+			paragraph += ", total: #{Duration.new(anime['average_episode_duration'].to_i * anime['num_episodes'].to_i).to_s}"
+		end
 		paragraph += "\nScore: #{anime['mean']}" if anime['mean']
 		paragraph += "\nGenres: #{anime['genres'].join(', ')}" if anime['genres']
 		paragraph += "\n\nLink: #{MAL_PREFIX}#{anime['id']}"

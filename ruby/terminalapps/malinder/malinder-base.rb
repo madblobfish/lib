@@ -82,7 +82,7 @@ configurable_default(:BAD_WORDS,
 		mini idol cultivat chibi promotion game pokemon pokémon sport mecha machine transformer
 		special extra harem hentai ecchi kids collaboration commercial precure reborn rebirth revive isekai
 		reincar sanrio compilation limited trailer short season recap sect sponsor promote
-		youku bilibili
+		youku bilibili summary
 	)	+ [
 		'love live', 'boys love', 'sailor moon', 'music film', 'music video', 'variety program',
 		'martial art'
