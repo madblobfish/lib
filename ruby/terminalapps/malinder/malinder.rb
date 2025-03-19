@@ -289,17 +289,27 @@ if __FILE__ == $PROGRAM_NAME
 		count_chosen = 0
 		time_watched_sum = 0
 		count_watched = 0
+		count_chosen_episodes = 0
+		count_watched_episodes = 0
 		CHOICES.each do |id, v|
 			if anime = CACHE_FULL[id.to_i]
 				status, seen_eps, seen_time = v['state'].split(',', 3)
 				seen_eps ||= anime['num_episodes'] if status == 'seen'
 				if %w(paused partly broken seen).include?(status)
 					time_watched_sum += seen_eps.to_i * anime.fetch('average_episode_duration', 0)
+					if %w(partly, paused).include?(status)
+						count_chosen_episodes += anime['num_episodes'].to_i
+					else
+						count_chosen_episodes += seen_eps.to_i
+					end
+					count_watched_episodes += seen_eps.to_i
 					count_watched += 1 if %w(broken seen).include?(status)
 				end
 				unless %w(nope okay).include?(status)
 					eps = anime['num_episodes']
 					eps = seen_eps if status == 'broken'
+					count_watched_episodes += seen_eps.to_i
+					count_chosen_episodes += eps.to_i
 					time_chosen_sum += eps.to_i * anime.fetch('average_episode_duration', 0)
 					count_chosen += 1
 				end
@@ -311,11 +321,16 @@ if __FILE__ == $PROGRAM_NAME
 		end
 		CHOICES.map{|k,v|v['state'].split(',').first}.group_by{|e|e}.map{|a,b|[a,b.count]}.sort_by{|k,v|v}.map{|e| puts e.join(': ') }
 		puts ''
-		print_percent = lambda do |name, part, full|
-			puts("%s ratio:\t%2.2f%% (%d of %d)" % [name, part*100.0/full, part, full])
+		print_percent = lambda do |name, part, full, print_duration=false|
+			if print_duration
+				puts("%s ratio:\t%2.2f%% (%s of %s), %s left" % [name, part*100.0/full, *[part, full, full-part].map{|e|Duration.new(e).to_s}])
+			else
+				puts("%s ratio:\t%2.2f%% (%d of %d), %d left" % [name, part*100.0/full, part, full, full-part])
+			end
 		end
 		print_percent['Watched', count_watched, count_chosen]
-		print_percent['Watched time', time_watched_sum, time_chosen_sum]
+		print_percent['Watched Time', time_watched_sum, time_chosen_sum, true]
+		print_percent['Watched Episodes ', count_watched_episodes, count_chosen_episodes]
 		print_percent['Tracked', CHOICES.size, CACHE.size]
 		print_percent['Filtered Cache vs full Cache', CACHE.size, CACHE_FULL.size]
 		if OPTIONS[:by_season]
