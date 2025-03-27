@@ -82,7 +82,7 @@ configurable_default(:BAD_WORDS,
 		mini idol cultivat chibi promotion game pokemon pokémon sport mecha machine transformer
 		special extra harem hentai ecchi kids collaboration commercial precure reborn rebirth revive isekai
 		reincar sanrio compilation limited trailer short season recap sect sponsor promote
-		youku bilibili summary
+		youku bilibili summary strongest invincible
 	)	+ [
 		'love live', 'boys love', 'sailor moon', 'music film', 'music video', 'variety program',
 		'martial art'
@@ -113,7 +113,11 @@ STATE_ACTIVE = %w(partly paused broken)
 STATE_INACTIVE = STATE_LEVEL.keys - STATE_ACTIVE
 CACHE = {}
 CACHE_FULL = {}
-FAVORITES = Hash[File.readlines(FAV_FILE_PATH, chomp: true).map{|l| l.split("\t", 3)[0..1] }]
+if File.readable?(FAV_FILE_PATH)
+	FAVORITES = Hash[File.readlines(FAV_FILE_PATH, chomp: true).map{|l| l.split("\t", 3)[0..1] }]
+else
+	FAVORITES = {}
+end
 IMAGE_CACHE = {}
 LOG_FILE = File.open(LOG_FILE_PATH, 'a+')
 LOG_FILE.sync = true
