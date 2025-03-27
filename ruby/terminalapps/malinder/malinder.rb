@@ -321,6 +321,8 @@ if __FILE__ == $PROGRAM_NAME
 		end
 		CHOICES.map{|k,v|v['state'].split(',').first}.group_by{|e|e}.map{|a,b|[a,b.count]}.sort_by{|k,v|v}.map{|e| puts e.join(': ') }
 		puts ''
+		puts FAVORITES.group_by{|a,b| b}.map{|k,v| "#{k}: #{v.count}"}
+		puts ''
 		print_percent = lambda do |name, part, full, print_duration=false|
 			if print_duration
 				puts("%s ratio:\t%2.2f%% (%s of %s), %s left" % [name, part*100.0/full, *[part, full, full-part].map{|e|Duration.new(e).to_s}])
