@@ -319,7 +319,7 @@ if __FILE__ == $PROGRAM_NAME
 				end
 			end
 		end
-		CHOICES.map{|k,v|v['state'].split(',').first}.group_by{|e|e}.map{|a,b|[a,b.count]}.sort_by{|k,v|v}.map{|e| puts e.join(': ') }
+		puts CHOICES.map{|k,v|v['state'].split(',').first}.group_by{|e|e}.map{|a,b|[a,b.count]}.sort_by{|k,v|v}.map{|e| e.join(': ') }
 		puts ''
 		puts FAVORITES.group_by{|a,b| b}.map{|k,v| "#{k}: #{v.count}"}
 		puts ''
@@ -387,6 +387,17 @@ if __FILE__ == $PROGRAM_NAME
 				ret << ['', "State: #{CHOICES[id.to_s]['state'] rescue '-'}"]
 			}
 		)
+	elsif ARGV.first == 'stack' && ARGV.length == 2
+		require 'nokogiri'
+		require 'open-uri'
+		html = URI.open(ARGV.last).read
+		doc = Nokogiri::HTML(html)
+		links = doc.css('.seasonal-anime')
+			.map{|e| e.css('.title a').first['href']}
+			.map{|l| /^https:\/\/myanimelist\.net\/anime\/([0-9]+)\//.match(l) ? $1.to_i : nil }
+			.compact
+		links.reject!{|l| CHOICES.has_key?(l.to_s)} unless OPTIONS[:all]
+		output_or_process(links, links, links.join("\n"))
 
 	elsif ARGV.length == 2
 		OPTIONS[:interactive] = true # this command forces interactive use
