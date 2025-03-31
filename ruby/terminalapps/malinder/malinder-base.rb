@@ -7,10 +7,13 @@ require 'socket'
 
 OFFLINE =
 	begin
-		Socket.tcp("1.1.1.1", 53){}
-		true if ENV['OFFLINE']
-		false
-	rescue Errno::ENETUNREACH
+		if ENV['OFFLINE']
+			true
+		else
+			Socket.tcp("1.1.1.1", 53, connect_timeout: 0.5){}
+			false
+		end
+	rescue Errno::ENETUNREACH, Errno::ETIMEDOUT
 		true
 	rescue
 		false
