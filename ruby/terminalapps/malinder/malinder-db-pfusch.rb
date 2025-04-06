@@ -34,7 +34,7 @@ csv = read_choices(LOG_FILE_PATH) unless NOCURRENT
 ARGV.each{|f| csv += read_choices(f)}
 csv.map! do |entry|
   r = entry.fetch_values(*%w(id year season state ts name c1 c2 c3))
-  unless CACHE_FULL[entry['id'].to_i]
+  unless CACHE_FULL[entry['id'].to_i] || DELETIONS[entry['id'].to_s]
     STDERR.puts('ID Lookupfail: ' + r[0].to_s) unless r[0].nil? or r[0].to_s.start_with?('imdb,')
   end
   r
