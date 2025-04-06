@@ -80,6 +80,7 @@ configurable_default(:LOG_SUFFIX, '-' + ENV['USER'])
 LOG_FILE_NAME = "choices#{LOG_SUFFIX}.log"
 configurable_default(:LOG_FILE_PATH, "#{CONFIG_DIR}#{LOG_FILE_NAME}")
 configurable_default(:FAV_FILE_PATH, "#{CONFIG_DIR}favorites#{LOG_SUFFIX}.txt")
+configurable_default(:DELETIONS_PATH, "#{CONFIG_DIR}sources/deletions.txt")
 configurable_default(:BAD_WORDS,
 	%w(
 		mini idol cultivat chibi promotion game pokemon pokémon sport mecha machine transformer
@@ -121,6 +122,7 @@ if File.readable?(FAV_FILE_PATH)
 else
 	FAVORITES = {}
 end
+DELETIONS = Hash[(File.readlines(DELETIONS_PATH, chomp: true) rescue []).map{|l| [l, true] }]
 IMAGE_CACHE = {}
 LOG_FILE = File.open(LOG_FILE_PATH, 'a+')
 LOG_FILE.sync = true
@@ -203,7 +205,7 @@ def load_all_to_cache()
 	end if AUTOPULL_SOURCES
 	default_filter = DEFAULT_FILTER.nil? ? lambda{|_|true} : Array::QueryParser.new.parse(DEFAULT_FILTER)
 	date = Time.now
-	Dir[CONFIG_DIR + 'sources/*'].map do |s|
+	Dir[CONFIG_DIR + 'sources/*.json'].map do |s|
 		JSON.parse(File.read(s))['data'].each do |blah|
 			# unified cache internal representation
 			v = blah['node']
