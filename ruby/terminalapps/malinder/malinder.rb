@@ -17,6 +17,8 @@ HELP_TEXT << '  results [a_log] <b_log> [year season|querysyntax]: find out comm
 HELP_TEXT << '      limits by year and season if given'
 HELP_TEXT << '      e.g.: someguy.log 2013 summer'
 HELP_TEXT << '      e.g.: /tmp/some.log "(year <= 2019) && type != movie"'
+HELP_TEXT << '  db-pfusch [--help]: merge or normalize choices'
+HELP_TEXT << '      see its own help for more details'
 HELP_TEXT << ''
 HELP_TEXT << '  edit [filename]: runs "$EDITOR logfile" or the given file name'
 HELP_TEXT << ''
@@ -56,10 +58,11 @@ def output_or_process(id_list, data, formatted_text)
 end
 
 if __FILE__ == $PROGRAM_NAME
-	if ARGV.include?('--help') || ARGV.empty?
+	if (ARGV.include?('--help') && ARGV.first != 'db-pfusch') || ARGV.empty?
 		puts HELP_TEXT
 		exit 0
 	end
+	ARGV_ORIGINAL = ARGV.map{|e| e.dup}
 
 	def pars_arg(const, flag)
 		if ARGV.include?(flag)
@@ -83,10 +86,11 @@ if __FILE__ == $PROGRAM_NAME
 		text: ARGV.delete('--text'),
 		recurse: ARGV.delete('--recurse'),
 	}
-	bad_args = ARGV.select{|a| a.start_with?('-')}
+	bad_args = ARGV.select{|a| a.start_with?('-')} - ['--help']
 	raise 'unknown argument(s): ' + bad_args.join(', ') if bad_args.any?
 	DEFAULT_FILTER = nil if OPTIONS[:no_default_filter]
 	require_relative 'malinder-base.rb'
+
 
 	# makes commands faster which do not need cached data
 	didcommand = true
@@ -94,6 +98,8 @@ if __FILE__ == $PROGRAM_NAME
 		filename = ARGV.fetch(1, LOG_FILE_NAME)
 		filename = CONFIG_DIR + filename unless filename.include?("/")
 		system(ENV.fetch('EDITOR', 'nano'), filename, exception: true)
+	elsif ARGV.first == 'db-pfusch'
+		exec("ruby", "#{__dir__}/malinder-db-pfusch.rb", *ARGV_ORIGINAL.drop(1))
 
 	# git integration
 	elsif ARGV == ['add']
