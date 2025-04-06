@@ -314,7 +314,7 @@ if __FILE__ == $PROGRAM_NAME
 					count_chosen += 1
 				end
 			else
-				unless id.start_with?('imdb,') || v['state'] == 'nope'
+				unless id.start_with?('imdb,') || v['state'] == 'nope' || DELETIONS[id]
 					STDERR.puts 'could not resolve: ' + id
 				end
 			end
