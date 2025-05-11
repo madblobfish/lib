@@ -309,3 +309,20 @@ def prefetch(list)
 		image(a)
 	end
 end
+
+def parse_local_files(filter, path='')
+	files = Hash[Dir[path + '[0-9]*-*.{mkv,mp4}']
+		.map{|f| [f.split('-',2).first.to_i, f]}
+		.compact.group_by(&:first).transform_values{|l|l.map(&:last)}
+		.map do |id, l|
+			seen = CHOICES[id.to_s]['state'].split(',', 2).last.to_i rescue 0
+			[id, l.map do |f|
+				ep = f.split('-',3)[1].split('E',2).last.to_i
+				if filter[seen, ep]
+					[f, ep]
+				else
+					nil
+				end
+			end.compact]
+		end]
+end

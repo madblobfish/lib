@@ -29,6 +29,10 @@ HELP_TEXT << '  restore: runs "git add -p" in config folder'
 HELP_TEXT << '  commit [message]: runs "git commit" in config folder, default message is the current day in iso8601 format'
 HELP_TEXT << '  log [-p]: runs "git log" in config folder, optionally with diffs'
 HELP_TEXT << ''
+HELP_TEXT << '  fix-names: try to guess the ID and rename files'
+HELP_TEXT << '  clean: cleanup already seen'
+HELP_TEXT << '  missing: list missing episodes in current dir'
+HELP_TEXT << ''
 HELP_TEXT << '  -i, --interactive may make it show results in the interactive Terminal UI'
 HELP_TEXT << '  --prefetch may make it load and cache images and related information'
 HELP_TEXT << '  --json may output json instead'
@@ -58,7 +62,8 @@ def output_or_process(id_list, data, formatted_text)
 end
 
 if __FILE__ == $PROGRAM_NAME
-	if (ARGV.include?('--help') && ARGV.first != 'db-pfusch') || ARGV.empty?
+	DB_PFUSCH = ARGV.first == 'db-pfusch'
+	if (ARGV.include?('--help') && !DB_PFUSCH) || ARGV.empty?
 		puts HELP_TEXT
 		exit 0
 	end
@@ -86,8 +91,8 @@ if __FILE__ == $PROGRAM_NAME
 		text: ARGV.delete('--text'),
 		recurse: ARGV.delete('--recurse'),
 	}
-	bad_args = ARGV.select{|a| a.start_with?('-')} - ['--help']
-	raise 'unknown argument(s): ' + bad_args.join(', ') if bad_args.any?
+	bad_args = ARGV.select{|a| a.start_with?('-')}
+	raise 'unknown argument(s): ' + bad_args.join(', ') if bad_args.any? && !DB_PFUSCH
 	DEFAULT_FILTER = nil if OPTIONS[:no_default_filter]
 	require_relative 'malinder-base.rb'
 
@@ -405,14 +410,83 @@ if __FILE__ == $PROGRAM_NAME
 		links.reject!{|l| CHOICES.has_key?(l.to_s)} unless OPTIONS[:all]
 		output_or_process(links, links, links.join("\n"))
 
-	elsif ARGV.length == 2
+	elsif ARGV[0] == 'fetch_related'
+		p fetch_related(ARGV[1].to_i).flat_map{|rel|rel['entry']}
+		p fetch_related(ARGV[1].to_i).flat_map{|rel|rel['entry'].map{|r| r['mal_id']}}
+		p fetch_related(ARGV[1].to_i).flat_map{|rel|rel['entry'].map{|r| CHOICES.fetch(r['mal_id'].to_s, {}).fetch('state', '-')}}
+
+	elsif ARGV == ['clean']
+		files = parse_local_files(lambda{|seen,ep| seen >= ep}).values.flatten
+		if files.empty?
+			puts 'already clean :)'
+			exit(0)
+		end
+		puts 'Will delete:'
+		puts files.map(&:inspect)
+		puts '[yes/NO]?'
+		if STDIN.readline.rstrip() == 'yes'
+			files.each{|f| File.delete(f)}
+			puts "deleted"
+		end
+	elsif ARGV == ['fix-names']
+		CLEAN_CACHE = {}
+		Dir['*{.mkv,.mp4}'].each do |f|
+			next if f =~ /^\d+-S\d+E\d+-/
+			cleaner = f.gsub(/\[[^\]]+\]\s*/, '').gsub(/\..*$/, '').gsub(/v\d\s*$/, '')
+			/S(?<season>\d{1,2})E(?<episod>\d{1,2})/i =~ cleaner
+			title, _, episode = cleaner.rpartition('-')
+			episode = episod if episod
+			series = title.split('-', 2).first.strip
+			CLEAN_CACHE[series] ||= cache_query("names like '#{series.tr("'",'')}'")
+			# puts "#{f} - #{title.strip}: #{episode}"
+			if CLEAN_CACHE[series].length == 1
+				newname = "#{CLEAN_CACHE[series].first['id']}-S00E#{episode.strip}-"
+				puts "rename: #{f.inspect} with prefix #{newname.inspect}?"
+				unless File.exist?(newname + f)
+					puts '[y/N]?'
+					if STDIN.readline.rstrip() == 'y'
+						File.rename(f, newname + f)
+						puts "renamed"
+					end
+				end
+			else
+				if CLEAN_CACHE[series].length == 0
+					puts "could not find the anime"
+				else
+					puts "can not solve for: #{f}"
+					p CLEAN_CACHE[series].map{|a|a['id']}.compact
+				end
+				puts "searched for: #{series.tr("'",'')}"
+				# id = CLEAN_CACHE[series].map{|a|a['id']}.compact.first
+			end
+		end
+	elsif ARGV == ['missing']
+		parse_local_files(lambda{|seen,ep| seen < ep}).map do |id, files_existing|
+			eps_existing = files_existing.map(&:last)
+			num_episodes = CACHE[id].fetch('num_episodes', 0)
+			num_episodes = eps_existing.max + 1 if num_episodes == 0
+			seen_so_far = CHOICES.fetch(id.to_s, {}).fetch('state', ',0').split(',', 2).last.to_i + 1
+			seen_so_far.upto(num_episodes).each do |ep|
+				unless eps_existing.include?(ep)
+					puts "#{id} is missing ep #{ep} - #{CACHE[id]&.fetch('title', 'name unkown')}"
+				end
+			end
+		end
+	elsif ARGV == ['watch']
+		files = parse_local_files(lambda{|seen,ep| seen < ep})
+		p files
+
+	elsif ARGV.length == 2 || (ARGV.one? && ARGV.first.to_i.to_s == ARGV.first)
 		OPTIONS[:interactive] = true # this command forces interactive use
 		year = Integer(ARGV.first, 10) # raises an exception if year is not integer
-		season = season_shortcuts(ARGV.last)
-		# for checking and better error messages
-		raise 'missing json, run malinder.sh first' unless File.exist?("#{CONFIG_DIR}sources/#{year}-#{season}.json")
+		season = ''
+		unless ARGV.one?
+			season = "&& season == #{ARGV.last}"
+			# for checking and better error messages
+			raise 'missing json, run malinder.sh first' unless File.exist?("#{CONFIG_DIR}sources/#{year}-#{ARGV.last}.json")
+		end
 		output_or_process(
-			lambda{cache_query("year == #{year} && season == #{season} && choice == -").map{|a| a['id']} },
+			lambda{cache_query("year == #{year} #{season} && choice == -").map{|a| a['id']} },
 			nil, nil
 		)
 
