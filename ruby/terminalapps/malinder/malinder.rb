@@ -437,9 +437,8 @@ if __FILE__ == $PROGRAM_NAME
 			title, _, episode = cleaner.rpartition('-')
 			episode = episod if episod
 			series = title.split('-', 2).first.strip
-			CLEAN_CACHE[series] ||= cache_query("names like '#{series.tr("'",'')}'")
+			CLEAN_CACHE[series] ||= cache_query("names textsearch '#{series.tr("'",'')}'")
 			prefixes = CLEAN_CACHE[series].map{|x| "#{x['id']}-S00E#{episode.strip}-"}
-			# puts "#{f} - #{title.strip}: #{episode}"
 			if prefixes == 1
 				puts "rename: #{f.inspect} with prefix #{prefixes.first.inspect}?"
 				unless File.exist?(prefixes.first + f)
@@ -452,10 +451,9 @@ if __FILE__ == $PROGRAM_NAME
 			elsif CLEAN_CACHE[series].length == 0
 				puts "could not find the anime"
 				puts "searched for: #{series.tr("'",'')}"
-				# id = CLEAN_CACHE[series].map{|a|a['id']}.compact.first
 			else
 				puts "can not solve for: #{f}, episode: #{episode.strip}"
-				puts CLEAN_CACHE[series].map.with_index{|a,i| "#{i}: " + a.values_at('id', 'title').join(' ')}.compact
+				puts CLEAN_CACHE[series].map.with_index{|a,i| "#{i}: " + a.values_at('id', 'title', 'num_episodes').join(' - ')}.compact
 				puts "which or none: [#{CLEAN_CACHE[series].size.times.to_a.join('/')}/N]?"
 				choice = Integer(STDIN.readline.rstrip(), 10) rescue -1
 				if choice >= 0 && CLEAN_CACHE[series].size > choice
