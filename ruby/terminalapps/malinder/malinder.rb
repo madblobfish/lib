@@ -416,7 +416,7 @@ if __FILE__ == $PROGRAM_NAME
 		p fetch_related(ARGV[1].to_i).flat_map{|rel|rel['entry'].map{|r| CHOICES.fetch(r['mal_id'].to_s, {}).fetch('state', '-')}}
 
 	elsif ARGV == ['clean']
-		files = parse_local_files(lambda{|seen,ep| seen >= ep}).values.flatten
+		files = parse_local_files(lambda{|seen,ep| seen >= ep}).values.flatten(1).map(&:first)
 		if files.empty?
 			puts 'already clean :)'
 			exit(0)
@@ -438,33 +438,37 @@ if __FILE__ == $PROGRAM_NAME
 			episode = episod if episod
 			series = title.split('-', 2).first.strip
 			CLEAN_CACHE[series] ||= cache_query("names like '#{series.tr("'",'')}'")
+			prefixes = CLEAN_CACHE[series].map{|x| "#{x['id']}-S00E#{episode.strip}-"}
 			# puts "#{f} - #{title.strip}: #{episode}"
-			if CLEAN_CACHE[series].length == 1
-				newname = "#{CLEAN_CACHE[series].first['id']}-S00E#{episode.strip}-"
-				puts "rename: #{f.inspect} with prefix #{newname.inspect}?"
-				unless File.exist?(newname + f)
+			if prefixes == 1
+				puts "rename: #{f.inspect} with prefix #{prefixes.first.inspect}?"
+				unless File.exist?(prefixes.first + f)
 					puts '[y/N]?'
 					if STDIN.readline.rstrip() == 'y'
-						File.rename(f, newname + f)
+						File.rename(f, prefixes.first + f)
 						puts "renamed"
 					end
 				end
-			else
-				if CLEAN_CACHE[series].length == 0
-					puts "could not find the anime"
-				else
-					puts "can not solve for: #{f}"
-					p CLEAN_CACHE[series].map{|a|a['id']}.compact
-				end
+			elsif CLEAN_CACHE[series].length == 0
+				puts "could not find the anime"
 				puts "searched for: #{series.tr("'",'')}"
 				# id = CLEAN_CACHE[series].map{|a|a['id']}.compact.first
+			else
+				puts "can not solve for: #{f}, episode: #{episode.strip}"
+				puts CLEAN_CACHE[series].map.with_index{|a,i| "#{i}: " + a.values_at('id', 'title').join(' ')}.compact
+				puts "which or none: [#{CLEAN_CACHE[series].size.times.to_a.join('/')}/N]?"
+				choice = Integer(STDIN.readline.rstrip(), 10) rescue -1
+				if choice >= 0 && CLEAN_CACHE[series].size > choice
+					File.rename(f, prefixes[choice] + f)
+					puts "renamed"
+				end
 			end
 		end
 	elsif ARGV == ['missing']
 		parse_local_files(lambda{|seen,ep| seen < ep}).map do |id, files_existing|
 			eps_existing = files_existing.map(&:last)
 			num_episodes = CACHE[id].fetch('num_episodes', 0)
-			num_episodes = eps_existing.max + 1 if num_episodes == 0
+			num_episodes = (eps_existing.max + 1 rescue 0) if num_episodes == 0
 			seen_so_far = CHOICES.fetch(id.to_s, {}).fetch('state', ',0').split(',', 2).last.to_i + 1
 			seen_so_far.upto(num_episodes).each do |ep|
 				unless eps_existing.include?(ep)
@@ -473,8 +477,16 @@ if __FILE__ == $PROGRAM_NAME
 			end
 		end
 	elsif ARGV == ['watch']
-		files = parse_local_files(lambda{|seen,ep| seen < ep})
-		p files
+		files = parse_local_files(lambda{|seen,ep| seen < ep}).reject{|id, eps| eps.empty?}
+		files.each_with_index do |(id, eps), idx|
+			choice = CHOICES.fetch(id.to_s, {})
+			name = choice.fetch('name', CACHE[id]&.fetch('title', 'unknown'))
+			ep = eps.map(&:last).map do |ep|
+				seen_so_far = choice.fetch('state', ',0').split(',', 2).last.to_i
+				ep == seen_so_far + 1 ? "(#{ep})" : ep.to_s
+			end.sort.join(', ')
+			puts "#{idx}: #{name} (#{id}): #{ep}"
+		end
 
 	elsif ARGV.length == 2 || (ARGV.one? && ARGV.first.to_i.to_s == ARGV.first)
 		OPTIONS[:interactive] = true # this command forces interactive use
