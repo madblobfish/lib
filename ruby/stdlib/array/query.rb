@@ -11,10 +11,10 @@ require 'racc/parser.rb'
 class Array
 class QueryParser < Racc::Parser
 
-module_eval(<<'...end query.y/module_eval...', 'query.y', 107)
+module_eval(<<'...end query.y/module_eval...', 'query.y', 121)
   def parse(str)
     value_sub_subregex = '-\p{Hiragana}\p{Katakana}\p{Han}\p{Hangul}ー〜、a-zA-Z0-9_+*.⭐🩵💩'
-    value_subregex = "([\"'][#{value_sub_subregex}\|\(\) ]+[\"']|[#{value_sub_subregex},]+)"
+    value_subregex = "(\"[#{value_sub_subregex}\|\(\)' ]+\"|'[#{value_sub_subregex}\|\(\)\" ]+'|[#{value_sub_subregex},]+)"
     @q = []
     until str.empty?
       case str
@@ -22,7 +22,7 @@ module_eval(<<'...end query.y/module_eval...', 'query.y', 107)
       when /\A(Like)\s+#{value_subregex}/
         @q.push [:SENSITIVE_LIKE, 'like']
         @q.push [:VALUE, $2.tr('"\'', '')]
-      when /\A(all|in|has|like)\s+#{value_subregex}/
+      when /\A(all|in|has|like|textsearch)\s+#{value_subregex}/
         @q.push [$1, $1]
         @q.push [:VALUE, $2.tr('"\'', '')]
       when /\A#{value_subregex}(\s+)?/
@@ -51,39 +51,39 @@ module_eval(<<'...end query.y/module_eval...', 'query.y', 107)
 
 racc_action_table = [
     11,    10,     3,    11,    10,     3,     9,     5,    12,    16,
-     5,    20,     6,     7,    32,     6,     7,     3,    16,     3,
-    16,     3,     5,    16,     5,    31,     5,     6,     7,     6,
-     7,     6,     7,    23,    24,    25,    26,    27,    13,    14,
-    15,    11,    16,    16,    16,    16,    16 ]
+     5,    20,    16,     6,     7,    33,     6,     7,     3,    16,
+     3,    16,     3,     5,    32,     5,    11,     5,    16,     6,
+     7,     6,     7,     6,     7,    23,    24,    25,    26,    27,
+    28,    13,    14,    15,    16,    16,    16,    16,    16 ]
 
 racc_action_check = [
     19,    19,     0,     2,     2,     6,     1,     0,     3,     5,
-     6,     9,     0,     0,    19,     6,     6,     7,    13,    10,
-    14,    11,     7,    15,    10,    16,    11,     7,     7,    10,
-    10,    11,    11,    12,    12,    12,    12,    12,     4,     4,
-     4,    21,    23,    24,    25,    26,    27 ]
+     6,     9,    13,     0,     0,    19,     6,     6,     7,    14,
+    10,    15,    11,     7,    16,    10,    21,    11,    23,     7,
+     7,    10,    10,    11,    11,    12,    12,    12,    12,    12,
+    12,     4,     4,     4,    24,    25,    26,    27,    28 ]
 
 racc_action_pointer = [
-    -3,     6,     0,     2,    31,     4,     0,    12,   nil,    11,
-    14,    16,    23,    13,    15,    18,    19,   nil,   nil,    -3,
-   nil,    38,   nil,    37,    38,    39,    40,    41,   nil,   nil,
-   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil ]
+    -3,     6,     0,     2,    34,     4,     0,    13,   nil,    11,
+    15,    17,    25,     7,    14,    16,    18,   nil,   nil,    -3,
+   nil,    23,   nil,    23,    39,    40,    41,    42,    43,   nil,
+   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil,   nil ]
 
 racc_action_default = [
-   -18,   -18,    -1,    -2,   -18,   -18,   -18,   -18,   -17,   -18,
-   -18,   -18,    -3,   -18,   -18,   -18,    -2,    -7,   -15,   -18,
-    38,   -13,   -14,   -18,   -18,   -18,   -18,   -18,    -4,    -5,
-    -6,    -3,   -16,    -8,    -9,   -10,   -11,   -12 ]
+   -19,   -19,    -1,    -2,   -19,   -19,   -19,   -19,   -18,   -19,
+   -19,   -19,    -3,   -19,   -19,   -19,    -2,    -7,   -16,   -19,
+    40,   -14,   -15,   -19,   -19,   -19,   -19,   -19,   -19,    -4,
+    -5,    -6,    -3,   -17,    -8,    -9,   -10,   -11,   -12,   -13 ]
 
 racc_goto_table = [
-    17,     1,   nil,   nil,   nil,     2,   nil,   nil,    28,    29,
-    30,    18,    19,   nil,   nil,    21,    22,   nil,    33,    34,
-    35,    36,    37 ]
+    17,     1,   nil,   nil,   nil,     2,   nil,   nil,    29,    30,
+    31,    18,    19,   nil,   nil,    21,    22,   nil,    34,    35,
+    36,    37,    38,    39 ]
 
 racc_goto_check = [
      3,     1,   nil,   nil,   nil,     2,   nil,   nil,     3,     3,
      3,     2,     2,   nil,   nil,     2,     2,   nil,     3,     3,
-     3,     3,     3 ]
+     3,     3,     3,     3 ]
 
 racc_goto_pointer = [
    nil,     1,     5,    -5,   nil ]
@@ -93,27 +93,28 @@ racc_goto_default = [
 
 racc_reduce_table = [
   0, 0, :racc_error,
-  1, 19, :_reduce_none,
-  1, 21, :_reduce_none,
-  2, 21, :_reduce_none,
-  3, 22, :_reduce_4,
-  3, 22, :_reduce_5,
-  3, 22, :_reduce_6,
-  2, 22, :_reduce_7,
-  4, 22, :_reduce_8,
-  4, 22, :_reduce_9,
-  4, 22, :_reduce_10,
-  4, 22, :_reduce_11,
-  4, 22, :_reduce_12,
-  3, 20, :_reduce_13,
-  3, 20, :_reduce_14,
-  2, 20, :_reduce_15,
-  3, 20, :_reduce_16,
-  1, 20, :_reduce_none ]
+  1, 20, :_reduce_none,
+  1, 22, :_reduce_none,
+  2, 22, :_reduce_none,
+  3, 23, :_reduce_4,
+  3, 23, :_reduce_5,
+  3, 23, :_reduce_6,
+  2, 23, :_reduce_7,
+  4, 23, :_reduce_8,
+  4, 23, :_reduce_9,
+  4, 23, :_reduce_10,
+  4, 23, :_reduce_11,
+  4, 23, :_reduce_12,
+  4, 23, :_reduce_13,
+  3, 21, :_reduce_14,
+  3, 21, :_reduce_15,
+  2, 21, :_reduce_16,
+  3, 21, :_reduce_17,
+  1, 21, :_reduce_none ]
 
-racc_reduce_n = 18
+racc_reduce_n = 19
 
-racc_shift_n = 38
+racc_shift_n = 40
 
 racc_token_table = {
   false => 0,
@@ -129,13 +130,14 @@ racc_token_table = {
   "has" => 10,
   "in" => 11,
   "all" => 12,
-  "like" => 13,
-  :SENSITIVE_LIKE => 14,
-  "!" => 15,
-  "(" => 16,
-  ")" => 17 }
+  "textsearch" => 13,
+  "like" => 14,
+  :SENSITIVE_LIKE => 15,
+  "!" => 16,
+  "(" => 17,
+  ")" => 18 }
 
-racc_nt_base = 18
+racc_nt_base = 19
 
 racc_use_result_var = true
 
@@ -170,6 +172,7 @@ Racc_token_to_s_table = [
   "\"has\"",
   "\"in\"",
   "\"all\"",
+  "\"textsearch\"",
   "\"like\"",
   "SENSITIVE_LIKE",
   "\"!\"",
@@ -277,6 +280,25 @@ module_eval(<<'.,.,', 'query.y', 46)
 
 module_eval(<<'.,.,', 'query.y', 59)
   def _reduce_11(val, _values, result)
+          # puts "textsearch #{val}" if $debug
+      regexp = /#{val[3]}/i
+      result = lambda{|h|
+        cleanup = lambda{|v| v.gsub(/[.,:;!?'"-]/,' ').gsub(/\s\s+/, ' ')}
+        if not h.has_key?(val[0])
+          raise "key '#{val[0]}' not found"
+        elsif h[val[0]].class == Array
+          h[val[0]].any?{|v| cleanup[v].match?(regexp)}
+        else
+          cleanup[h[val[0]]].match?(regexp)
+        end
+      }
+
+    result
+  end
+.,.,
+
+module_eval(<<'.,.,', 'query.y', 73)
+  def _reduce_12(val, _values, result)
           # puts "like #{val}" if $debug
       regexp = /#{val[3]}/i
       result = lambda{|h|
@@ -293,8 +315,8 @@ module_eval(<<'.,.,', 'query.y', 59)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 72)
-  def _reduce_12(val, _values, result)
+module_eval(<<'.,.,', 'query.y', 86)
+  def _reduce_13(val, _values, result)
           # puts "sensitive like #{val}" if $debug
       regexp = /#{val[3]}/
       result = lambda{|h|
@@ -311,39 +333,39 @@ module_eval(<<'.,.,', 'query.y', 72)
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 87)
-  def _reduce_13(val, _values, result)
+module_eval(<<'.,.,', 'query.y', 101)
+  def _reduce_14(val, _values, result)
           # puts 'or' if $debug
       result = lambda{|h| val[0][h] || val[2][h]}
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 90)
-  def _reduce_14(val, _values, result)
+module_eval(<<'.,.,', 'query.y', 104)
+  def _reduce_15(val, _values, result)
           # puts 'and' if $debug
       result = lambda{|h| val[0][h] && val[2][h]}
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 93)
-  def _reduce_15(val, _values, result)
+module_eval(<<'.,.,', 'query.y', 107)
+  def _reduce_16(val, _values, result)
           # puts 'not' if $debug
       result = lambda{|h| ! val[1][h] }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'query.y', 96)
-  def _reduce_16(val, _values, result)
+module_eval(<<'.,.,', 'query.y', 110)
+  def _reduce_17(val, _values, result)
           # puts 'brack' if $debug
       result = val[1]
     result
   end
 .,.,
 
-# reduce 17 omitted
+# reduce 18 omitted
 
 def _reduce_none(val, _values, result)
   val[0]
@@ -405,6 +427,10 @@ raise 'ahhhhhhhhhhhhhhhhhhhh' unless x.query('has d') == x.select{|h| !(h['d'].n
   'a all b all c',
   'a > b > c',
   'a like (a)',
+  'a like ""',
+  'a like \'\'',
+  'a like \'a"',
+  'a like "a\'',
   'a like [a]',
   'd has d',
   '!(d has b)',

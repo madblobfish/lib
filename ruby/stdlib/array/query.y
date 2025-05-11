@@ -56,6 +56,20 @@ rule
         end
       }
     }
+    | VALUE SPACE 'textsearch' val {
+      # puts "textsearch #{val}" if $debug
+      regexp = /#{val[3]}/i
+      result = lambda{|h|
+        cleanup = lambda{|v| v.gsub(/[.,:;!?'"-]/,' ').gsub(/\s\s+/, ' ')}
+        if not h.has_key?(val[0])
+          raise "key '#{val[0]}' not found"
+        elsif h[val[0]].class == Array
+          h[val[0]].any?{|v| cleanup[v].match?(regexp)}
+        else
+          cleanup[h[val[0]]].match?(regexp)
+        end
+      }
+    }
     | VALUE SPACE 'like' val {
       # puts "like #{val}" if $debug
       regexp = /#{val[3]}/i
@@ -106,7 +120,7 @@ class Array
 ---- inner
   def parse(str)
     value_sub_subregex = '-\p{Hiragana}\p{Katakana}\p{Han}\p{Hangul}ー〜、a-zA-Z0-9_+*.⭐🩵💩'
-    value_subregex = "([\"'][#{value_sub_subregex}\|\(\) ]+[\"']|[#{value_sub_subregex},]+)"
+    value_subregex = "(\"[#{value_sub_subregex}\|\(\)' ]+\"|'[#{value_sub_subregex}\|\(\)\" ]+'|[#{value_sub_subregex},]+)"
     @q = []
     until str.empty?
       case str
@@ -114,7 +128,7 @@ class Array
       when /\A(Like)\s+#{value_subregex}/
         @q.push [:SENSITIVE_LIKE, 'like']
         @q.push [:VALUE, $2.tr('"\'', '')]
-      when /\A(all|in|has|like)\s+#{value_subregex}/
+      when /\A(all|in|has|like|textsearch)\s+#{value_subregex}/
         @q.push [$1, $1]
         @q.push [:VALUE, $2.tr('"\'', '')]
       when /\A#{value_subregex}(\s+)?/
@@ -193,6 +207,10 @@ raise 'ahhhhhhhhhhhhhhhhhhhh' unless x.query('has d') == x.select{|h| !(h['d'].n
   'a all b all c',
   'a > b > c',
   'a like (a)',
+  'a like ""',
+  'a like \'\'',
+  'a like \'a"',
+  'a like "a\'',
   'a like [a]',
   'd has d',
   '!(d has b)',
