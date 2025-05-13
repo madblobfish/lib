@@ -485,6 +485,25 @@ if __FILE__ == $PROGRAM_NAME
 			end.sort.join(', ')
 			puts "#{idx}: #{name} (#{id}): #{ep}"
 		end
+		puts "which or none: [#{files.size.times.to_a.join('/')}/N]?"
+		choice = Integer(STDIN.readline.rstrip(), 10) rescue -1
+		if choice >= 0
+			id, eps = files.each.to_a[choice]
+			choices = eps.select{|f,ep| ep == 1+ CHOICES.fetch(id.to_s, {}).fetch('state', ',0').split(',', 2).last.to_i}.map(&:first)
+			if choices.length == 0
+				puts 'nothing'
+				exit(0)
+			elsif choices.length != 1
+				puts 'choose:'
+				choices = [choices.first]
+			end
+			`mpv '#{choices.first}'`
+			puts 'done, remove?[y/N]?'
+			if STDIN.readline.rstrip() == 'y'
+				File.delete(choices.first)
+				puts 'deleted'
+			end
+		end
 
 	elsif ARGV.length == 2 || (ARGV.one? && ARGV.first.to_i.to_s == ARGV.first)
 		OPTIONS[:interactive] = true # this command forces interactive use
