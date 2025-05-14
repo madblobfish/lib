@@ -465,7 +465,7 @@ if __FILE__ == $PROGRAM_NAME
 	elsif ARGV == ['missing']
 		parse_local_files(lambda{|seen,ep| seen < ep}).map do |id, files_existing|
 			eps_existing = files_existing.map(&:last)
-			num_episodes = CACHE[id].fetch('num_episodes', 0)
+			num_episodes = CACHE.fetch(id, {}).fetch('num_episodes', 0)
 			num_episodes = (eps_existing.max + 1 rescue 0) if num_episodes == 0
 			seen_so_far = CHOICES.fetch(id.to_s, {}).fetch('state', ',0').split(',', 2).last.to_i + 1
 			seen_so_far.upto(num_episodes).each do |ep|
@@ -483,7 +483,7 @@ if __FILE__ == $PROGRAM_NAME
 				seen_so_far = choice.fetch('state', ',0').split(',', 2).last.to_i
 				ep == seen_so_far + 1 ? "(#{ep})" : ep.to_s
 			end.sort.join(', ')
-			puts "#{idx}: #{name} (#{id}): #{ep}"
+			puts "#{idx}: #{id} '#{name}': #{ep}"
 		end
 		puts "which or none: [#{files.size.times.to_a.join('/')}/N]?"
 		choice = Integer(STDIN.readline.rstrip(), 10) rescue -1
@@ -497,7 +497,14 @@ if __FILE__ == $PROGRAM_NAME
 				puts 'choose:'
 				choices = [choices.first]
 			end
-			`mpv '#{choices.first}'`
+			require 'open3'
+			stdin, stdout, stderr, wait_thread = Open3.popen3('/usr/bin/mpv', '--', choices.first)
+			Thread.new{io_copy(stdout, STDOUT)}
+			Thread.new{io_copy(STDIN, stdin)}
+			Thread.new{io_copy(stderr, STDOUT)}
+			wait_thread.join
+			# `mpv '#{choices.first}'`
+			# log
 			puts 'done, remove?[y/N]?'
 			if STDIN.readline.rstrip() == 'y'
 				File.delete(choices.first)
