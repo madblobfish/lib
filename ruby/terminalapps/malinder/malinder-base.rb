@@ -326,12 +326,3 @@ def parse_local_files(filter, path='')
 			end.compact]
 		end]
 end
-
-def io_copy(from, to)
-  loop do
-    IO.select([from])
-    data = from.read_nonblock(100_000)
-    yield(data) if block_given?
-    to.write(data)
-  end
-end

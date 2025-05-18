@@ -381,6 +381,11 @@ if __FILE__ == $PROGRAM_NAME
 			related,
 			'well... use --json or --interactive here for now' # no clue how to present this
 		)
+	elsif ARGV[0] == 'fetch_related'
+		p fetch_related(ARGV[1].to_i).flat_map{|rel|rel['entry']}
+		p fetch_related(ARGV[1].to_i).flat_map{|rel|rel['entry'].map{|r| r['mal_id']}}
+		p fetch_related(ARGV[1].to_i).flat_map{|rel|rel['entry'].map{|r| CHOICES.fetch(r['mal_id'].to_s, {}).fetch('state', '-')}}
+
 	elsif ARGV.first == 'show' && ARGV.length == 2
 		id = Integer(ARGV[1], 10)
 		output_or_process(
@@ -409,11 +414,6 @@ if __FILE__ == $PROGRAM_NAME
 			.compact
 		links.reject!{|l| CHOICES.has_key?(l.to_s)} unless OPTIONS[:all]
 		output_or_process(links, links, links.join("\n"))
-
-	elsif ARGV[0] == 'fetch_related'
-		p fetch_related(ARGV[1].to_i).flat_map{|rel|rel['entry']}
-		p fetch_related(ARGV[1].to_i).flat_map{|rel|rel['entry'].map{|r| r['mal_id']}}
-		p fetch_related(ARGV[1].to_i).flat_map{|rel|rel['entry'].map{|r| CHOICES.fetch(r['mal_id'].to_s, {}).fetch('state', '-')}}
 
 	elsif ARGV == ['clean']
 		files = parse_local_files(lambda{|seen,ep| seen >= ep}).values.flatten(1).map(&:first)
@@ -475,42 +475,62 @@ if __FILE__ == $PROGRAM_NAME
 			end
 		end
 	elsif ARGV == ['watch']
-		files = parse_local_files(lambda{|seen,ep| seen < ep}).reject{|id, eps| eps.empty?}
-		files.each_with_index do |(id, eps), idx|
-			choice = CHOICES.fetch(id.to_s, {})
-			name = choice.fetch('name', CACHE[id]&.fetch('title', 'unknown'))
-			ep = eps.map(&:last).map do |ep|
-				seen_so_far = choice.fetch('state', ',0').split(',', 2).last.to_i
-				ep == seen_so_far + 1 ? "(#{ep})" : ep.to_s
-			end.sort.join(', ')
-			puts "#{idx}: #{id} '#{name}': #{ep}"
+		require 'socket'
+		require 'json'
+		mpv_ipc_socket = "/run/user/#{Process.uid}/malinder-mpv"
+		unless File.exist?(mpv_ipc_socket)
+			puts "open mpv like: mpv --idle --input-ipc-server=#{mpv_ipc_socket}"
+			exit 1
 		end
-		puts "which or none: [#{files.size.times.to_a.join('/')}/N]?"
-		choice = Integer(STDIN.readline.rstrip(), 10) rescue -1
-		if choice >= 0
-			id, eps = files.each.to_a[choice]
-			choices = eps.select{|f,ep| ep == 1+ CHOICES.fetch(id.to_s, {}).fetch('state', ',0').split(',', 2).last.to_i}.map(&:first)
-			if choices.length == 0
-				puts 'nothing'
-				exit(0)
-			elsif choices.length != 1
-				puts 'choose:'
-				choices = [choices.first]
+		control_socket = UNIXSocket.new(mpv_ipc_socket)
+
+		# TODO: listen to "end-file" event
+		# TODO: query "playback-time" and log this optionally
+		loop do
+			files = parse_local_files(lambda{|seen,ep| seen < ep}).reject{|id, eps| eps.empty?}
+			files.each_with_index do |(id, eps), idx|
+				choice = CHOICES.fetch(id.to_s, {})
+				name = choice.fetch('name', CACHE[id]&.fetch('title', 'unknown'))
+				ep = eps.map(&:last).map do |ep|
+					seen_so_far = choice.fetch('state', ',0').split(',', 2).last.to_i
+					ep == seen_so_far + 1 ? "(#{ep})" : ep.to_s
+				end.sort.join(', ')
+				puts "#{idx}: #{id} '#{name}': #{ep}"
 			end
-			require 'open3'
-			stdin, stdout, stderr, wait_thread = Open3.popen3('/usr/bin/mpv', '--', choices.first)
-			Thread.new{io_copy(stdout, STDOUT)}
-			Thread.new{io_copy(STDIN, stdin)}
-			Thread.new{io_copy(stderr, STDOUT)}
-			wait_thread.join
-			# `mpv '#{choices.first}'`
-			# log
-			puts 'done, remove?[y/N]?'
-			if STDIN.readline.rstrip() == 'y'
-				File.delete(choices.first)
-				puts 'deleted'
+			if files.empty?
+				puts 'all seen or none here'
+				exit 0
+			end
+			puts "which or none: [#{files.size.times.to_a.join('/')}/N]?"
+			user_choice = Integer(STDIN.readline.rstrip(), 10) rescue -1
+			if user_choice >= 0
+				id, eps = files.each.to_a[user_choice]
+				current_ep = CHOICES.fetch(id.to_s, {}).fetch('state', ',0').split(',', 2).last.to_i
+				choices = eps.select{|f,ep| ep == 1+current_ep }.map(&:first)
+				if choices.length == 0
+					puts 'nothing'
+					exit(0)
+				elsif choices.length != 1
+					puts 'choose:'
+					choices = [choices.first]
+				end
+
+				control_socket.write(JSON.generate({ 'command': ['set', 'pause', 'yes'] }) + "\n")
+				control_socket.write(JSON.generate({ 'command': ['loadfile', Dir.pwd + '/' + choices.first] }) + "\n")
+
+				logentry = CHOICES.fetch(id.to_s, {})
+				logentry['state'] = 'partly,' + (current_ep + 1).to_s
+				CHOICES[id.to_s] = logentry
+				# TODO: actually log this
+
+				puts 'File is loaded change to MPV now, remove?[y/N]?'
+				if STDIN.readline.rstrip() == 'y'
+					File.delete(choices.first)
+					puts 'deleted'
+				end
 			end
 		end
+
 
 	elsif ARGV.length == 2 || (ARGV.one? && ARGV.first.to_i.to_s == ARGV.first)
 		OPTIONS[:interactive] = true # this command forces interactive use
