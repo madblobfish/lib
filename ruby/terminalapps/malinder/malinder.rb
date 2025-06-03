@@ -416,7 +416,9 @@ if __FILE__ == $PROGRAM_NAME
 		output_or_process(links, links, links.join("\n"))
 
 	elsif ARGV == ['clean']
-		files = parse_local_files(lambda{|seen,ep| seen >= ep}).values.flatten(1).map(&:first)
+		files = parse_local_files(proc do |seen, ep, id|
+			seen >= ep or %(broken nope seen).include?(CHOICES.fetch(id.to_s, {}).fetch('state', 'partly,').split(',',2).first)
+		end).values.flatten(1).map(&:first)
 		if files.empty?
 			puts 'already clean :)'
 			exit(0)
@@ -463,7 +465,7 @@ if __FILE__ == $PROGRAM_NAME
 			end
 		end
 	elsif ARGV == ['missing']
-		parse_local_files(lambda{|seen,ep| seen < ep}).map do |id, files_existing|
+		parse_local_files(proc{|seen,ep| seen < ep}).map do |id, files_existing|
 			eps_existing = files_existing.map(&:last)
 			num_episodes = CACHE.fetch(id, {}).fetch('num_episodes', 0)
 			num_episodes = (eps_existing.max + 1 rescue 0) if num_episodes == 0
@@ -487,7 +489,7 @@ if __FILE__ == $PROGRAM_NAME
 		# TODO: listen to "end-file" event
 		# TODO: query "playback-time" and log this optionally
 		loop do
-			files = parse_local_files(lambda{|seen,ep| seen < ep}).reject{|id, eps| eps.empty?}
+			files = parse_local_files(proc{|seen,ep| seen < ep}).reject{|id, eps| eps.empty?}
 			files.each_with_index do |(id, eps), idx|
 				choice = CHOICES.fetch(id.to_s, {})
 				name = choice.fetch('name', CACHE[id]&.fetch('title', 'unknown'))

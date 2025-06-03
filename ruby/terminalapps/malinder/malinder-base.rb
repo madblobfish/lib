@@ -318,7 +318,7 @@ def parse_local_files(filter, path='')
 			seen = CHOICES[id.to_s]['state'].split(',', 2).last.to_i rescue 0
 			[id, l.map do |f|
 				ep = f.split('-',3)[1].split('E',2).last.to_i
-				if filter[seen, ep]
+				if filter[seen, ep, id]
 					[f, ep]
 				else
 					nil
