@@ -523,6 +523,8 @@ if __FILE__ == $PROGRAM_NAME
 				CHOICES[id.to_s] = logentry
 				# TODO: actually log this
 
+				File.write('/tmp/malinder-watch.log', [id, current_ep + 1].join("\t") + "\n", mode:'a')
+
 				puts 'File is loaded change to MPV now, remove?[y/N]?'
 				if STDIN.readline.rstrip() == 'y'
 					File.delete(choices.first)
