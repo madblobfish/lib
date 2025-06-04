@@ -489,46 +489,59 @@ if __FILE__ == $PROGRAM_NAME
 		# TODO: listen to "end-file" event
 		# TODO: query "playback-time" and log this optionally
 		loop do
-			files = parse_local_files(proc{|seen,ep| seen < ep}).reject{|id, eps| eps.empty?}
+			files = parse_local_files(proc{|seen,ep| OPTIONS[:all] || seen < ep}).reject{|id, eps| eps.empty?}
 			files.each_with_index do |(id, eps), idx|
 				choice = CHOICES.fetch(id.to_s, {})
 				name = choice.fetch('name', CACHE[id]&.fetch('title', 'unknown'))
+				state = choice.fetch('state', 'partly,0').split(',', 2)
+				seen_so_far = state.last.to_i
 				ep = eps.map(&:last).map do |ep|
-					seen_so_far = choice.fetch('state', ',0').split(',', 2).last.to_i
 					ep == seen_so_far + 1 ? "(#{ep})" : ep.to_s
-				end.sort.join(', ')
-				puts "#{idx}: #{id} '#{name}': #{ep}"
+				end.join(', ')
+				state_string = ''
+				unless %w(partly want).include?(state.first)
+					state_string = "[#{state.first}] "
+				end
+				puts "#{idx}: #{id} #{state_string}'#{name}': #{ep}"
 			end
 			if files.empty?
 				puts 'all seen or none here'
 				exit 0
 			end
 			puts "which or none: [#{files.size.times.to_a.join('/')}/N]?"
-			user_choice = Integer(STDIN.readline.rstrip(), 10) rescue -1
+			user_input = STDIN.readline.rstrip().split(',',2)
+			user_choice = Integer(user_input.first, 10) rescue -1
+			user_choice_ep = Integer(user_input.last, 10) rescue -1
 			if user_choice >= 0
 				id, eps = files.each.to_a[user_choice]
+				if eps.nil?
+					puts 'not there'
+					next
+				end
 				current_ep = CHOICES.fetch(id.to_s, {}).fetch('state', ',0').split(',', 2).last.to_i
 				choices = eps.select{|f,ep| ep == 1+current_ep }.map(&:first)
+				if user_choice_ep != -1
+					choices = eps.select{|f,ep| ep == user_choice_ep}.map(&:first)
+				end
 				if choices.length == 0
-					puts 'nothing'
-					exit(0)
+					puts 'nothing there'
+					next
 				elsif choices.length != 1
-					puts 'choose:'
+					puts 'choose the first one:'
 					choices = [choices.first]
 				end
 
 				control_socket.write(JSON.generate({ 'command': ['set', 'pause', 'yes'] }) + "\n")
 				control_socket.write(JSON.generate({ 'command': ['loadfile', Dir.pwd + '/' + choices.first] }) + "\n")
 
-				logentry = CHOICES.fetch(id.to_s, {})
-				logentry['state'] = 'partly,' + (current_ep + 1).to_s
-				CHOICES[id.to_s] = logentry
-				# TODO: actually log this
-
-				File.write('/tmp/malinder-watch.log', [id, current_ep + 1].join("\t") + "\n", mode:'a')
-
 				puts 'File is loaded change to MPV now, remove?[y/N]?'
 				if STDIN.readline.rstrip() == 'y'
+					# TODO: properly log this
+					logentry = CHOICES.fetch(id.to_s, {})
+					logentry['state'] = 'partly,' + (current_ep + 1).to_s
+					CHOICES[id.to_s] = logentry
+					File.write('/tmp/malinder-watch.log', [id, current_ep + 1].join("\t") + "\n", mode:'a')
+
 					File.delete(choices.first)
 					puts 'deleted'
 				end
