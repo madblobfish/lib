@@ -90,6 +90,7 @@ if __FILE__ == $PROGRAM_NAME
 		push: ARGV.delete('--push'),
 		text: ARGV.delete('--text'),
 		recurse: ARGV.delete('--recurse'),
+		partial: ARGV.delete('-p'),
 	}
 	bad_args = ARGV.select{|a| a.start_with?('-')}
 	raise 'unknown argument(s): ' + bad_args.join(', ') if bad_args.any? && !DB_PFUSCH
@@ -133,7 +134,7 @@ if __FILE__ == $PROGRAM_NAME
 		end
 	elsif ARGV.first == 'log' && (1..2).include?(ARGV.length)
 		Dir.chdir(CONFIG_DIR) do
-			if ARGV[1] == '-p'
+			if OPTIONS[:partial]
 				system('git', 'log', '-p', exception: true)
 			elsif ARGV.one?
 				system('git', 'log', exception: true)
