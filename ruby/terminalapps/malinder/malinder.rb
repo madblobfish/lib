@@ -467,10 +467,12 @@ if __FILE__ == $PROGRAM_NAME
 		end
 	elsif ARGV == ['missing']
 		parse_local_files(proc{|seen,ep| seen < ep}).map do |id, files_existing|
+			state = CHOICES.fetch(id.to_s, {}).fetch('state', 'partly,0').split(',', 2)
+			next if %w(broken).include?(state.first)
 			eps_existing = files_existing.map(&:last)
 			num_episodes = CACHE.fetch(id, {}).fetch('num_episodes', 0)
 			num_episodes = (eps_existing.max + 1 rescue 0) if num_episodes == 0
-			seen_so_far = CHOICES.fetch(id.to_s, {}).fetch('state', ',0').split(',', 2).last.to_i + 1
+			seen_so_far = state.last.to_i + 1
 			seen_so_far.upto(num_episodes).each do |ep|
 				unless eps_existing.include?(ep)
 					puts "#{id} is missing ep #{ep} - #{CACHE[id]&.fetch('title', 'name unkown')}"
