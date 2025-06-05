@@ -119,9 +119,9 @@ end
 class Array
 ---- inner
   def parse(str)
-    value_sub_subregex = '-\p{Hiragana}\p{Katakana}\p{Han}\p{Hangul}ー〜、a-zA-Z0-9_+*.⭐🩵💩'
+    value_sub_subregex = '-\p{Hiragana}\p{Katakana}\p{Han}\p{Hangul}ー〜、a-zA-Z0-9_+*.,⭐🩵💩'
     value_quoted_subregex = value_sub_subregex + "\|\(\) !?"
-    value_subregex = "(\"[#{value_quoted_subregex}']+\"|'[#{value_quoted_subregex}\"]+'|[#{value_sub_subregex},]+)"
+    value_subregex = "(\"[#{value_quoted_subregex}']+\"|'[#{value_quoted_subregex}\"]+'|[#{value_sub_subregex}]+)"
     @q = []
     until str.empty?
       case str
