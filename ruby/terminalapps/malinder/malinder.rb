@@ -532,10 +532,10 @@ if __FILE__ == $PROGRAM_NAME
 				puts 'all seen or none here'
 				exit 0
 			end
-			puts "which or none: [#{files.size.times.to_a.join('/')}/N]?"
+			puts "which: [#{files.size.times.to_a.join('/')}]?"
 			user_input = STDIN.readline.rstrip().split(',',2)
 			user_choice = Integer(user_input.first, 10) rescue -1
-			user_choice_ep = Integer(user_input.last, 10) rescue -1
+			user_choice_ep = Integer(user_input[1], 10) rescue -1
 			if user_choice >= 0
 				id, eps = files.each.to_a[user_choice]
 				if eps.nil?
@@ -544,8 +544,10 @@ if __FILE__ == $PROGRAM_NAME
 				end
 				current_ep = CHOICES.fetch(id.to_s, {}).fetch('state', ',0').split(',', 2).last.to_i
 				choices = eps.select{|f,ep| ep == 1+current_ep }.map(&:first)
-				if user_choice_ep != -1
+				if user_choice_ep >= 1
+					puts "overriding choices [#{user_input}]: #{choices}"
 					choices = eps.select{|f,ep| ep == user_choice_ep}.map(&:first)
+					puts "after: #{choices}"
 				end
 				if choices.length == 0
 					puts 'nothing there'
@@ -558,14 +560,16 @@ if __FILE__ == $PROGRAM_NAME
 				control_socket.write(JSON.generate({ 'command': ['set', 'pause', 'yes'] }) + "\n")
 				control_socket.write(JSON.generate({ 'command': ['loadfile', Dir.pwd + '/' + choices.first] }) + "\n")
 
-				puts 'File is loaded change to MPV now, remove?[y/N]?'
-				if STDIN.readline.rstrip() == 'y'
+				puts 'File is loaded change to MPV now, remove/keep?[y/k/N]?'
+				user_input = STDIN.readline.rstrip()
+				if %w(k y).include?(user_input)
 					# TODO: properly log this
 					logentry = CHOICES.fetch(id.to_s, {})
 					logentry['state'] = 'partly,' + (current_ep + 1).to_s
 					CHOICES[id.to_s] = logentry
 					File.write('/tmp/malinder-watch.log', [id, current_ep + 1].join("\t") + "\n", mode:'a')
-
+				end
+				if user_input == 'y'
 					File.delete(choices.first)
 					puts 'deleted'
 				end
