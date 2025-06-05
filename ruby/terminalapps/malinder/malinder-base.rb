@@ -211,12 +211,12 @@ def load_all_to_cache()
 			v = blah['node']
 			old = CHOICES.fetch(v['id'].to_s, {})
 			v['state'] = old.fetch('state', '-')
-			v['choice'] = v['state'].split(',').first
+			v['choice'] = v['state'].split(',', 2).first
 			v['choices_related'] = fetch_related(v['id']).flat_map{|rel| rel['entry'].select{|r| r['type'] == 'anime'}.map{|r| CHOICES.fetch(r['mal_id'].to_s, {}).fetch('state', '-')}} rescue ['ratelimited']
 			CHOICES_OTHERS.each do |name, c|
 				choice = c.fetch(v['id'].to_s, {}).fetch('state', '-')
 				v['state-' + name] = choice
-				v['choice-' + name] = choice.split(',').first
+				v['choice-' + name] = choice.split(',', 2).first
 			end
 			v['timestamp'] = old.fetch('ts', date.to_i)
 			v['c1'] = old.fetch('c1', nil)
