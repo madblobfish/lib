@@ -433,17 +433,38 @@ if __FILE__ == $PROGRAM_NAME
 		end
 	elsif ARGV == ['fix-names']
 		CLEAN_CACHE = {}
+		MALINDER_FILE_PREFIX_REGEX = /^\d+-S\d+E\d+-/
 		Dir['*{.mkv,.mp4}'].each do |f|
-			next if f =~ /^\d+-S\d+E\d+-/
-			cleaner = f.gsub(/\[[^\]]+\]\s*/, '').gsub(/\..*$/, '').gsub(/v\d\s*$/, '')
+			next if !OPTIONS[:all] && f =~ MALINDER_FILE_PREFIX_REGEX
+			file = f.sub(MALINDER_FILE_PREFIX_REGEX, '')
+			unless f.include?(' ')
+				if file.count('.') >= 3
+					file = file.gsub('.', ' ')
+				end
+				if file.count('_') >= 3
+					file = file.gsub('_', ' ')
+				end
+			end
+			cleaner = file.gsub(/\[[^\]]+\]\s*/, '').gsub(/\..*$/, '').gsub(/v\d\s*$/, '')
 			/S(?<season>\d{1,2})E(?<episod>\d{1,2})/i =~ cleaner
 			title, _, episode = cleaner.rpartition('-')
+			episode = '%02d' % episode.strip.to_i
 			episode = episod if episod
-			series = title.split('-', 2).first.strip
-			CLEAN_CACHE[series] ||= cache_query("names textsearch '#{series.tr("'",'')}'")
+			if episode.nil? || episod.nil?
+				canidates = file.scan(/(?<!\d)\d\d(?!\d)/)
+				if canidates.one?
+					episode = canidates.first
+				end
+			end
+			series = title.split('-', 2).first&.strip
+			if series.nil?
+				puts "skipping: #{f}"
+				next
+			end
+			CLEAN_CACHE[series] ||= cache_query("names textsearch '#{series.tr("',",'')}'")
 			prefixes = CLEAN_CACHE[series].map{|x| "#{x['id']}-S00E#{episode.strip}-"}
 			if prefixes == 1
-				puts "rename: #{f.inspect} with prefix #{prefixes.first.inspect}?"
+				puts "rename: #{file.inspect} with prefix #{prefixes.first.inspect}?"
 				unless File.exist?(prefixes.first + f)
 					puts '[y/N]?'
 					if STDIN.readline.rstrip() == 'y'
@@ -453,7 +474,7 @@ if __FILE__ == $PROGRAM_NAME
 				end
 			elsif CLEAN_CACHE[series].length == 0
 				puts "could not find the anime"
-				puts "searched for: #{series.tr("'",'')}"
+				puts "searched for: #{series.inspect}"
 			else
 				puts "can not solve for: #{f}, episode: #{episode.strip}"
 				puts CLEAN_CACHE[series].map.with_index{|a,i| "#{i}: " + a.values_at('id', 'title', 'num_episodes').join(' - ')}.compact
