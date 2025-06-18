@@ -29,9 +29,12 @@ HELP_TEXT << '  restore: runs "git add -p" in config folder'
 HELP_TEXT << '  commit [message]: runs "git commit" in config folder, default message is the current day in iso8601 format'
 HELP_TEXT << '  log [-p]: runs "git log" in config folder, optionally with diffs'
 HELP_TEXT << ''
-HELP_TEXT << '  fix-names: try to guess the ID and rename files'
+HELP_TEXT << '  fix-names [--all]: try to guess the ID and rename files'
+HELP_TEXT << '      --all will try to refix the already aligned'
 HELP_TEXT << '  clean: cleanup already seen'
 HELP_TEXT << '  missing: list missing episodes in current dir'
+HELP_TEXT << '  watch [--all] [log]: watch new and track in log'
+HELP_TEXT << '      --all will show all parsable files'
 HELP_TEXT << ''
 HELP_TEXT << '  -i, --interactive may make it show results in the interactive Terminal UI'
 HELP_TEXT << '  --prefetch may make it load and cache images and related information'
@@ -553,8 +556,7 @@ if __FILE__ == $PROGRAM_NAME
 					puts 'nothing there'
 					next
 				elsif choices.length != 1
-					puts 'choose the first one:'
-					choices = [choices.first]
+					puts 'choose the first one'
 				end
 
 				control_socket.write(JSON.generate({ 'command': ['set', 'pause', 'yes'] }) + "\n")
