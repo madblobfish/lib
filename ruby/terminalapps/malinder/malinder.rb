@@ -436,8 +436,7 @@ if __FILE__ == $PROGRAM_NAME
 		end
 	elsif ARGV == ['fix-names']
 		CLEAN_CACHE = {}
-		MALINDER_FILE_PREFIX_REGEX = /^\d+-S\d+E\d+-/
-		Dir['*{.mkv,.mp4}'].each do |f|
+		Dir['*.{mkv,mp4}'].each do |f|
 			next if !OPTIONS[:all] && f =~ MALINDER_FILE_PREFIX_REGEX
 			file = f.sub(MALINDER_FILE_PREFIX_REGEX, '')
 			unless f.include?(' ')
@@ -468,10 +467,11 @@ if __FILE__ == $PROGRAM_NAME
 			prefixes = CLEAN_CACHE[series].map{|x| "#{x['id']}-S00E#{episode.strip}-"}
 			if prefixes == 1
 				puts "rename: #{file.inspect} with prefix #{prefixes.first.inspect}?"
-				unless File.exist?(prefixes.first + f)
+				new_name = (prefixes.first + f).sub(MALINDER_FILE_PREFIX_REGEX, '')
+				unless File.exist?(new_name)
 					puts '[y/N]?'
 					if STDIN.readline.rstrip() == 'y'
-						File.rename(f, prefixes.first + f)
+						File.rename(f, new_name)
 						puts "renamed"
 					end
 				end

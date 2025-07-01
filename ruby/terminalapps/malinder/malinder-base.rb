@@ -97,6 +97,7 @@ configurable_default(:BAD_WORDS_REGEX, /\b#{ Regexp.union(BAD_WORDS).source }\b/
 configurable_default(:DEFAULT_FILTER, '!(media_type in music,cm,pv || genres in hentai) && !(num_episodes == 1 && average_episode_duration <= 1000) && (average_episode_duration >= 300 || average_episode_duration == 0)') # set to nil to disable
 
 # not configurable
+MALINDER_FILE_PREFIX_REGEX = /^\d+-S\d+E\d+-/
 SEASON_SHORTCUTS = {
 	'w'=> 'winter', 'sp'=> 'spring', 'su'=> 'summer', 'f'=> 'fall',
 	'1'=> 'winter', '2'=> 'spring', '3'=> 'summer', '4'=> 'fall',
