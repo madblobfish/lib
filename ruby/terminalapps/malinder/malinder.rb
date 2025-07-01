@@ -520,10 +520,13 @@ if __FILE__ == $PROGRAM_NAME
 			files.each_with_index do |(id, eps), idx|
 				choice = CHOICES.fetch(id.to_s, {})
 				name = choice.fetch('name', CACHE[id]&.fetch('title', 'unknown'))
+				num_episodes = CACHE.fetch(id, {}).fetch('num_episodes', -1)
 				state = choice.fetch('state', 'partly,0').split(',', 2)
 				seen_so_far = state.last.to_i
-				ep = eps.map(&:last).map do |ep|
-					ep == seen_so_far + 1 ? "(#{ep})" : ep.to_s
+				ep = eps.map{|ep| episode_wrap(id, ep.last)}.map do |ep|
+					ret = ep == seen_so_far + 1 ? "(#{ep})" : ep.to_s
+					ret += ']' if ep.to_i == num_episodes
+					ret
 				end.join(', ')
 				state_string = ''
 				unless %w(partly want).include?(state.first)
@@ -548,9 +551,7 @@ if __FILE__ == $PROGRAM_NAME
 				current_ep = CHOICES.fetch(id.to_s, {}).fetch('state', ',0').split(',', 2).last.to_i
 				choices = eps.select{|f,ep| ep == 1+current_ep }.map(&:first)
 				if user_choice_ep >= 1
-					puts "overriding choices [#{user_input}]: #{choices}"
 					choices = eps.select{|f,ep| ep == user_choice_ep}.map(&:first)
-					puts "after: #{choices}"
 				end
 				if choices.length == 0
 					puts 'nothing there'
