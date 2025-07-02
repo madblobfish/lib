@@ -95,7 +95,7 @@ class MALinder < TerminalGame
 			paragraph += related.map do |rel|
 				rel['entry'].map do |r|
 					id = r['mal_id']
-					cache = CACHE[id]
+					cache = CACHE[id] if r['type'] == 'anime'
 					title = r['name']
 					# color pattern:
 					## yellow when not in CACHE
