@@ -215,6 +215,16 @@ if __FILE__ == $PROGRAM_NAME
 				r << v
 			end
 		})
+	# elsif ARGV.first == 'add'
+	# 	ARGV.shift # throw away first argument
+	# 	load_all_to_cache
+	# 	if anime = CACHE[Integer(ARGV.first, 10)] rescue false
+	# 		line = "#{anime['id']}\t#{anime['start_season'].fetch_values('year', 'season').join("\t")}\t#{ARGV.fetch(1)}\t#{Time.now.to_i}\t#{anime['title']}\n"
+	# 	else
+	# 		line = [ARGV.shift, '', '', ARGV.shift, Time.now.to_i, ARGV.fetch(0)].join("\t")
+	# 		line += "\n"
+	# 	end
+	# 	LOG_FILE.write(line)
 	elsif ARGV.first == 'log' && (ARGV.length == 3 || ARGV.length == 4)
 		custom = ARGV.pop.strip if ARGV.length == 4
 		ARGV.shift # throw away first argument
@@ -585,9 +595,10 @@ if __FILE__ == $PROGRAM_NAME
 		year = Integer(ARGV.first, 10) # raises an exception if year is not integer
 		season = ''
 		unless ARGV.one?
-			season = "&& season == #{ARGV.last}"
+			season_str = SEASON_SHORTCUTS.fetch(ARGV.last, ARGV.last)
+			season = "&& season == #{season_str}"
 			# for checking and better error messages
-			raise 'missing json, run malinder.sh first' unless File.exist?("#{CONFIG_DIR}sources/#{year}-#{ARGV.last}.json")
+			raise 'missing json, run malinder.sh first' unless File.exist?("#{CONFIG_DIR}sources/#{year}-#{season_str}.json")
 		end
 		output_or_process(
 			lambda{cache_query("year == #{year} #{season} && choice == -").map{|a| a['id']} },
