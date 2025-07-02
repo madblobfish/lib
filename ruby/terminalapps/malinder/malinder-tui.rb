@@ -162,7 +162,10 @@ class MALinder < TerminalGame
 			exit()
 		when 'r', 'R'
 			related = fetch_related(@season[@current]['id'], true)
-			return if related.is_a?(String)
+			if related.is_a?(String)
+				print("\t#{related}")
+				return
+			end
 			already_seen = UNDO_BUFFER.select{|e| e[:type]==:log}.map{|e| e[:anime]['id'] }
 			animes = related.flat_map{|r|
 				r['entry']
