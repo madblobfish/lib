@@ -4,7 +4,6 @@ require 'csv'
 if ARGV.include?('--help')
   puts 'give me files to merge and cleanup, the configured logfile is always input'
   puts 'inputs can be relative paths to the config directory'
-  puts 'Tipp: write stdout somewhere else, only then override after checking the diff or so'
   puts '--nocurrent do not load the configured logfile'
   puts '--gitmerge integration as git custom merge driver: see readme!'
   puts '--json output json instead'
@@ -117,7 +116,7 @@ unless OUTPUT_JSON
   if File.read(LOG_FILE_PATH) == out
     STDERR.puts('', 'files do not diff :)')
   else
-    STDERR.puts('', 'TOOL IS maybe still UnSaVE! diff the result to check or accept to loose some things!')
+    STDERR.puts('', 'this tool is maybe still unsave diff the result to check or accept to loose some things!')
   end
   if INPLACE
     File.write(NOCURRENT ? ARGV.first : LOG_FILE_PATH, out)
