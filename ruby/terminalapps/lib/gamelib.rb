@@ -248,7 +248,8 @@ class TerminalGame
     require 'base64'
     print "\e_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\e\\\e[c"
     return false unless STDIN.readpartial(12) == "\e_Gi=31;OK\e\\"
-    return STDIN.readpartial(20) == "\e[?62;c#{used_in_normal_tty ? "\n" : ''}"
+    a = STDIN.readpartial(20)
+    return a == "\e[?62;c#{used_in_normal_tty ? "\n" : ''}" || a == "\e[?62;52;c#{used_in_normal_tty ? "\n" : ''}"
   end
   def _kitty_graphics_img_get_id
     raise 'requires @require_kitty_graphics=true' unless require_kitty_graphics
