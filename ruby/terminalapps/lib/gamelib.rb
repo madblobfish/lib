@@ -85,7 +85,7 @@ class TerminalGame
           require 'text/hyphen'
           en = Text::Hyphen.new(left: 0, right: 0)
           en.hyphenate_to('instructions', 7)
-          lambda{|str, l| en.hyphenate_to(str, l)}
+          lambda{|str, l| en.hyphenate_to(str, l) rescue [nil, str]}
         rescue
           lambda{|str, l| [nil, str]}
         end
