@@ -76,28 +76,50 @@ class TerminalGame
         .gsub(/\e\]((?!\e\\).)+\e\\/, '') # OSC Escapes
         .gsub(/\e[NO][\x20-\x7F]/,'') # Single Shift Escapes
         .gsub(/\e[\x20-\x2F]+[\x30-\x7E]/, '') # nF Escapes
-        .gsub(/[\x00-\x09\x11-\x19\x27]/,'') # C0 control Escapes and other nonprintables
+        .gsub(/[\x00-\x09\x11-\x19]/,'') # C0 control Escapes and other nonprintables
     end
 
     def break_lines(string, width, punctation=/(?:[ .,!—()\n-])/)
+      hyph =
+        begin
+          require 'text/hyphen'
+          en = Text::Hyphen.new(left: 0, right: 0)
+          en.hyphenate_to('instructions', 7)
+          lambda{|str, l| en.hyphenate_to(str, l)}
+        rescue
+          lambda{|str, l| [nil, str]}
+        end
       out = ''
       rest = string
-      current = ''
+      current_line = ''
       while not rest.empty?
         start, separator, rest = rest.partition(punctation)
-        if remove_escape_codes(current+start+separator).length > width
-          raise "not enough space" if current == ''
-          out += current + "\r\n"
-          current = ''
+        current_length = remove_escape_codes(current_line+start+separator).length
+        if current_length > width
+          space_left = width - remove_escape_codes(current_line + separator).length
+          hyphenation = hyph[start, space_left]
+          if hyphenation.first.nil? # no hyphenation found
+            raise "not enough space" if current_line == ''
+            out += current_line + "\r\n"
+            if current_line.end_with?('.') && separator == ' ' # cut off spaces following linebreaks
+              current_line = ''
+              next
+            end
+            current_line = ''
+          else
+            out += current_line + hyphenation.first + "\r\n"
+            current_line = hyphenation.last + separator
+            next
+          end
         end
         if separator == "\n"
-          out += current + start + separator
-          current = ''
+          out += current_line + start + "\r\n"
+          current_line = ''
         else
-          current += start + separator
+          current_line += start + separator
         end
       end
-      (out+current).gsub(/\n /, "\n")
+      (out+current_line)
     end
   end
   include Term
@@ -378,3 +400,11 @@ raise "remove_escape_codes selftest fail 5" unless TerminalGame.remove_escape_co
 raise "remove_escape_codes selftest fail 6" unless TerminalGame.remove_escape_codes("a\x1bPb\x1b\x1bc\x1b\\d") == 'ad'
 raise "remove_escape_codes selftest fail 7" unless TerminalGame.remove_escape_codes("a\x1b_b\x1b\x1b\x1bc\x1b\\d") == 'ad'
 raise "remove_escape_codes selftest fail 8" unless TerminalGame.remove_escape_codes("\x1b]X\x07\x1b]X\x1b\x07\x1b\\") == ''
+
+# hyphenation test
+# if __FILE__ == $PROGRAM_NAME
+#   puts TerminalGame.break_lines(
+#     "Studying at the Yamabuki Arts High School has been a dream-come-true for Yuno, and she's learned so much already! And not just from her instructors, but from her friends and neighbors who've become her second family and made the Hidamari Apartments such a safe and nurturing home. But as the day of her \"big sisters\" Sae and Hiro's graduation draws slowly closer, it's time for Yuno to start seriously taking on the same role for Nazuna, Nori and the other budding young artists who've entered Hidamari's protective cocoon. And it's also time to tackle some really challenging artistic assignments. That doesn't mean there won't still be time for fun with Miyako and all the others, but it's definitely time to pencil in her plans for the future. And sometimes that means you have to put the art before the course!",
+#     ARGV.first.to_i
+#   ).split("\r\n").map{|s| "#{s} (#{s.length})" }
+# end
