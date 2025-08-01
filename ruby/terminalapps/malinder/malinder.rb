@@ -473,7 +473,7 @@ if __FILE__ == $PROGRAM_NAME
 				puts "skipping: #{f}"
 				next
 			end
-			CLEAN_CACHE[series] ||= cache_query("names textsearch '#{series.tr("',",'')}'")
+			CLEAN_CACHE[series] ||= cache_query("names textsearch '#{series.tr("',",' ')}'")
 			prefixes = CLEAN_CACHE[series].map{|x| "#{x['id']}-S00E#{episode.strip}-"}
 			if prefixes == 1
 				puts "rename: #{file.inspect} with prefix #{prefixes.first.inspect}?"
