@@ -19,6 +19,7 @@ Note: images displayed by `malinder` will be stored in `~/.cache/malinder/images
 	* The `ruby/games/lib/gamelib.rb` file in the correct relative location.
 	* A terminal that supports the kitty graphics protocol.
 	* The `libvips` library and `ruby-visp` gem.
+	* The `text-hyphen` gem, for nice hyphenation in the word breaking algorithm.
 	* Optional: the `ruby/stdlib/duration.rb` file in the correct relative location.
 	* Optional: the `ruby/stdlib/string/contains_japanese?.rb` file in the correct relative location.
 * A directory of JSON files downloaded from MyAnimeListAPI should be located in `~/.config/malinder/sources`.
