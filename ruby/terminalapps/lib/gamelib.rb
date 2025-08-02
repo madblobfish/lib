@@ -99,10 +99,10 @@ class TerminalGame
           hyphenation = hyph[start, space_left]
           if hyphenation.first.nil? # no hyphenation found
             raise "not enough space" if current_line == ''
+            current_line.chomp!(' ') # eat trailing space
             out += current_line + "\r\n"
-            if current_line.end_with?('.') && separator == ' ' # cut off spaces following linebreaks
-              current_line = ''
-              next
+            if current_line[-1].match?(punctation) && start == '' && separator == ' '
+              separator = '' # cut off spaces following linebreaks and punctation
             end
             current_line = ''
           else
@@ -403,7 +403,7 @@ raise "remove_escape_codes selftest fail 8" unless TerminalGame.remove_escape_co
 # hyphenation test
 # if __FILE__ == $PROGRAM_NAME
 #   puts TerminalGame.break_lines(
-#     "Studying at the Yamabuki Arts High School has been a dream-come-true for Yuno, and she's learned so much already! And not just from her instructors, but from her friends and neighbors who've become her second family and made the Hidamari Apartments such a safe and nurturing home. But as the day of her \"big sisters\" Sae and Hiro's graduation draws slowly closer, it's time for Yuno to start seriously taking on the same role for Nazuna, Nori and the other budding young artists who've entered Hidamari's protective cocoon. And it's also time to tackle some really challenging artistic assignments. That doesn't mean there won't still be time for fun with Miyako and all the others, but it's definitely time to pencil in her plans for the future. And sometimes that means you have to put the art before the course!",
+#     "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\r\n\r\nSomething split up at the end",
 #     ARGV.first.to_i
-#   ).split("\r\n").map{|s| "#{s} (#{s.length})" }
+#   ).split("\r\n").map{|s| "#{s.inspect} (#{s.length})" }
 # end
