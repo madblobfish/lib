@@ -94,8 +94,8 @@ class TerminalGame
       while not rest.empty?
         start, separator, rest = rest.partition(punctation)
         current_length = remove_escape_codes(current_line+start+separator).length
-        if current_length > width
-          space_left = width - remove_escape_codes(current_line + separator).length
+        if current_length > width + (separator == ' ' ? 1 : 0)
+          space_left = width - remove_escape_codes(current_line + separator).length + (separator == ' ' ? 1 : 0)
           hyphenation = hyph[start, space_left]
           if hyphenation.first.nil? # no hyphenation found
             raise "not enough space" if current_line == ''
