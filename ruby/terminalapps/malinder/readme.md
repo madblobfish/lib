@@ -31,6 +31,9 @@ Please refer to the `configurable_default` function within the code for customiz
 ```
 DEFAULT_HEADERS = {'X-MAL-CLIENT-ID': 'asdf'}
 LOG_SUFFIX = '-yourname'
+#configure how long to wait until again pulling automatically
+# AUTOPULL_SOURCES_WAIT = 86400*2
+# AUTOPULL_CONFIG_WAIT = 86400
 ```
 To share or distribute `malinder` logs, it is recommended to set up your sources directory or the entire config directory as a git repository.
 
@@ -78,4 +81,9 @@ malinder fix-names
 malinder clean
 malinder missing
 malinder watch
+
+# git integration
+malinder add # runs git add -p
+malinder commit --push # defaults to a iso date YYYY-MM-DD commit message
+malinder pull/push/log # runs git commands as well # pulling is automatically done on a configurable regular basis
 ```
