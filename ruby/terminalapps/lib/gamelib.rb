@@ -79,11 +79,39 @@ class TerminalGame
         .gsub(/[\x00-\x09\x11-\x19]/,'') # C0 control Escapes and other nonprintables
     end
 
-    def break_lines(string, width, punctation=/(?:[ .,!—()\n-])/)
+    def _break_lines_mod_string(string)
+      def string.hyphens=(hyphens); @hyphens = hyphens; end
+      def string.hyphens; @hyphens; end
+      def string.badness=(badness); @badness = badness; end
+      def string.badness; @badness; end
+    end
+    def break_lines(string, width, **opts)
+      if string.include?("\n\n")
+        ret, hyph, bad = string.split("\n\n").map do |s|
+          r=break_lines(s, width, **opts);[r, r.hyphens, r.badness]
+        end.reduce{|a,b| [a.first+ "\r\n"*2 +b.first, a[1]+b[1], a.last+b.last] }
+        _break_lines_mod_string(ret)
+        ret.hyphens = hyph
+        ret.badness = bad
+        return ret
+      end
+
+      punctation = opts.fetch(:punctation, /(?:[ .,!—()\n-])/)
+      hyphenation = opts.fetch(:hyphenation, true)
+      hyphenate_harder = opts.fetch(:hyphenate_harder, false) ? {left: 0, right: 0} : {}
+      ignore_whitespace = opts.fetch(:ignore_whitespace, 2)
+      badness_window_length = opts.fetch(:ignore_whitespace, 3)
+
+      hyphens = []
+      badness = 0
+      doover_hyphenate = false
+      line = 0
+      badness_window = []
       hyph =
         begin
           require 'text/hyphen'
-          en = Text::Hyphen.new(left: 0, right: 0)
+          en = Text::Hyphen.new(**hyphenate_harder)
+          raise "nope" unless hyphenation
           lambda{|str, l| en.hyphenate_to(str, l) rescue [nil, str]}
         rescue
           lambda{|str, l| [nil, str]}
@@ -95,30 +123,93 @@ class TerminalGame
         start, separator, rest = rest.partition(punctation)
         current_length = remove_escape_codes(current_line+start+separator).length
         if current_length > width + (separator == ' ' ? 1 : 0)
-          space_left = width - remove_escape_codes(current_line + separator).length + (separator == ' ' ? 1 : 0)
+          current_line_space = remove_escape_codes(current_line + separator).length
+          space_left = width - current_line_space + (separator == ' ' ? 1 : 0)
           hyphenation = hyph[start, space_left]
-          if hyphenation.first.nil? # no hyphenation found
-            raise "not enough space" if current_line == ''
+          if hyphenation.first && hyphenation.last.length <= width
+            out += current_line + hyphenation.first + "\r\n"
+            line += 1
+            current_line_space += hyphenation.first.length
+            current_line = hyphenation.last + separator
+
+            if badness_window.length >= 1
+              avg = badness_window.sum.to_f / badness_window.length
+              case (diff = [avg, current_line_space].max - [avg, current_line_space].min)
+              when 0..1
+                badness -= 3
+              when 2
+                badness -= 1
+              when 5...width
+                badness += 10
+              end
+            end
+            badness_window.unshift(current_line_space + hyphenation.first.length)
+            badness_window = badness_window[..badness_window_length]
+            badness += 2
+            badness += hyphenation.map{|s| (l = s.chomp('-').length) <= 3 ? 3 * 4-l : 0 }.sum
+
+            hyphens << {original: start, result: hyphenation}
+            doover_hyphenate = false
+            next
+          else # no hyphenation found
+            raise TerminalGameException, "not enough space" if current_line == ''
             current_line.chomp!(' ') # eat trailing space
             out += current_line + "\r\n"
+            line += 1
+            doover_hyphenate = false
             if current_line[-1].match?(punctation) && start == '' && separator == ' '
               separator = '' # cut off spaces following linebreaks and punctation
             end
             current_line = ''
-          else
-            out += current_line + hyphenation.first + "\r\n"
-            current_line = hyphenation.last + separator
-            next
+
+            if badness_window.length >= 1
+              avg = badness_window.sum.to_f / badness_window.length
+              case [avg, current_line_space].min / [avg, current_line_space].max
+              when 0.98..1
+                badness -= 2
+              when 0.95..1
+                badness -= 1
+              when 0..0.9
+                badness += 10
+              end
+            end
+            badness_window.unshift(current_line_space)
+            badness_window = badness_window[..badness_window_length]
+            if current_line_space + ignore_whitespace <= width
+              badness += width - current_line_space
+            end
           end
+        end
+        if current_line == '' && (start + separator).length >= width && !doover_hyphenate
+          rest = start + separator + rest
+          doover_hyphenate = true
+          hyphens << {result: ['', "doover for hyphenation on line #{line}"]}
+          next
         end
         if separator == "\n"
           out += current_line + start + "\r\n"
+          line += 1
           current_line = ''
         else
           current_line += start + separator
+          # raise TerminalGameException, "not enough space" if width < current_line.length
+          hyphens << {result: ['', "not enough space, line #{line}"]} unless current_line.chomp(' ').length <= width
         end
       end
-      (out+current_line)
+      current_line.chomp!(' ')
+      case current_line.length
+      when 1..14
+        badness += 100
+      when (width-ignore_whitespace)..(width)
+        # noop :)
+      when ([width*0.85, 2].max)..(width-ignore_whitespace)
+        badness += 100
+      end
+      ret = (out+current_line)
+      _break_lines_mod_string(ret)
+      ret.hyphens = hyphens
+      ret.badness = badness
+      ret
     end
   end
   include Term

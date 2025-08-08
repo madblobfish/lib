@@ -1,7 +1,7 @@
 require_relative '../lib/gamelib'
 
 class LineBreaking < TerminalGame
-  def initialize(size_x=120, size_y=33, text=nil)
+  def initialize(size_x=13, size_y=33, text=nil, columns=1)
     @fps = :manual
 
     @scroll_pos = [0,0]
@@ -31,15 +31,33 @@ class LineBreaking < TerminalGame
     clear
     move_cursor
     lengths = []
-    text = break_lines(@text, @size[1], hyphenation: @hyphenation, hyphenate_harder: @hyphenate_harder)
-    hyphen_score = text.hyphens.count{|e| e[:result].first.chomp!('-'); e[:result].map(&:length).min <= 3 }
-    print text.split("\r\n").map{|s| lengths << s.length; @annotations ? "#{s.inspect} (#{s.length})" : s }[@scroll_pos[0]..(@scroll_pos[0] + @size[0])].join("\r\n")
-    print "\r\n\r\n"
-    puts "Wanted Size: #{@size[1]}, #{@hyphenation ? 'hyphenated' + (@hyphenate_harder ? ' hard': '') : ''}\r"
-    puts "#{color(9)}badness score: #{text.badness}#{color_reset_code}\r"
-    # puts "whitespace score: #{lengths.map{|l| r = (@size[1] - l); r <= 2 ? 0 : l == 0 ? 0 : r}.sum}\r"
-    puts "hyphen count: #{text.hyphens.count}, hyphen score: #{hyphen_score}\r"
-    puts "#{text.hyphens.map{|h| h.inspect }.join("\r\n")}"
+    spaces_between_columns = @columns - 1
+    spaces_between_columns_amount = 3
+    column_size = (@size[1] / @columns) - spaces_between_columns*spaces_between_columns_amount
+    # raise "AHHH" if column_size <= 4
+    begin
+      text = break_lines(
+        @text,
+        column_size,
+        hyphenation: @hyphenation,
+        hyphenate_harder: @hyphenate_harder
+      )
+      orig_text = text
+      hyphen_score = text.hyphens.count{|e| e[:result].first.chomp!('-'); e[:result].map(&:length).min <= 3 }
+      if @columns > 1 && @size[0] < text.count("\r\n")
+        c = text.split("\r\n").each_slice(@size[0])
+        text = c.first.zip(*c.drop(1).take(@columns - 1)).map{|arr| arr.compact.map{|s|s.ljust(column_size, ' ')}.join(' '*spaces_between_columns_amount) }.join("\r\n")
+      end
+      print text.split("\r\n").map{|s| lengths << s.length; @annotations ? "#{s.inspect} (#{s.length})" : s }[@scroll_pos[0]..(@scroll_pos[0] + @size[0])].join("\r\n")
+      print "\r\n\r\n"
+      puts "Wanted Size: #{@size[1]}, columns: #{@columns}, column size: #{column_size}, #{@hyphenation ? 'hyphenated' + (@hyphenate_harder ? ' hard': '') : ''}\r"
+      puts "#{color(9)}badness score: #{orig_text.badness}#{color_reset_code}\r"
+      # puts "whitespace score: #{lengths.map{|l| r = (@size[1] - l); r <= 2 ? 0 : l == 0 ? 0 : r}.sum}\r"
+      puts "hyphen count: #{orig_text.hyphens.count}, hyphen score: #{hyphen_score}\r"
+      puts "#{orig_text.hyphens.map{|h| h.inspect }.join("\r\n")}"
+    rescue TerminalGameException => e
+      puts e.message
+    end
   end
 
   def input_handler(input)
@@ -58,6 +76,11 @@ class LineBreaking < TerminalGame
       @size[1] += 1
     when "\e[D" # left
       @size[1] -= 1
+    when "c"
+      @columns += 1
+    when "C"
+      @columns -= 1
+      @columns = 1 if @columns <= 0
     when "n"
       @annotations = ! @annotations
     when "h"
