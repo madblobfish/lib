@@ -58,9 +58,9 @@ rule
     }
     | VALUE SPACE 'textsearch' val {
       # puts "textsearch #{val}" if $debug
-      regexp = /#{val[3]}/i
+      cleanup = lambda{|v| v.gsub(/[.,:;!?'"-]/,' ').gsub(/\s\s+/, ' ')}
+      regexp = /#{cleanup[val[3]]}/i
       result = lambda{|h|
-        cleanup = lambda{|v| v.gsub(/[.,:;!?'"-]/,' ').gsub(/\s\s+/, ' ')}
         if not h.has_key?(val[0])
           raise "key '#{val[0]}' not found"
         elsif h[val[0]].class == Array

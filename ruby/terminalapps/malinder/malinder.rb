@@ -298,7 +298,7 @@ if __FILE__ == $PROGRAM_NAME
 	elsif (ARGV.first == 'query' || ARGV.first == 'search') && ARGV.length >= 2
 		mode = ARGV.shift # throw away first argument
 		query = ARGV.join(' ')
-		query = "names like '#{query}'" if mode == 'search'
+		query = "names textsearch '#{query}'" if mode == 'search'
 		res = cache_query(query, OPTIONS[:all])
 		output_or_process(
 			lambda{res.map{|a|a["id"]}.sort()},
@@ -473,7 +473,7 @@ if __FILE__ == $PROGRAM_NAME
 				puts "skipping: #{f}"
 				next
 			end
-			CLEAN_CACHE[series] ||= cache_query("names textsearch '#{series.tr("',",' ')}'")
+			CLEAN_CACHE[series] ||= cache_query("names textsearch '#{series}'")
 			prefixes = CLEAN_CACHE[series].map{|x| "#{x['id']}-S00E#{episode.strip}-"}
 			if prefixes == 1
 				puts "rename: #{file.inspect} with prefix #{prefixes.first.inspect}?"
