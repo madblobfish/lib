@@ -115,6 +115,17 @@ if __FILE__ == $PROGRAM_NAME
 		Dir.chdir(CONFIG_DIR) do
 			system('git', 'add', '-p', exception: true)
 		end
+	elsif ARGV == ['status']
+		puts 'config: '
+		Dir.chdir("#{CONFIG_DIR}") do
+			system('git', 'show', '--no-patch', '--pretty=format:%h: %s', exception: true)
+			system('git', 'status', '--short' , exception: true)
+		end
+		puts '', 'sources: '
+		Dir.chdir("#{CONFIG_DIR}sources/") do
+			system('git', 'show', '--no-patch', '--pretty=format:%h: %s', exception: true)
+			system('git', 'status', '--short' , exception: true)
+		end
 	elsif ARGV == ['pull']
 		Dir.chdir("#{CONFIG_DIR}sources/") do
 			system('git', 'pull', '--ff-only', exception: true)
