@@ -533,6 +533,7 @@ if __FILE__ == $PROGRAM_NAME
 				num_episodes = CACHE.fetch(id, {}).fetch('num_episodes', -1)
 				state = choice.fetch('state', 'partly,0').split(',', 2)
 				seen_so_far = state.last.to_i
+				seen_so_far -= 1 if state.last.include?(',')
 				ep = eps.map{|ep| episode_wrap(id, ep.last)}.map do |ep|
 					ret = ep == seen_so_far + 1 ? "(#{ep})" : ep.to_s
 					ret += ']' if ep.to_i == num_episodes
@@ -542,6 +543,9 @@ if __FILE__ == $PROGRAM_NAME
 				unless %w(partly want).include?(state.first)
 					state_string = "[#{state.first}] "
 				end
+				if state_string.empty? && choice.empty?
+					state_string = '[ - ]'
+				end
 				puts "#{idx}: #{id} #{state_string}'#{name}': #{ep}"
 			end
 			if files.empty?
@@ -549,16 +553,19 @@ if __FILE__ == $PROGRAM_NAME
 				exit 0
 			end
 			puts "which: [#{files.size.times.to_a.join('/')}]?"
-			user_input = STDIN.readline.rstrip().split(',',2)
+			user_input = STDIN.readline.rstrip().split(',',3)
 			user_choice = Integer(user_input.first, 10) rescue -1
 			user_choice_ep = Integer(user_input[1], 10) rescue -1
+			user_choice_time = user_input[2]
 			if user_choice >= 0
 				id, eps = files.each.to_a[user_choice]
 				if eps.nil?
 					puts 'not there'
 					next
 				end
-				current_ep = CHOICES.fetch(id.to_s, {}).fetch('state', ',0').split(',', 2).last.to_i
+				current_ep, current_time = CHOICES.fetch(id.to_s, {}).fetch('state', ',0').split(',', 2).last.split(',', 2)
+				current_ep = current_ep.to_i
+				current_ep -= 1 if current_time
 				choices = eps.select{|f,ep| ep == 1+current_ep }.map(&:first)
 				if user_choice_ep >= 1
 					choices = eps.select{|f,ep| ep == user_choice_ep}.map(&:first)
@@ -572,6 +579,14 @@ if __FILE__ == $PROGRAM_NAME
 
 				control_socket.write(JSON.generate({ 'command': ['set', 'pause', 'yes'] }) + "\n")
 				control_socket.write(JSON.generate({ 'command': ['loadfile', Dir.pwd + '/' + choices.first] }) + "\n")
+				if (seek_to = user_choice_time || current_time)
+					seek_to = Duration.parse(seek_to).to_i.to_s rescue Integer(seek_to, 10).to_s
+					puts "seeking to: #{seek_to} seconds"
+					sleep 0.05
+					control_socket.write(JSON.generate({ 'command': ['seek', seek_to] }) + "\n")
+				end
+				# empty socket, is that needed?
+				control_socket.read_nonblock(1000).inspect rescue nil
 
 				puts 'File is loaded change to MPV now, remove/keep?[y/k/N]?'
 				user_input = STDIN.readline.rstrip()

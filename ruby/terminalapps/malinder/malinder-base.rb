@@ -49,11 +49,13 @@ end
 VIPS = require_optional('vips')
 require_optional(__dir__ + '/../../stdlib/duration'){
 	class Duration
+		def self.parse;self.new(0);end
 		def initialize(secs)
 			@secs = secs
 			@secs
 		end
 		def to_s;@secs.to_s;end
+		def to_i;@secs;end
 	end
 }
 
@@ -318,7 +320,9 @@ def parse_local_files(filter, path='')
 		.map{|f| [f.split('-',2).first.to_i, f]}
 		.compact.group_by(&:first).transform_values{|l|l.map(&:last)}
 		.map do |id, l|
-			seen = CHOICES[id.to_s]['state'].split(',', 2).last.to_i rescue 0
+			seen, seen_time = CHOICES[id.to_s]['state'].split(',', 2)[1].split(',', 2) rescue ['0', nil]
+			seen = Integer(seen, 10)
+			seen -= 1 if seen_time
 			[id, l.map do |f|
 				ep = f.split('-',3)[1].split('E',2).last.to_i
 				if filter[seen, ep, id]
