@@ -113,7 +113,7 @@ class TerminalGame
           en = Text::Hyphen.new(**hyphenate_harder)
           raise "nope" unless hyphenation
           lambda{|str, l| en.hyphenate_to(str, l) rescue [nil, str]}
-        rescue
+        rescue LoadError, RuntimeError
           lambda{|str, l| [nil, str]}
         end
       out = ''
