@@ -80,6 +80,7 @@ FileUtils.mkdir_p(CACHE_DIR_RELATIONS)
 configurable_default(:DEFAULT_HEADERS, {}) # currently unused
 configurable_default(:LOG_SUFFIX, '-' + ENV['USER'])
 LOG_FILE_NAME = "choices#{LOG_SUFFIX}.log"
+configurable_default(:SUBTITLES_PATH, nil) # should include slash
 configurable_default(:LOG_FILE_PATH, "#{CONFIG_DIR}#{LOG_FILE_NAME}")
 configurable_default(:FAV_FILE_PATH, "#{CONFIG_DIR}favorites#{LOG_SUFFIX}.txt")
 configurable_default(:DELETIONS_PATH, "#{CONFIG_DIR}sources/deletions.txt")

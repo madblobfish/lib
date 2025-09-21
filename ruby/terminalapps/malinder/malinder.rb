@@ -532,7 +532,15 @@ if __FILE__ == $PROGRAM_NAME
 			puts "open mpv like: mpv --idle --input-ipc-server=#{mpv_ipc_socket}"
 			exit 1
 		end
-		control_socket = UNIXSocket.new(mpv_ipc_socket)
+		begin
+			control_socket = UNIXSocket.new(mpv_ipc_socket)
+		rescue Errno::ECONNREFUSED
+			puts "socket is broken, fix and press enter to retry"
+			STDIN.readline
+			retry
+		end
+		socket_worked = false
+		SUBTITLE_CANIDATES = Dir[SUBTITLES_PATH + '*/*.{ass,srt}'] rescue []
 
 		# TODO: listen to "end-file" event
 		# TODO: query "playback-time" and log this optionally
@@ -574,12 +582,15 @@ if __FILE__ == $PROGRAM_NAME
 					puts 'not there'
 					next
 				end
+				anime = CACHE.fetch(id, {})
 				current_ep, current_time = CHOICES.fetch(id.to_s, {}).fetch('state', ',0').split(',', 2).last.split(',', 2)
 				current_ep = current_ep.to_i
 				current_ep -= 1 if current_time
-				choices = eps.select{|f,ep| ep == 1+current_ep }.map(&:first)
+				wanted_ep = current_ep + 1
+				choices = eps.select{|f,ep| ep == wanted_ep}.map(&:first)
 				if user_choice_ep >= 1
 					choices = eps.select{|f,ep| ep == user_choice_ep}.map(&:first)
+					wanted_ep = user_choice_ep
 				end
 				if choices.length == 0
 					puts 'nothing there'
@@ -589,30 +600,45 @@ if __FILE__ == $PROGRAM_NAME
 				end
 
 				control_socket.write(JSON.generate({ 'command': ['set', 'pause', 'yes'] }) + "\n")
-				control_socket.write(JSON.generate({ 'command': ['loadfile', Dir.pwd + '/' + choices.first] }) + "\n")
+				control_socket.write(JSON.generate({ 'command': ['change-list', 'sub-files', 'set', ''] }) + "\n")
 				if (seek_to = user_choice_time || current_time)
 					seek_to = Duration.parse(seek_to).to_i.to_s rescue Integer(seek_to, 10).to_s
 					puts "seeking to: #{seek_to} seconds"
 					sleep 0.05
 					control_socket.write(JSON.generate({ 'command': ['seek', seek_to] }) + "\n")
 				end
+				SUBTITLE_CANIDATES.select do |f|
+					anime['names']&.any?{|n| f.downcase.include?(n.downcase.tr('/', '-'))}
+				end.select do |f|
+					f.match?(/(\b|[0E])#{wanted_ep.to_s.rjust(2, '0')}\b/i)
+				end.each do |sub|
+					puts "adding subtitles: #{sub.inspect}"
+					control_socket.write(JSON.generate({ 'command': ['change-list', 'sub-files', 'append', sub] }) + "\n")
+				end
+				control_socket.write(JSON.generate({ 'command': ['loadfile', Dir.pwd + '/' + choices.first] }) + "\n")
 				# empty socket, is that needed?
 				control_socket.read_nonblock(1000).inspect rescue nil
+				socket_worked = true
 
 				puts 'File is loaded change to MPV now, remove/keep?[y/k/N]?'
 				user_input = STDIN.readline.rstrip()
 				if %w(k y).include?(user_input)
 					# TODO: properly log this
 					logentry = CHOICES.fetch(id.to_s, {})
-					logentry['state'] = 'partly,' + (current_ep + 1).to_s
+					logentry['state'] = 'partly,' + wanted_ep.to_s
 					CHOICES[id.to_s] = logentry
-					File.write('/tmp/malinder-watch.log', [id, current_ep + 1].join("\t") + "\n", mode:'a')
+					File.write('/tmp/malinder-watch.log', [id, wanted_ep].join("\t") + "\n", mode:'a')
 				end
 				if user_input == 'y'
 					File.delete(choices.first)
 					puts 'deleted'
 				end
 			end
+		rescue Errno::EPIPE, Errno::ECONNREFUSED
+			puts "Socket is gone/broken, restart/fix and press enter"
+			STDIN.readline
+			control_socket = UNIXSocket.new(mpv_ipc_socket)
+			retry
 		end
 
 
