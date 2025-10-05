@@ -75,6 +75,7 @@ malinder log 1 seen; malinder log 1 4
 malinder db-pfusch --inplace choices-relative.txt ~/.config/malinder/sharedfile.txt
 malinder stats
 malinder results choices-relative.log
+malinder results name 2030 winter # will use the 'choices-name.log' file
 
 # watch and file helpers, mostly interactive
 malinder fix-names

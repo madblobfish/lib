@@ -139,6 +139,7 @@ CSV_OPTS = {
 CSV_OPTS[:skip_lines] = /^(#|$|<<+|==+|>>+|\|\|+)/
 def read_choices(file)
 	file = CONFIG_DIR + file if File.exist?(CONFIG_DIR + file) # allow relative paths
+	file = CONFIG_DIR + "choices-#{file}.log" if File.exist?(CONFIG_DIR + "choices-#{file}.log")
 	headers = %w(id year season state ts name c1 c2 c3)
 	headers = true if File.read(file, 20).start_with?("id\t", "seencount(state)\t")
 	CSV.read(file, **CSV_OPTS, headers: headers).map do |r|
