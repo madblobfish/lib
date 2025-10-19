@@ -133,6 +133,9 @@ if __FILE__ == $PROGRAM_NAME
 		Dir.chdir(CONFIG_DIR) do
 			system('git', 'pull', '--ff-only', exception: true)
 		end
+		Dir.chdir(SUBTITLES_PATH) do
+			system('git', 'pull', '--ff-only', exception: true)
+		end if SUBTITLES_PATH
 	elsif ARGV == ['push']
 		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true)
 	elsif ARGV.first == 'commit' && (1..3).include?(ARGV.length)
@@ -525,6 +528,10 @@ if __FILE__ == $PROGRAM_NAME
 			end
 		end
 	elsif ARGV == ['watch']
+		Dir.chdir(SUBTITLES_PATH) do
+			system('git', 'pull', '--ff-only', exception: true)
+			puts ''
+		end if AUTOPULL_SUBTITLES && SUBTITLES_PATH
 		require 'socket'
 		require 'json'
 		mpv_ipc_socket = "/run/user/#{Process.uid}/malinder-mpv"

@@ -31,9 +31,13 @@ Please refer to the `configurable_default` function within the code for customiz
 ```
 DEFAULT_HEADERS = {'X-MAL-CLIENT-ID': 'asdf'}
 LOG_SUFFIX = '-yourname'
+
 #configure how long to wait until again pulling automatically
 # AUTOPULL_SOURCES_WAIT = 86400*2
-# AUTOPULL_CONFIG_WAIT = 86400
+
+#configure watch command adding subtitles from here and updating them regularly, assuming its a git
+# SUBTITLES_PATH = '/some/folder/'
+# AUTOPULL_SUBTITLES_WAIT = 3600
 ```
 To share or distribute `malinder` logs, it is recommended to set up your sources directory or the entire config directory as a git repository.
 

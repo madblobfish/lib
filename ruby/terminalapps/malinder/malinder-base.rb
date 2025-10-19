@@ -71,7 +71,11 @@ sources_outdated = (Time.now - File.mtime("#{CONFIG_DIR}sources/.git/FETCH_HEAD"
 configurable_default(:AUTOPULL_SOURCES, AUTOPULL_SOURCES_WAIT == 0 ? true : AUTOPULL_SOURCES_WAIT == -1 ? false : sources_outdated)
 configurable_default(:AUTOPULL_CONFIG_WAIT, 86400)
 config_outdated = (Time.now - File.mtime("#{CONFIG_DIR}.git/FETCH_HEAD")).to_f >= AUTOPULL_CONFIG_WAIT rescue true
-configurable_default(:AUTOPULL_CONFIG, AUTOPULL_CONFIG_WAIT == 0 ? true : AUTOPULL_CONFIG_WAIT == -1 ? false : sources_outdated)
+configurable_default(:AUTOPULL_CONFIG, AUTOPULL_CONFIG_WAIT == 0 ? true : AUTOPULL_CONFIG_WAIT == -1 ? false : config_outdated)
+configurable_default(:SUBTITLES_PATH, nil) # should include slash
+configurable_default(:AUTOPULL_SUBTITLES_WAIT, -1) # don't pull by default
+subtitles_outdated = (Time.now - File.mtime("#{SUBTITLES_DIR}.git/FETCH_HEAD")).to_f >= AUTOPULL_SUBTITLES_WAIT rescue true
+configurable_default(:AUTOPULL_SUBTITLES, AUTOPULL_SUBTITLES_WAIT == 0 ? true : AUTOPULL_SUBTITLES_WAIT == -1 ? false : subtitles_outdated)
 configurable_default(:CACHE_DIR, ENV.fetch('XDG_CACHE_HOME', ENV.fetch('HOME') + '/.cache') + '/malinder/')
 CACHE_DIR_IMAGES = CACHE_DIR + 'images/'
 CACHE_DIR_RELATIONS = CACHE_DIR + 'relations/'
@@ -80,7 +84,6 @@ FileUtils.mkdir_p(CACHE_DIR_RELATIONS)
 configurable_default(:DEFAULT_HEADERS, {}) # currently unused
 configurable_default(:LOG_SUFFIX, '-' + ENV['USER'])
 LOG_FILE_NAME = "choices#{LOG_SUFFIX}.log"
-configurable_default(:SUBTITLES_PATH, nil) # should include slash
 configurable_default(:LOG_FILE_PATH, "#{CONFIG_DIR}#{LOG_FILE_NAME}")
 configurable_default(:FAV_FILE_PATH, "#{CONFIG_DIR}favorites#{LOG_SUFFIX}.txt")
 configurable_default(:DELETIONS_PATH, "#{CONFIG_DIR}sources/deletions.txt")
