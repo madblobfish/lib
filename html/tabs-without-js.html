@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+  <title>HTML tabs without JS</title>
+  <style>
+    /* functionality */
+    .tab{
+      display: none;
+    }
+    input#a:checked ~ #tab-a{
+      display: block;
+    }
+    input#b:checked ~ #tab-b{
+      display: block;
+    }
+    input#c:checked ~ #tab-c{
+      display: block;
+    }
+
+    /* styling */
+    body{
+      padding: 10px;
+      font-size: 1.5rem;
+    }
+    .tab{
+      border: 2px solid black;
+      padding: 0 20px;
+      background: #fdfdfd;
+    }
+    label{
+      margin-right: 5px;
+      padding: 0 20px;
+      font-size: 2rem;
+      border: 2px solid black;
+      border-bottom: none;
+      background: #ddd;
+    }
+    label:hover{
+      background: #fff;
+    }
+    input:checked + label{
+      background: #bbb;
+    }
+    input[type="radio"]{
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <input type="radio" name="switch" id="a"><label for="a">A</label>
+  <input type="radio" name="switch" id="b"><label for="b">B</label>
+  <input type="radio" name="switch" id="c"><label for="c">C</label>
+  <div id="tab-a" class="tab">
+    <h1>A: Downsides</h1>
+    <ul>
+      <li>radio buttons need to be on same level as tabs</li>
+      <li>ugly imperformant? css and html</li>
+    </ul>
+  </div>
+  <div id="tab-b" class="tab">
+    <h1>B: Upsides: no JavaScript</h1>
+  </div>
+  <div id="tab-c" class="tab">
+    <h1>C: hello here is nothing</h1>
+  </div>
+</body>
+</html>
