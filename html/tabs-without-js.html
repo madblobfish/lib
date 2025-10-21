@@ -17,18 +17,31 @@
     input#c:checked ~ #tab-c{
       display: block;
     }
+    input#d:checked ~ #tab-d{
+      display: block;
+    }
+    input#e:checked ~ #tab-e{
+      display: block;
+    }
 
     /* styling */
     body{
       padding: 10px;
       font-size: 1.5rem;
     }
+    code:before, code:after{
+      content: '"';
+      background: #fff;
+    }
+    code{
+      background: #eee;
+    }
     .tab{
       border: 2px solid black;
       padding: 0 20px;
       background: #fdfdfd;
     }
-    label{
+    label, #e{
       margin-right: 5px;
       padding: 0 20px;
       font-size: 2rem;
@@ -36,26 +49,48 @@
       border-bottom: none;
       background: #ddd;
     }
-    label:hover{
+    label:hover, #e:hover{
       background: #fff;
     }
-    input:checked + label{
+    input:checked + label, #e:checked{
       background: #bbb;
     }
-    input[type="radio"]{
+    input[type="radio"]#b{
       display: none;
+    }
+    input[type="radio"]#c{
+      opacity: 0;
+    }
+    input[type="radio"]#d{
+      height: 0;
+      width: 0;
+    }
+    #e{
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background: #eee;
+      display: inline-block;
+      border: 2px solid black;
+      border-bottom: none;
+    }
+    #e:before{
+      content: attr(id);
     }
   </style>
 </head>
 <body>
-  <input type="radio" name="switch" id="a"><label for="a">A</label>
+  <input type="radio" name="switch" id="a" checked="checked"><label for="a">A</label>
   <input type="radio" name="switch" id="b"><label for="b">B</label>
   <input type="radio" name="switch" id="c"><label for="c">C</label>
+  <input type="radio" name="switch" id="d"><label for="d">D</label>
+  <input type="radio" name="switch" id="e">
   <div id="tab-a" class="tab">
     <h1>A: Downsides</h1>
     <ul>
       <li>radio buttons need to be on same level as tabs</li>
       <li>ugly imperformant? css and html</li>
+      <li>not good for screen readers and keyboard interactions (see workarounds in E)</li>
     </ul>
   </div>
   <div id="tab-b" class="tab">
@@ -63,6 +98,19 @@
   </div>
   <div id="tab-c" class="tab">
     <h1>C: hello here is nothing</h1>
+  </div>
+  <div id="tab-d" class="tab">
+    <h1>D: Horray</h1>
+  </div>
+  <div id="tab-e" class="tab">
+    <h1>E. Accessibility workarounds:</h1>
+    <ul>
+      <li>A: just displaying</li>
+      <li>B: using <code>display: none</code> to hide the radiobuttons is <strong>bad</strong></li>
+      <li>C: using <code>opacity: 0</code> to hide it visually (best combined with <code>margin: 0</code>)</li>
+      <li>D: using <code>height/width: 0</code> to hide it alternatively (best combined with <code>margin: 0</code>)</li>
+      <li>E: removing the label and style the radio button by yourself, using <code>appearance: none</code></li>
+    </ul>
   </div>
 </body>
 </html>
