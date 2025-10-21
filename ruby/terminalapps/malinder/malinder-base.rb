@@ -339,6 +339,13 @@ def parse_local_files(filter, path='')
 		end]
 end
 
+def add_log_entry(anime, state)
+	which_season = anime['start_season'].fetch_values('year', 'season')
+	title = anime['title'].include?('"') ? "\"#{anime['title'].gsub('"', '""')}\"" : anime['title']
+	written_bytes = LOG_FILE.write("#{anime['id']}\t#{which_season.join("\t")}\t#{state}\t#{Time.now.to_i}\t#{title}\n")
+	return written_bytes
+end
+
 def episode_wrap(id, ep)
 	ep = ep.to_i
 	offset = OFFSETS[id.to_s].to_i
