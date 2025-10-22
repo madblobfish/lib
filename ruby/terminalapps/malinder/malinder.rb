@@ -536,7 +536,7 @@ if __FILE__ == $PROGRAM_NAME
 		Dir.chdir(SUBTITLES_PATH) do
 			system('git', 'pull', '--ff-only', exception: true)
 			puts ''
-		end if AUTOPULL_SUBTITLES && SUBTITLES_PATH
+		end if AUTOPULL_SUBTITLES && SUBTITLES_PATH && !OFFLINE
 		require 'socket'
 		require 'json'
 		mpv_ipc_socket = "/run/user/#{Process.uid}/malinder-mpv"
