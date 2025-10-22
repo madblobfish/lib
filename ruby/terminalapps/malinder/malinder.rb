@@ -556,6 +556,7 @@ if __FILE__ == $PROGRAM_NAME
 
 		# TODO: listen to "end-file" event
 		# TODO: query "playback-time" and log this optionally
+		last_selected = nil
 		loop do
 			files = parse_local_files(proc{|seen,ep| OPTIONS[:all] || seen < ep}).reject{|id, eps| eps.empty?}
 			files.each_with_index do |(id, eps), idx|
@@ -583,9 +584,11 @@ if __FILE__ == $PROGRAM_NAME
 				puts 'all seen or none here'
 				exit 0
 			end
-			puts "which: [#{files.size.times.to_a.join('/')}]?"
+			puts "which: [#{files.size.times.to_a.map{|e| e == last_selected ? "(#{e})" : e}.join('/')}]?"
 			user_input = STDIN.readline.rstrip().split(',',3)
+			user_input = [last_selected.to_s] if user_input == []
 			user_choice = Integer(user_input.first, 10) rescue -1
+			last_selected = user_choice
 			user_choice_ep = Integer(user_input[1], 10) rescue -1
 			user_choice_time = user_input[2]
 			if user_choice >= 0
