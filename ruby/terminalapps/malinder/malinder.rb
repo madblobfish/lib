@@ -104,6 +104,7 @@ if __FILE__ == $PROGRAM_NAME
 	# makes commands faster which do not need cached data
 	didcommand = true
 	if ARGV.first == 'edit' && (1..2).include?(ARGV.length)
+		lock_logfile(true)
 		filename = ARGV.fetch(1, LOG_FILE_NAME)
 		filename = CONFIG_DIR + filename unless filename.include?("/")
 		system(ENV.fetch('EDITOR', 'nano'), filename, exception: true)
@@ -230,6 +231,7 @@ if __FILE__ == $PROGRAM_NAME
 			end
 		})
 	# elsif ARGV.first == 'add'
+	# 	lock_logfile(true)
 	# 	ARGV.shift # throw away first argument
 	# 	load_all_to_cache
 	# 	if anime = CACHE[Integer(ARGV.first, 10)] rescue false
@@ -303,12 +305,14 @@ if __FILE__ == $PROGRAM_NAME
 				e
 			end
 		end
-		if found
-			File.write(LOG_FILE, newcontent.join(''))
-		else
-			LOG_FILE.write("#{nime['id']}\t#{nime['start_season'].fetch_values('year', 'season').join("\t")}\t#{log_value}\t#{Time.now.to_i}\t#{nime['title']}\n")
-			puts 'created new entry'
-		end
+		lock_logfile(true){
+			if found
+				File.write(LOG_FILE, newcontent.join(''))
+			else
+				LOG_FILE.write("#{nime['id']}\t#{nime['start_season'].fetch_values('year', 'season').join("\t")}\t#{log_value}\t#{Time.now.to_i}\t#{nime['title']}\n")
+				puts 'created new entry'
+			end
+		}
 	elsif (ARGV.first == 'query' || ARGV.first == 'search') && ARGV.length >= 2
 		mode = ARGV.shift # throw away first argument
 		query = ARGV.join(' ')
@@ -528,6 +532,7 @@ if __FILE__ == $PROGRAM_NAME
 			end
 		end
 	elsif ARGV == ['watch']
+		lock_logfile(true)
 		Dir.chdir(SUBTITLES_PATH) do
 			system('git', 'pull', '--ff-only', exception: true)
 			puts ''

@@ -22,6 +22,7 @@ class MALinder < TerminalGame
 	end
 	def initialize(year_or_ids, season=false, cache_preloaded=true)
 		@fps = :manual
+		@first_write = true
 		@require_kitty_graphics = true
 #		@show_overflow = true
 
@@ -215,6 +216,7 @@ class MALinder < TerminalGame
 	def logchoice(choice)
 		anime = @season[@current]
 		return if CHOICES.has_key?(anime['id'].to_s)
+		lock_logfile() if @first_write # sorry to exit for now
 		written_bytes = add_log_entry(anime, choice)
 		@season.delete_at(@current)
 		exit() if @season.empty?

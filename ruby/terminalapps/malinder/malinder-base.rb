@@ -355,3 +355,16 @@ def episode_wrap(id, ep)
 	end
 	return ep
 end
+
+def lock_logfile(block=false)
+	ret = LOG_FILE.flock(6) # exclusive(2) | nonblock(4)
+	if block && !ret
+		STDERR.puts('blocking on lock on: ' + LOG_FILE_PATH)
+		ret = LOG_FILE.flock(2) # exclusive(2)
+	end
+	raise "lock aquire on '#{LOG_FILE_PATH}' failed" unless ret
+	if block_given?
+		yield
+		LOG_FILE.flock(8) # unlock(8)
+	end
+end

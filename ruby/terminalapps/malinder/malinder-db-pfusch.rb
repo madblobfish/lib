@@ -27,6 +27,7 @@ if GITMERGE
   raise 'aahh' unless ARGV.one? # sanity check of above
 end
 
+lock_logfile()
 load_all_to_cache()
 csv = []
 csv = read_choices(LOG_FILE_PATH) unless NOCURRENT
