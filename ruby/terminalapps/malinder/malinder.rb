@@ -570,8 +570,8 @@ if __FILE__ == $PROGRAM_NAME
 				seen_so_far = state.last.to_i
 				seen_so_far -= 1 if state.last.include?(',')
 				ep = eps.map{|ep| episode_wrap(id, ep.last)}.map do |ep|
-					ret = ep == seen_so_far + 1 ? "(#{ep})" : ep.to_s
-					ret += ']' if ep.to_i == num_episodes
+					ret = ep == seen_so_far + 1 ? TerminalGame.color(10){"(#{ep})"} : ep.to_s
+					ret += TerminalGame.color(11){']'} if ep.to_i == num_episodes
 					ret
 				end.join(', ')
 				state_string = ''
