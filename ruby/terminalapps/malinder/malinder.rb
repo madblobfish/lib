@@ -558,7 +558,10 @@ if __FILE__ == $PROGRAM_NAME
 		# TODO: query "playback-time" and log this optionally
 		last_selected = nil
 		loop do
-			files = parse_local_files(proc{|seen,ep| OPTIONS[:all] || seen < ep}).reject{|id, eps| eps.empty?}
+			files = parse_local_files(proc do |seen,ep,id|
+				state = CHOICES.fetch(id.to_s, {}).fetch('state', 'partly,0').split(',', 2).first
+				OPTIONS[:all] || seen < ep && !(!OPTIONS[:all] && state == 'broken')
+			end).reject{|id,eps| eps.empty?}
 			files.each_with_index do |(id, eps), idx|
 				choice = CHOICES.fetch(id.to_s, {})
 				name = choice.fetch('name', CACHE[id]&.fetch('title', 'unknown'))
