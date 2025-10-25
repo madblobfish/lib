@@ -36,7 +36,10 @@ class TerminalGame
     def bold_code(enable = true)
       "\e[#{enable ? '' : '2'}1m"
     end
-    def color(color = 15, mode = :fg)
+    def color(color = 15, mode = :fg, &block)
+      if block_given?
+        return get_color_code(color, mode) + block[] + color_reset_code()
+      end
       print get_color_code(color, mode)
     end
     def color_invert
