@@ -31,6 +31,7 @@ Please refer to the `configurable_default` function within the code for customiz
 ```
 DEFAULT_HEADERS = {'X-MAL-CLIENT-ID': 'asdf'}
 LOG_SUFFIX = '-yourname'
+# LOCKING = true # lock the logfile, newly started instances check this and fail or wait, this is the default
 
 #configure how long to wait until again pulling automatically
 # AUTOPULL_SOURCES_WAIT = 86400*2

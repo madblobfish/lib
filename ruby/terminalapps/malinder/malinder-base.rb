@@ -85,6 +85,7 @@ configurable_default(:DEFAULT_HEADERS, {}) # currently unused
 configurable_default(:LOG_SUFFIX, '-' + ENV['USER'])
 LOG_FILE_NAME = "choices#{LOG_SUFFIX}.log"
 configurable_default(:LOG_FILE_PATH, "#{CONFIG_DIR}#{LOG_FILE_NAME}")
+configurable_default(:LOCKING, true)
 configurable_default(:FAV_FILE_PATH, "#{CONFIG_DIR}favorites#{LOG_SUFFIX}.txt")
 configurable_default(:DELETIONS_PATH, "#{CONFIG_DIR}sources/deletions.txt")
 configurable_default(:OFFSETS_PATH, "#{CONFIG_DIR}sources/offsets.txt")
@@ -357,6 +358,10 @@ def episode_wrap(id, ep)
 end
 
 def lock_logfile(block=false)
+	unless LOCKING
+		yielf if block_given?
+		return
+	end
 	ret = LOG_FILE.flock(6) # exclusive(2) | nonblock(4)
 	if block && !ret
 		STDERR.puts('blocking on lock on: ' + LOG_FILE_PATH)
