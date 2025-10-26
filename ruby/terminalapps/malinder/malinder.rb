@@ -605,7 +605,7 @@ if __FILE__ == $PROGRAM_NAME
 				current_ep = current_ep.to_i
 				current_ep -= 1 if current_time
 				wanted_ep = current_ep + 1
-				choices = eps.select{|f,ep| ep == wanted_ep}.map(&:first)
+				choices = eps.select{|f,ep| episode_wrap(id, ep) == wanted_ep}.map(&:first)
 				if user_choice_ep >= 1
 					choices = eps.select{|f,ep| ep == user_choice_ep}.map(&:first)
 					wanted_ep = user_choice_ep
