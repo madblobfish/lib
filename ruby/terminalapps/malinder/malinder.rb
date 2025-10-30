@@ -641,11 +641,22 @@ if __FILE__ == $PROGRAM_NAME
 				puts 'File is loaded change to MPV now, remove/keep?[y/k/N]?'
 				user_input = STDIN.readline.rstrip()
 				if %w(k y).include?(user_input)
-					# TODO: properly log this
+					state_string =
+						if anime.fetch('num_episodes', -1) == wanted_ep
+							'seen,'
+						else
+							'partly,'
+						end
+					state_string += wanted_ep.to_s
+
+					# log to memory
 					logentry = CHOICES.fetch(id.to_s, {})
-					logentry['state'] = 'partly,' + wanted_ep.to_s
+					logentry['state'] = state_string
 					CHOICES[id.to_s] = logentry
-					File.write('/tmp/malinder-watch.log', [id, wanted_ep].join("\t") + "\n", mode:'a')
+
+					# log to logfile
+					add_log_entry(anime, state_string)
+					puts 'logged to logfile'
 				end
 				if user_input == 'y'
 					File.delete(choices.first)
