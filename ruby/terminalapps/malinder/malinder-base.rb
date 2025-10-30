@@ -74,7 +74,7 @@ config_outdated = (Time.now - File.mtime("#{CONFIG_DIR}.git/FETCH_HEAD")).to_f >
 configurable_default(:AUTOPULL_CONFIG, AUTOPULL_CONFIG_WAIT == 0 ? true : AUTOPULL_CONFIG_WAIT == -1 ? false : config_outdated)
 configurable_default(:SUBTITLES_PATH, nil) # should include slash
 configurable_default(:AUTOPULL_SUBTITLES_WAIT, -1) # don't pull by default
-subtitles_outdated = (Time.now - File.mtime("#{SUBTITLES_DIR}.git/FETCH_HEAD")).to_f >= AUTOPULL_SUBTITLES_WAIT rescue true
+subtitles_outdated = (Time.now - File.mtime("#{SUBTITLES_PATH}/../.git/FETCH_HEAD")).to_f >= AUTOPULL_SUBTITLES_WAIT rescue true
 configurable_default(:AUTOPULL_SUBTITLES, AUTOPULL_SUBTITLES_WAIT == 0 ? true : AUTOPULL_SUBTITLES_WAIT == -1 ? false : subtitles_outdated)
 configurable_default(:CACHE_DIR, ENV.fetch('XDG_CACHE_HOME', ENV.fetch('HOME') + '/.cache') + '/malinder/')
 CACHE_DIR_IMAGES = CACHE_DIR + 'images/'
