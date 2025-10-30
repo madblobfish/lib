@@ -560,7 +560,7 @@ if __FILE__ == $PROGRAM_NAME
 		loop do
 			files = parse_local_files(proc do |seen,ep,id|
 				state = CHOICES.fetch(id.to_s, {}).fetch('state', 'partly,0').split(',', 2).first
-				OPTIONS[:all] || seen < ep && !(!OPTIONS[:all] && state == 'broken')
+				OPTIONS[:all] || seen < ep && !(!OPTIONS[:all] && %w(nope broken seen).include?(state))
 			end).reject{|id,eps| eps.empty?}
 			files.each_with_index do |(id, eps), idx|
 				choice = CHOICES.fetch(id.to_s, {})
