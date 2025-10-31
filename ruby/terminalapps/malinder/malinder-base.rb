@@ -330,7 +330,7 @@ def parse_local_files(filter, path='')
 			seen = Integer(seen, 10)
 			seen -= 1 if seen_time
 			[id, l.map do |f|
-				ep = f.split('-',3)[1].split('E',2).last.to_i
+				ep = episode_wrap(id, f.split('-',3)[1].split('E',2).last.to_i)
 				if filter[seen, ep, id]
 					[f, ep]
 				else
