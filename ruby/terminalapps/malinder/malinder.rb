@@ -448,8 +448,8 @@ if __FILE__ == $PROGRAM_NAME
 		output_or_process(links, links, links.join("\n"))
 
 	elsif ARGV == ['clean']
-		files = parse_local_files(proc do |seen, ep, id|
-			seen >= ep or %(broken nope seen).include?(CHOICES.fetch(id.to_s, {}).fetch('state', 'partly,').split(',',2).first)
+		files = parse_local_files(proc do |seen, ep, id, state|
+			seen >= ep or %(broken nope seen).include?(state)
 		end).values.flatten(1).map(&:first)
 		if files.empty?
 			puts 'already clean :)'
@@ -558,9 +558,8 @@ if __FILE__ == $PROGRAM_NAME
 		# TODO: query "playback-time" and log this optionally
 		last_selected = nil
 		loop do
-			files = parse_local_files(proc do |seen,ep,id|
-				state = CHOICES.fetch(id.to_s, {}).fetch('state', 'partly,0').split(',', 2).first
-				OPTIONS[:all] || seen < ep && !(!OPTIONS[:all] && %w(nope broken seen).include?(state))
+			files = parse_local_files(proc do |seen, ep, id, state|
+				OPTIONS[:all] || ep > seen && !(!OPTIONS[:all] && %w(nope broken seen).include?(state))
 			end).reject{|id,eps| eps.empty?}
 			files.each_with_index do |(id, eps), idx|
 				choice = CHOICES.fetch(id.to_s, {})
@@ -605,7 +604,7 @@ if __FILE__ == $PROGRAM_NAME
 				current_ep = current_ep.to_i
 				current_ep -= 1 if current_time
 				wanted_ep = current_ep + 1
-				choices = eps.select{|f,ep| episode_wrap(id, ep) == wanted_ep}.map(&:first)
+				choices = eps.map(&:first)
 				if user_choice_ep >= 1
 					choices = eps.select{|f,ep| ep == user_choice_ep}.map(&:first)
 					wanted_ep = user_choice_ep
@@ -635,7 +634,7 @@ if __FILE__ == $PROGRAM_NAME
 				end
 				control_socket.write(JSON.generate({ 'command': ['loadfile', Dir.pwd + '/' + choices.first] }) + "\n")
 				# empty socket, is that needed?
-				control_socket.read_nonblock(1000).inspect rescue nil
+				control_socket.read_nonblock(1000) rescue nil
 				socket_worked = true
 
 				puts 'File is loaded change to MPV now, remove/keep?[y/k/N]?'
