@@ -639,14 +639,22 @@ if __FILE__ == $PROGRAM_NAME
 
 				puts 'File is loaded change to MPV now, remove/keep?[y/k/N]?'
 				user_input = STDIN.readline.rstrip()
+				# empty socket again
+				control_socket.read_nonblock(9000) rescue nil
 				if %w(k y).include?(user_input)
+					control_socket.write(JSON.generate({ 'command': ['get_property', 'time-pos'] }) + "\n")
+					timepos = JSON.parse(control_socket.recvfrom(1000)[0])['data'].to_i
+					control_socket.write(JSON.generate({ 'command': ['get_property', 'time-remaining'] }) + "\n")
+					remaining = JSON.parse(control_socket.recvfrom(1000)[0])['data'] || 0
+
 					state_string =
-						if anime.fetch('num_episodes', -1) == wanted_ep
+						if anime.fetch('num_episodes', -1) == wanted_ep && remaining <= 4
 							'seen,'
 						else
 							'partly,'
 						end
 					state_string += wanted_ep.to_s
+					state_string += ",#{Duration.new(timepos)}" if remaining > 4
 
 					# log to memory
 					logentry = CHOICES.fetch(id.to_s, {})
