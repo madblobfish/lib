@@ -326,7 +326,8 @@ def parse_local_files(filter, path='')
 		.map{|f| [f.split('-',2).first.to_i, f]}
 		.compact.group_by(&:first).transform_values{|l|l.map(&:last)}
 		.map do |id, l|
-			seen, seen_time = CHOICES[id.to_s]['state'].split(',', 2)[1].split(',', 2) rescue ['0', nil]
+			state, seen = CHOICES.fetch(id.to_s, {}).fetch('state', 'partly,0').split(',', 2)
+			seen, seen_time = seen.split(',', 2) rescue ['0', nil]
 			seen = Integer(seen, 10)
 			seen -= 1 if seen_time
 			[id, l.map do |f|
