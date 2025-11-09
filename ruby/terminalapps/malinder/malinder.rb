@@ -641,11 +641,11 @@ if __FILE__ == $PROGRAM_NAME
 				user_input = STDIN.readline.rstrip()
 				# empty socket again
 				control_socket.read_nonblock(9000) rescue nil
+				control_socket.write(JSON.generate({ 'command': ['get_property', 'time-pos'] }) + "\n")
+				timepos = JSON.parse(control_socket.recvfrom(1000)[0])['data'].to_i
+				control_socket.write(JSON.generate({ 'command': ['get_property', 'time-remaining'] }) + "\n")
+				remaining = JSON.parse(control_socket.recvfrom(1000)[0])['data'] || 0
 				if %w(k y).include?(user_input)
-					control_socket.write(JSON.generate({ 'command': ['get_property', 'time-pos'] }) + "\n")
-					timepos = JSON.parse(control_socket.recvfrom(1000)[0])['data'].to_i
-					control_socket.write(JSON.generate({ 'command': ['get_property', 'time-remaining'] }) + "\n")
-					remaining = JSON.parse(control_socket.recvfrom(1000)[0])['data'] || 0
 
 					state_string =
 						if anime.fetch('num_episodes', -1) == wanted_ep && remaining <= 4
@@ -666,8 +666,17 @@ if __FILE__ == $PROGRAM_NAME
 					puts 'logged to logfile'
 				end
 				if user_input == 'y'
-					File.delete(choices.first)
-					puts 'deleted'
+					user_input =
+						if remaining <= 4
+							puts 'Not finished, really delete? [y/N]?'
+							STDIN.readline.rstrip()
+						else
+							'y'
+						end
+					if user_input == 'y'
+						File.delete(choices.first)
+						puts 'deleted'
+					end
 				end
 			end
 		rescue Errno::EPIPE, Errno::ECONNREFUSED
