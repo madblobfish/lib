@@ -394,6 +394,14 @@ class TerminalGame
   end
   def kitty_graphics_img_pixel_place(id, x, y, **opts)
     raise 'requires @require_kitty_graphics=true' unless require_kitty_graphics
+    if opts[:place] && opts[:iw] && opts[:ih]
+      place = opts.fetch(:place, [0.5, 0.5])
+      x = (opts.fetch(:w, @size_x) - opts[:iw]) * place[0]
+      y = (opts.fetch(:h, @size_y) - opts[:ih]) * place[1]
+      opts.delete(:place)
+      opts.delete(:iw)
+      opts.delete(:ih)
+    end
     # STDERR.puts([id, x,y, opts].to_s)
     # x = 0 if x < 0
     # y = 0 if y < 0
