@@ -4,6 +4,17 @@ Vips.cache_set_max_mem(1024*1024*1024)
 require 'open3'
 
 class ImageViewer < TerminalGame
+  IMAGE_PLACEMENTS = [
+    [0.5, 0.5], # middle middle / center
+    [0  , 0  ], # top left
+    [0.5, 0  ], # top middle
+    [1  , 0  ], # top right
+    [0  , 0.5], # middle left
+    [1  , 0.5], # middle right
+    [0  , 1  ], # bottom left
+    [0.5, 1  ], # bottom middle
+    [1  , 1  ], # bottom right
+  ]
   def inspect #make errors short
     '#<ImageViewer>'
   end
@@ -14,6 +25,7 @@ class ImageViewer < TerminalGame
     @scale_up = :auto if agrgs.delete('--scale-up')
     @zoom = 1
     @zoom_pos = [0,0]
+    @place = 0
     if agrgs.delete('--rotate')
       @images_cycle = -1
       @fps = 1.0/5
@@ -94,7 +106,15 @@ class ImageViewer < TerminalGame
     end
     move_cursor(0,0)
     imgid = kitty_graphics_img_load(buffer)
-    kitty_graphics_img_pixel_place_center(imgid, *current_img.size.map{|e| (e).to_i}, 0, -rowsize)
+    kitty_graphics_img_pixel_place(
+      imgid,
+      0,
+      0,
+      place: IMAGE_PLACEMENTS[@place],
+      iw: current_img.size[0].to_i,
+      ih: current_img.size[1].to_i,
+      h: @size_y - rowsize,
+    )
     # frames.each do |frame|
     #   if scale_by * @zoom != 1
     #     frame = frame.resize(scale_by*@zoom)
@@ -140,6 +160,9 @@ class ImageViewer < TerminalGame
     when "\e[1;5D" # ctrl left
       @zoom_pos[0] -= @size_x/5
       @zoom_pos[0] = 0 if @zoom_pos[0] < 0
+    when "p"
+      @place += 1
+      @place %= IMAGE_PLACEMENTS.length
     else
       # raise input.inspect # for implementing new commands
       return
