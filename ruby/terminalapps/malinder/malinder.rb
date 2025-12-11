@@ -4,7 +4,8 @@ HELP_TEXT << '  <year> <season>: run an interactive malinder Terminal UI, decide
 HELP_TEXT << '      season is one of: winter, spring, summer, fall'
 HELP_TEXT << '      controls: arrow keys, q to quit, 1 for nope, 2/a is ok, 3/y is want'
 HELP_TEXT << ''
-HELP_TEXT << '  stats [--by-season]: get some statistics'
+HELP_TEXT << '  stats [--by-season]: get some statistics about your choices'
+HELP_TEXT << '  status: prints information about malinder\'s database and the git folders'
 HELP_TEXT << '  show <id>: lookup an entry from cache'
 HELP_TEXT << '  search <name> [--all]: fuzzy search on "names" in the cache'
 HELP_TEXT << '  query <querysyntax>: search cache using expressions'
@@ -117,16 +118,26 @@ if __FILE__ == $PROGRAM_NAME
 			system('git', 'add', '-p', exception: true)
 		end
 	elsif ARGV == ['status']
-		puts 'config: '
+		puts 'git: config:'
 		Dir.chdir("#{CONFIG_DIR}") do
 			system('git', 'show', '--no-patch', '--pretty=format:%h: %s', exception: true)
 			system('git', 'status', '--short' , exception: true)
 		end
-		puts '', 'sources: '
+		puts ''
+		puts 'git: sources:'
 		Dir.chdir("#{CONFIG_DIR}sources/") do
 			system('git', 'show', '--no-patch', '--pretty=format:%h: %s', exception: true)
 			system('git', 'status', '--short' , exception: true)
 		end
+		a = Time.now
+		load_all_to_cache()
+		b = Time.now
+		puts ''
+		puts "seasons: #{Dir[CONFIG_DIR + 'sources/*.json'].length}"
+		puts "loaded  animes: #{CACHE_FULL.size} (filtered: #{CACHE.size})"
+		puts "parsed choices: #{CHOICES.size}"
+		puts "others choices: #{CHOICES_OTHERS.map{|k,v| "#{k}: #{v.size}"}.join(', ')}"
+		puts "and parsing took #{ b - a }"
 	elsif ARGV == ['pull']
 		Dir.chdir("#{CONFIG_DIR}sources/") do
 			system('git', 'pull', '--ff-only', exception: true)
