@@ -118,6 +118,16 @@ if __FILE__ == $PROGRAM_NAME
 			system('git', 'add', '-p', exception: true)
 		end
 	elsif ARGV == ['status']
+		a = Time.now
+		load_all_to_cache()
+		b = Time.now
+		puts "seasons: #{Dir[CONFIG_DIR + 'sources/*.json'].length}"
+		puts "loaded  animes: #{CACHE_FULL.size} (filtered: #{CACHE.size})"
+		puts "deletions: #{DELETIONS.size}"
+		puts "parsed choices: #{CHOICES.size}"
+		puts "others choices: #{CHOICES_OTHERS.map{|k,v| "#{k}: #{v.size}"}.join(', ')}"
+		puts "and parsing took #{ b - a }"
+		puts ''
 		puts 'git: config:'
 		Dir.chdir("#{CONFIG_DIR}") do
 			system('git', 'show', '--no-patch', '--pretty=format:%h: %s', exception: true)
@@ -129,15 +139,6 @@ if __FILE__ == $PROGRAM_NAME
 			system('git', 'show', '--no-patch', '--pretty=format:%h: %s', exception: true)
 			system('git', 'status', '--short' , exception: true)
 		end
-		a = Time.now
-		load_all_to_cache()
-		b = Time.now
-		puts ''
-		puts "seasons: #{Dir[CONFIG_DIR + 'sources/*.json'].length}"
-		puts "loaded  animes: #{CACHE_FULL.size} (filtered: #{CACHE.size})"
-		puts "parsed choices: #{CHOICES.size}"
-		puts "others choices: #{CHOICES_OTHERS.map{|k,v| "#{k}: #{v.size}"}.join(', ')}"
-		puts "and parsing took #{ b - a }"
 	elsif ARGV == ['pull']
 		Dir.chdir("#{CONFIG_DIR}sources/") do
 			system('git', 'pull', '--ff-only', exception: true)
