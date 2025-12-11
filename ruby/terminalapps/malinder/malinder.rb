@@ -618,12 +618,6 @@ if __FILE__ == $PROGRAM_NAME
 
 				control_socket.write(JSON.generate({ 'command': ['set', 'pause', 'yes'] }) + "\n")
 				control_socket.write(JSON.generate({ 'command': ['change-list', 'sub-files', 'set', ''] }) + "\n")
-				if (seek_to = user_choice_time || current_time)
-					seek_to = Duration.parse(seek_to).to_i.to_s rescue Integer(seek_to, 10).to_s
-					puts "seeking to: #{seek_to} seconds"
-					sleep 0.05
-					control_socket.write(JSON.generate({ 'command': ['seek', seek_to] }) + "\n")
-				end
 				SUBTITLE_CANIDATES.select do |f|
 					anime['names']&.any?{|n| f.downcase.include?(n.downcase.tr('/', '-'))}
 				end.select do |f|
@@ -633,12 +627,23 @@ if __FILE__ == $PROGRAM_NAME
 					control_socket.write(JSON.generate({ 'command': ['change-list', 'sub-files', 'append', sub] }) + "\n")
 				end
 				control_socket.write(JSON.generate({ 'command': ['loadfile', Dir.pwd + '/' + choices.first] }) + "\n")
+				if (seek_to = user_choice_time || current_time)
+					seek_to = Duration.parse(seek_to).to_i.to_s rescue Integer(seek_to, 10).to_s
+					puts "seeking to: #{seek_to} seconds"
+					sleep 0.05
+					control_socket.write(JSON.generate({ 'command': ['seek', seek_to] }) + "\n")
+				end
 				# empty socket, is that needed?
 				control_socket.read_nonblock(1000) rescue nil
 				socket_worked = true
 
 				puts 'File is loaded change to MPV now, remove/keep?[y/k/N]?'
 				user_input = STDIN.readline.rstrip()
+				state_string = 'partly'
+				if user_input.start_with?('d')
+					state_string = 'broken'
+					user_input.delete_prefix!('d')
+				end
 				# empty socket again
 				control_socket.read_nonblock(9000) rescue nil
 				control_socket.write(JSON.generate({ 'command': ['get_property', 'time-pos'] }) + "\n")
@@ -646,14 +651,8 @@ if __FILE__ == $PROGRAM_NAME
 				control_socket.write(JSON.generate({ 'command': ['get_property', 'time-remaining'] }) + "\n")
 				remaining = JSON.parse(control_socket.recvfrom(1000)[0])['data'] || 0
 				if %w(k y).include?(user_input)
-
-					state_string =
-						if anime.fetch('num_episodes', -1) == wanted_ep && remaining <= 4
-							'seen,'
-						else
-							'partly,'
-						end
-					state_string += wanted_ep.to_s
+					state_string = 'seen' if anime.fetch('num_episodes', -1) == wanted_ep && remaining <= 4
+					state_string += ",#{wanted_ep}"
 					state_string += ",#{Duration.new(timepos)}" if remaining > 4
 
 					# log to memory
@@ -666,13 +665,10 @@ if __FILE__ == $PROGRAM_NAME
 					puts 'logged to logfile'
 				end
 				if user_input == 'y'
-					user_input =
-						if remaining <= 4
-							puts 'Not finished, really delete? [y/N]?'
-							STDIN.readline.rstrip()
-						else
-							'y'
-						end
+					if remaining <= 4
+						puts 'Not finished, really delete? [y/N]?'
+						user_input = STDIN.readline.rstrip()
+					end
 					if user_input == 'y'
 						File.delete(choices.first)
 						puts 'deleted'
