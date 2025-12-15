@@ -32,6 +32,7 @@ class Tetrinal < TerminalGame
     @tile_next = gen_tile
     @sync = false
     @score = 0
+    @random = opts[:random] ? true : false
     @mutex_draw = Mutex.new
     @mutex_drop = Mutex.new
   end
@@ -73,7 +74,17 @@ class Tetrinal < TerminalGame
       "##\n##",
       "  #\n ##\n # ",
       " # \n ##\n  #",
-    ].sample.split("\n").each_with_index{|s,i| s.split('').each_with_index{|s,j| elem[[i,j]] = {symbol:'██', color: color} if s == '#'; elem[:size] = [i,j]}}
+    ].sample
+    if @random
+      tile = Array.new(rand(3)+1){|a| Array.new(rand(3)+1){' '}}
+      tile.each_with_index.flat_map{|e, i| e.each_with_index.map{|e,j| [i,j]} }.sample( rand(5)+rand(5)+1).each do |i,j|
+        tile[i][j] = '#'
+      end
+      tile = tile.map{|e| e.join('') }.join("\n")
+      # tile = Array.new(rand(3)+1){|a| Array.new(rand(3)+1){|a| rand(2) == 1 ? '#' : ' '}.join('') }.join("\n")
+    end
+    tile.split("\n").each_with_index{|s,i| s.split('').each_with_index{|s,j| elem[[i,j]] = {symbol:'██', color: color} if s == '#'; elem[:size] = [i,j]}}
+    elem[:size] = [0,0].zip(*elem.keys.reject{|k|k.is_a?(Symbol)}).map(&:max)
     rand(0..3).times{elem.rotate!}
     elem[:pos] = [-2, @size[1] / 2 -1]
     elem
@@ -175,7 +186,9 @@ end
 if ARGV.include?('--help')
   puts 'tetrinal takes an optional parameter which defines the speedup.'
   puts 'there are 3 values: none, time and stepped. stepped is the default'
+  puts ''
+  puts '--random-tiles randomly generate tiles'
   exit
 end
 
-Tetrinal.new(speedup: ARGV.first).run if __FILE__ == $PROGRAM_NAME
+Tetrinal.new(speedup: ARGV.first, random: ARGV.delete('--random-tiles')).run if __FILE__ == $PROGRAM_NAME
