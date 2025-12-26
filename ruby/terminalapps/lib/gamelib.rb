@@ -520,7 +520,7 @@ raise "remove_escape_codes selftest fail 8" unless TerminalGame.remove_escape_co
 # hyphenation test
 # if __FILE__ == $PROGRAM_NAME
 #   puts TerminalGame.break_lines(
-#     "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\r\n\r\nSomething split up at the end",
+#     "Sixty-Four comes asking for bread. She folded her handkerchief neatly. The underground bunker was filled with chips and candy. The bees decided to have a mutiny against their queen. There were three sphered rocks congregating in a cubed room. Best friends are like old tomatoes and shoelaces. Baby wipes are made of chocolate stardust. The rain pelted the windshield as the darkness engulfed us.\r\n\r\nSomething split up at the end",
 #     ARGV.first.to_i
 #   ).split("\r\n").map{|s| "#{s.inspect} (#{s.length})" }
 # end
