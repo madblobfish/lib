@@ -21,13 +21,37 @@ class Hash
 end
 
 class Tetrinal < TerminalGame
-  EMPTY_CELL = {symbol:'⬜', color: [50,50,50]}
+  TETRIS_TILES_NORMAL = [
+    "    \n    \n####    \n    ",
+    "   \n###\n#  ",
+    "   \n###\n  #",
+    "   \n###\n # ",
+    "##\n##",
+    "  #\n ##\n # ",
+    " # \n ##\n  #",
+  ]
+  TETRIS_TILES_NUMBERS = [
+    "###\n# #\n# #\n# #\n###",
+    "## \n # \n # \n # \n###",
+    "###\n  #\n # \n#  \n###",
+    "###\n  #\n ##\n  #\n###",
+    "# #\n# #\n###\n  #\n  #",
+    "###\n#  \n###\n  #\n###",
+    "#  \n#  \n###\n# #\n###",
+    "###\n  #\n  #\n  #\n  #",
+    "###\n# #\n###\n# #\n###",
+    "###\n# #\n###\n  #\n ##"
+  ]
+  EMPTY_CELL = {symbol:'⬛', color: [50,50,50]}
   def initialize(**opts)
     @board = Hash.new
     @size = [opts.fetch(:size_y, 20), opts.fetch(:size_x, 9)]
     @fps = 3
     @start = Time.now()
     @speedup = opts.fetch(:speedup, "stepped")
+    @tiles_break = opts.fetch(:tiles_break, false)
+    @tileset = TETRIS_TILES_NORMAL
+    @tileset = TETRIS_TILES_NUMBERS if opts[:numbers]
     @tile_current = gen_tile
     @tile_next = gen_tile
     @sync = false
@@ -66,17 +90,9 @@ class Tetrinal < TerminalGame
   def gen_tile
     color = rand(9..14)
     elem = {}
-    [
-      "    \n    \n####    \n    ",
-      "   \n###\n#  ",
-      "   \n###\n  #",
-      "   \n###\n # ",
-      "##\n##",
-      "  #\n ##\n # ",
-      " # \n ##\n  #",
-    ].sample
+    tile = @tileset.sample
     if @random
-      tile = Array.new(rand(3)+1){|a| Array.new(rand(3)+1){' '}}
+      tile = Array.new(rand(4)+rand(2)+1){|a| Array.new(rand(4)+rand(2)+1){' '}}
       tile.each_with_index.flat_map{|e, i| e.each_with_index.map{|e,j| [i,j]} }.sample( rand(5)+rand(5)+1).each do |i,j|
         tile[i][j] = '#'
       end
@@ -87,14 +103,35 @@ class Tetrinal < TerminalGame
     elem[:size] = [0,0].zip(*elem.keys.reject{|k|k.is_a?(Symbol)}).map(&:max)
     rand(0..3).times{elem.rotate!}
     elem[:pos] = [-2, @size[1] / 2 -1]
+    # raise elem.to_s
     elem
+  end
+
+  def current_tile_remove_connected
+    changed = true
+    while changed
+      changed = false
+      (@tile_current.dup).each do |k,v|
+        next unless k.is_a?(Array)
+        pos = k.add(@tile_current[:pos])
+        dir = [[1,0], [0,1], [0,-1], [-1,0]]
+        dir = [[1,0]] if @tiles_break == :unless_supported
+        dir.each do |d|
+          if !@tiles_break || @board.has_key?(pos.add(d)) || pos[0] +1 >= @size[0]
+            @board[pos] = v
+            @tile_current.delete(k)
+            changed = true
+          end
+        end
+      end
+    end
   end
 
   def current_tile_stuck
     # stuck in other block
     return true if @board.any?{|k,v| @tile_current[k.sub(@tile_current[:pos])] rescue false}
     # stuck on ground
-    return true if @tile_current.any?{|k,v| k.is_a?(Array) ? (k.first + @tile_current[:pos][0]) >= @size[0] : false}
+    return true if @tile_current.any?{|k,v| k.is_a?(Array) ? (k.add(@tile_current[:pos])[0]) >= @size[0] : false}
     # stuck left
     return true if @tile_current.any?{|k,v| k.is_a?(Array) ? (k.add(@tile_current[:pos])[1]) < 0 : false}
     # stuck right
@@ -108,8 +145,11 @@ class Tetrinal < TerminalGame
         @tile_current[:pos][0] += 1
         if current_tile_stuck
           @tile_current[:pos][0] -= 1
-          next_tile
-          return
+          current_tile_remove_connected
+          if @tile_current.select{|k,v| k.is_a?(Array)}.none?
+            next_tile
+            return
+          end
         else
           @score += completely ? 3 : 1 if useraction
         end
@@ -184,11 +224,32 @@ class Tetrinal < TerminalGame
 end
 
 if ARGV.include?('--help')
-  puts 'tetrinal takes an optional parameter which defines the speedup.'
-  puts 'there are 3 values: none, time and stepped. stepped is the default'
+  puts 'tetrinal takes three optional parameters: [speedup] [size_y] [size_x]'
+  puts '  speedup: there are 3 values: none, time and stepped. (default: stepped)'
+  puts '  size_y: (default: 20)'
+  puts '  size_x: (default: 9)'
   puts ''
-  puts '--random-tiles randomly generate tiles'
+  puts '--random-tiles       randomly generate tiles'
+  puts '--number-tiles       use number tiles (changes size to 30x40 if not given)'
+  puts '--background=white   white background (default dark)'
+  puts '--no-tiles-break     (default)'
+  puts '--tiles-break=naive  tiles break if not connected (but can stick to walls on break)'
+  puts '--tiles-break=full   tiles fall appart if nothing is below them'
   exit
 end
-
-Tetrinal.new(speedup: ARGV.first, random: ARGV.delete('--random-tiles')).run if __FILE__ == $PROGRAM_NAME
+opt = {}
+opt[:random] = ARGV.delete('--random-tiles')
+opt[:tiles_break] = :naive if ARGV.delete('--tiles-break=naive')
+opt[:tiles_break] = :unless_supported if ARGV.delete('--tiles-break=full')
+opt[:tiles_break] = false if ARGV.delete('--no-tiles-break')
+Tetrinal::EMPTY_CELL[:symbol] = '⬜' if ARGV.delete('--background=white')
+opt[:numbers] = ARGV.delete('--number-tiles')
+opt[:speedup] = ARGV[0] if ARGV.length >= 1
+if opt[:numbers] && ARGV.length <= 1
+  opt[:size_y] = 30
+  opt[:size_x] = 40
+end
+opt[:size_y] = ARGV[1].to_i if ARGV.length >= 2
+opt[:size_x] = ARGV[2].to_i if ARGV.length >= 3
+Tetrinal.new(**opt).run if __FILE__ == $PROGRAM_NAME
+# highscore: 7129
