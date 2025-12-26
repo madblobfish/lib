@@ -12,6 +12,7 @@ class KenKenBoard
   }
   attr :size, :board_numbers, :board_groups, :group_meta
   def initialize(size, ops=OP_TO_S.keys)
+    @operators_bounding_set = ops.dup
     @size = [size, 9].min
     @board_numbers = Array.new(@size){|i| Array.new(@size){|j| (i+j)%@size+1}}.shuffle.transpose.shuffle
     @board_groups = Array.new(@size){|i| Array.new(@size){-1}}
@@ -44,6 +45,7 @@ class KenKenBoard
       else
         ops -= [:mod, :div, :sub]
       end
+      ops &= @operators_bounding_set
       case ops.sample
       when :add
         [:add, a.sum]
