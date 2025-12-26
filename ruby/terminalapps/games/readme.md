@@ -1,9 +1,26 @@
 # Games
 
-Theese are games I did code, they might or might not work on other terminals than kitty.
-You can usually/sometimes get the options via `--help` commandline argument.
+These are games I did code, they might or might not work on other terminals than kitty and depending on installed fonts.
+You can usually/sometimes get some options via `--help` commandline argument.
 
-It might be that there are weird dependencies to `optsparser_generator` gem and in this whole ruby git repo.
+It might be that there are weird dependencies to `optsparser_generator` gem
+and also to the whole ruby folder of this git repo, beware.
+
+* [2048](#2048)
+* [bao](#bao)
+* [bbcpss](#bbcpss)
+* [chess](#chess)
+* [flap](#flap)
+* [flip](#flip)
+* [hexmine](#hexmine)
+* [mathdoku](#mathdoku)
+* [maze](#maze)
+* [minesweeper](#minesweeper)
+* [minimine](#minimine)
+* [pong](#pong)
+* [tetrinal](#tetrinal)
+* [texas_holdem](#texas_holdem)
+* [typical terminal snakes](#typical-terminal-snakes)
 
 ## 2048
 ![2048](2048.png)
@@ -14,7 +31,7 @@ A 2048 clone, which you play with your arrow keys.
 ![bao](bao.png)
 
 This one is a bit tricky.
-Its a clone of an african game which I'm not certain I implemented properly.
+Its a clone of an african game, which I'm not certain I implemented properly.
 Here's [its Wikipedia page](https://en.wikipedia.org/wiki/Bao_(game)) if you're interested.
 It does not have a computer opponent, yet.
 
