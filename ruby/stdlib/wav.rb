@@ -10,7 +10,13 @@ def wave_read(io)
   _byte_rate = io.read(4).unpack1('L<')
   _block_align = io.read(2).unpack1('S<')
   bits_per_sample = io.read(2).unpack1('S<')
-  raise 'expected data section' unless io.read(4) == 'data'
+  section = io.read(4)
+  if section == 'LIST'
+    list_size = io.read(4).unpack1('L<')
+    io.read(list_size)
+    section = io.read(4)
+  end
+  raise 'expected data section' unless section == 'data'
   data_size = io.read(4).unpack1('L<')
 
   pa_format =
