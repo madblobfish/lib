@@ -339,6 +339,8 @@ if __FILE__ == $PROGRAM_NAME
 				}.sort_by(&:first).map{|a| a.join("\t")}
 			}
 		)
+	elsif ARGV.first == 'stats-genres'
+		puts CACHE.reject{|id,h| CHOICES.has_key?(id.to_s) && !OPTIONS[:all]}.flat_map{|id, h| h['genres']}.compact.group_by(&:itself).map{|k,v| [k,v.count]}.sort_by{|k,v| v}.map{|x| x.join(': ') }
 	elsif ARGV.first == 'stats'
 		time_chosen_sum = 0
 		count_chosen = 0
