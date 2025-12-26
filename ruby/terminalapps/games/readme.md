@@ -12,12 +12,18 @@ A 2048 clone, which you play with your arrow keys.
 
 ## bao
 ![bao](bao.png)
+
 This one is a bit tricky.
 Its a clone of an african game which I'm not certain I implemented properly.
 Here's [its Wikipedia page](https://en.wikipedia.org/wiki/Bao_(game)) if you're interested.
 It does not have a computer opponent, yet.
 
 ## bbcpss
+Unfinished, ignore me
+
+## chess
+![Chess](chess.png)
+
 Unfinished, ignore me
 
 ## flap
@@ -78,6 +84,8 @@ See also `--help` for some alternative tetris fun:
 ![tetrinal screenshot with number tiles](tetrinal2.png)
 
 ## texas_holdem
+![texas holdem in text but you see everyone's cards](texas_holdem.png)
+
 Unfinished, ignore me
 
 ## typical terminal snakes

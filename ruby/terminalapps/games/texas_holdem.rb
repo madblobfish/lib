@@ -262,3 +262,6 @@ cards.each do |c|
   players.each{|p| p.add_card(c)}
   players.map{|player| p player}
 end
+win = players.max
+puts '', "we got a winner: player #{players.find_index(win)}"
+p win
