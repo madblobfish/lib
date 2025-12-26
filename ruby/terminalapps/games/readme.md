@@ -25,10 +25,12 @@ Flappy bird clone using the kitty terminal graphics protocol.
 It requires some copyrighted pictures which are not mine, those are not included.
 
 ## flip
-An old unfinished logic game where you flip white and black fields to turn the entire 2D plane one color.
+![flip](flip.png)
+
+An old logic game where you flip white and black fields to turn the entire 2D plane one color.
 Then you are tasked to reverse the colors to the other side.
 
-Its usually not completeable due to creating the puzzles wrong, there is also no win condition.
+Its sometimes not completeable due to creating the puzzles wrong, oops.
 
 ## hexmine
 ![hexmine](hexmine.png)
@@ -62,13 +64,18 @@ Left click = uncover
 Right click = mark as mine (which then leads to winning)
 
 ## pong
-unfinished, ignore
+![pong screenshot](pong.png)
+
+Pong but it ends after one point, not really fun.
 
 ## tetrinal
 ![tetrinal screenshot](tetrinal.png)
 
 Tetris like game but no bagged random, it gets fast quick (you can optionally change this).
 Also colors are random, enjoy.
+
+See also `--help` for some alternative tetris fun:
+![tetrinal screenshot with number tiles](tetrinal2.png)
 
 ## texas_holdem
 Unfinished, ignore me
