@@ -38,8 +38,8 @@ class ImageViewer < TerminalGame
     unless agrgs.size > 0
       raise 'feed me folders and/or images'
     end
-    files = agrgs.flat_map{|f| File.directory?(f) ? Dir.children(f).map{|p|f+'/'+p} : File.readable?(f) ? f : nil}.compact
-    @images = files.uniq.map do |f|
+    files = agrgs.flat_map{|f| File.directory?(f) ? Dir.children(f).map{|p|f+'/'+p} : File.readable?(f) ? f : nil}.compact.uniq.map{|f| f.delete_prefix('./')}
+    @images = files.map do |f|
       begin
         [f.tr('//','/'), Vips::Image.new_from_file(f)]
       rescue Vips::Error
