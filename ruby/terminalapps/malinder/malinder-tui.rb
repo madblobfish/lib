@@ -1,12 +1,5 @@
 require_relative 'malinder-base.rb'
 
-require_optional(__dir__ + '/../../stdlib/string/contains_japanese?'){
-	class String
-		def contains_japanese?
-			true
-		end
-	end
-}
 require_optional(__dir__ + '/../lib/gamelib'){
 	class TerminalGame
 		def run

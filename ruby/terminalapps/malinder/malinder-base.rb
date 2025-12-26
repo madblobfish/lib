@@ -58,6 +58,13 @@ require_optional(__dir__ + '/../../stdlib/duration'){
 		def to_i;@secs;end
 	end
 }
+require_optional(__dir__ + '/../../stdlib/string/contains_japanese?'){
+	class String
+		def contains_japanese?
+			true
+		end
+	end
+}
 
 CONFIG_DIR = ENV.fetch('XDG_CONFIG_HOME', ENV.fetch('HOME') + '/.config') + '/malinder/'
 require_optional(CONFIG_DIR + '/config.rb')
@@ -232,6 +239,8 @@ def load_all_to_cache()
 			v['timestamp'] = old.fetch('ts', date.to_i)
 			v['c1'] = old.fetch('c1', nil)
 			v.merge!(v.fetch('start_season', {}))
+			v['japanese'] = v['alternative_titles'].fetch('ja', v['title']).contains_japanese? ? 'yes' : 'no'
+			v['duration'] = v['average_episode_duration'].to_i * v['num_episodes'].to_i rescue 0
 			v['genres'] = v['genres']&.map{|h| (h.is_a?(Hash) ? h['name']: h).downcase.tr(' ', '_')}
 			v['names'] = [v['title'], *v['alternative_titles']&.values.flatten].reject{|n| n == ''}
 			v['incache'] = anime_files_in_cache?(v['id'])
