@@ -61,6 +61,16 @@ class TerminalGame
       end
     end
 
+    def color_query(color = 11)
+      printf "\e]11;?\a"
+      # ^[]11;rgb:0000/0000/0000^G
+      if /^\e\[\]11;rgb:([0-9a-fA-F]+)\/([0-9a-fA-F]+)\/([0-9a-fA-F]+)\a$/ =~ STDIN.readpartial(200)
+        [$1, $2, $3].map{|c| Integer(c, 16) rescue 128 } # sorry if you colors turned grey ;(
+      else
+
+      end
+    end
+
     def reset_tty_state
       system('stty '+ TTY_CLEAN_STATE)
     end
