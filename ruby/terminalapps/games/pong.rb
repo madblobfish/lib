@@ -43,6 +43,7 @@ class Pong < TerminalGame
   def draw(step=true)
     move_ball if step
     move_cursor()
+    print '-'*@size[0] + "\r\n"
     print @size[1].times.map{|y| @size[0].times.map do |x|
       if @ball.map(&:to_i) == [x,y]
         'O'
@@ -57,6 +58,7 @@ class Pong < TerminalGame
       end
     end.join}.join("\r\n")
     print("\r\n")
+    print '-'*@size[0] + "\r\n"
     # @score += 1
     STDOUT.flush
     @fps = @fps_start + Math.log(Time.now() - @start + 0.01)
