@@ -4,6 +4,7 @@ require 'json'
 require 'net/http'
 require 'set'
 require 'socket'
+require 'open3'
 
 OFFLINE =
 	begin

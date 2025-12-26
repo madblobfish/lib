@@ -131,16 +131,17 @@ if __FILE__ == $PROGRAM_NAME
 		puts "and parsing took #{ b - a }"
 		puts ''
 		puts 'git: config:'
-		Dir.chdir("#{CONFIG_DIR}") do
-			system('git', 'show', '--no-patch', '--pretty=format:%h: %s', exception: true)
-			system('git', 'status', '--short' , exception: true)
+		blah = lambda do |cmd, chdir, check_status=true|
+			out, status = Open3.capture2e(*cmd, chdir: chdir)
+			puts out
+			raise "cmd faild #{cmd.inspect}" unless status.success?
 		end
+		blah[['git', 'show', '--no-patch', '--pretty=format:%h: %s'], CONFIG_DIR]
+		blah[['git', 'status', '--short'], CONFIG_DIR]
 		puts ''
 		puts 'git: sources:'
-		Dir.chdir("#{CONFIG_DIR}sources/") do
-			system('git', 'show', '--no-patch', '--pretty=format:%h: %s', exception: true)
-			system('git', 'status', '--short' , exception: true)
-		end
+		blah[['git', 'show', '--no-patch', '--pretty=format:%h: %s'], "#{CONFIG_DIR}sources/"]
+		blah[['git', 'status', '--short'], "#{CONFIG_DIR}sources/"]
 	elsif ARGV == ['pull']
 		Dir.chdir("#{CONFIG_DIR}sources/") do
 			system('git', 'pull', '--ff-only', exception: true)
