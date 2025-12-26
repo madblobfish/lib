@@ -25,8 +25,6 @@ class TerminalGame
     def cursor_query
       print "\e[6n"
     end
-    def get_size(no_tty=false)
-    end
     def size_query
       print "\e[14t"
     end
@@ -65,6 +63,12 @@ class TerminalGame
 
     def reset_tty_state
       system('stty '+ TTY_CLEAN_STATE)
+    end
+
+    def tty_size_query
+      raise "AHHHHHHH" unless STDOUT.ioctl(0x5413, buff="") == 0
+      # rows, cols, size_x, size_y =
+      buff.unpack("SSSS")
     end
 
     STRING_TERMINATOR = "\e\\"
@@ -254,8 +258,7 @@ class TerminalGame
     else
       raise 'needs a tty' unless STDIN.tty?
       @update_size = proc do |initial|
-        raise "AHHHHHHH" unless STDOUT.ioctl(0x5413, buff="") == 0
-        @rows, @cols, @size_x, @size_y = buff.unpack("SSSS")
+        @rows, @cols, @size_x, @size_y = tty_size_query()
         @size_col, @size_row = [@cols, @rows].zip([@size_x, @size_y]).map{|x,y| y/x.to_f }
         size_change_handler() unless initial == true
       end
