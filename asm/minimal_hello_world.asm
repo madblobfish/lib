@@ -1,3 +1,5 @@
+;; SOURCE: http://www.muppetlabs.com/~breadbox/software/tiny/
+;; BUILD: nasm -f bin -o a.out test.asm; chmod +x a.out
 
 BITS 32
 		org	0x05430000
@@ -45,6 +47,3 @@ msg:		db	'hello, world', 10
 ;;                                            ; e_shentsize
 ;;                                            ; e_shnum
 ;;                                            ; e_shstrndx
-
-;; SOURCE: http://www.muppetlabs.com/~breadbox/software/tiny/
-;; BUILD: nasm -f bin -o a.out test.asm; chmod +x a.out
