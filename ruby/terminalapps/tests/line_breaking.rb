@@ -9,6 +9,7 @@ class LineBreaking < TerminalGame
     @hyphenation = true
     @annotations = true
     @hyphenate_harder = false
+    @columns = columns
 
     @text = text || (
       # 'Sixty-Four comes asking for bread. She folded her handkerchief neatly. The underground bunker was filled with chips and candy. The bees decided to have a mutiny against their queen. There were three sphered rocks congregating in a cubed room. Best friends are like old tomatoes and shoelaces. Baby wipes are made of chocolate stardust. The rain pelted the windshield as the darkness engulfed us.' +
@@ -54,7 +55,7 @@ class LineBreaking < TerminalGame
       puts "#{color(9)}badness score: #{orig_text.badness}#{color_reset_code}\r"
       # puts "whitespace score: #{lengths.map{|l| r = (@size[1] - l); r <= 2 ? 0 : l == 0 ? 0 : r}.sum}\r"
       puts "hyphen count: #{orig_text.hyphens.count}, hyphen score: #{hyphen_score}\r"
-      puts "#{orig_text.hyphens.map{|h| h.inspect }.join("\r\n")}"
+      # puts "#{orig_text.hyphens.map{|h| h.inspect }.join("\r\n")}"
     rescue TerminalGameException => e
       puts e.message
     end
