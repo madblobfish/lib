@@ -186,8 +186,10 @@ if __FILE__ == $PROGRAM_NAME
     # Steps: 1918
     # Path: 1374
     # Time: 1937.503126671s
+  when 'hardr'
+    Maze.new(51,190,deth).run()
   else
-    puts 'hi we got 4 modi [hard|har|normal|eazy]'
+    puts 'hi we got 4 modi [hardr|hard|har|normal|eazy]'
     puts 'try --death for more fun'
   end
 end
