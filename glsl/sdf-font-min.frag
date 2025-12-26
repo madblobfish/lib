@@ -1,4 +1,4 @@
-// made by killerwolf and @literallylara (twitter)
+// made by madblobfish and @literallylara (twitter)
 
 #define SC 0.07 // line scale
 #define LW 0.03 // line width
