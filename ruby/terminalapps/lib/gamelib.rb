@@ -304,6 +304,7 @@ class TerminalGame
     rescue TerminalGameEnd => e
       return_to_tty()
       puts e.message
+      game_exit(e)
     ensure
       return_to_tty()
     end
@@ -314,6 +315,7 @@ class TerminalGame
     sync_draw{draw()}
   end
   def game_quit;end
+  def game_exit(exception=nil);end
   def draw;end
   KEYBOARD_EVENT_TYPES = {"2"=>:repeat,"3"=>:up}
   KEYBOARD_EVENT_MODIFIERS = {
