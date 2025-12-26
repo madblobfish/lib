@@ -13,10 +13,11 @@ class MALinder < TerminalGame
 	def inspect #reduce size of errors
 		'#<MALinder>'
 	end
-	def initialize(year_or_ids, season=false, cache_preloaded=true)
+	def initialize(year_or_ids, season=false, cache_preloaded=true, **opts)
 		@fps = :manual
 		@first_write = true
 		@require_kitty_graphics = true
+		@hide_other = opts.fetch(:hide_other, false)
 #		@show_overflow = true
 
 		raise 'not supported' unless year_or_ids.is_a?(Array)
@@ -73,7 +74,7 @@ class MALinder < TerminalGame
 		paragraph += "\n\nLink: #{MAL_PREFIX}#{anime['id']}"
 		paragraph += "\n\nState: #{CHOICES[anime['id'].to_s]['state']}" if CHOICES.has_key?(anime['id'].to_s)
 		others = CHOICES_OTHERS.select{|name, choices| choices.has_key?(anime['id'].to_s)}
-		if others.any?
+		if others.any? && !@hide_other
 			separator = "\n  "
 			paragraph += "\n\nOthers:" + separator
 			paragraph += others.map{|name, choices| "#{name}: #{choices[anime['id'].to_s]['state']}" }.join(separator)

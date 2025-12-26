@@ -38,6 +38,7 @@ HELP_TEXT << '  watch [--all] [log]: watch new and track in log'
 HELP_TEXT << '      --all will show all parsable files'
 HELP_TEXT << ''
 HELP_TEXT << '  -i, --interactive may make it show results in the interactive Terminal UI'
+HELP_TEXT << '  --hide-other do not show choices of others'
 HELP_TEXT << '  --prefetch may make it load and cache images and related information'
 HELP_TEXT << '  --json may output json instead'
 HELP_TEXT << ''
@@ -51,7 +52,7 @@ def output_or_process(id_list, data, formatted_text)
 		prefetch((id_list.is_a?(Proc) ? id_list.call : id_list))
 	in {interactive: a} if a
 		raise 'interactive not supported' if id_list.nil?
-		MALinder.new((id_list.is_a?(Proc) ? id_list.call : id_list)).run
+		MALinder.new((id_list.is_a?(Proc) ? id_list.call : id_list), hide_other: OPTIONS[:hide_other]).run
 	in {json: a} if a
 		puts JSON.pretty_generate((data.is_a?(Proc) ? data.call : data))
 	in {text: a} if a
@@ -93,6 +94,7 @@ if __FILE__ == $PROGRAM_NAME
 		prefetch: ARGV.delete('--prefetch'),
 		push: ARGV.delete('--push'),
 		text: ARGV.delete('--text'),
+		hide_other: ARGV.delete('--hide-other'),
 		recurse: ARGV.delete('--recurse'),
 		partial: ARGV.delete('-p'),
 	}
