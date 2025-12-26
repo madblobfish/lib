@@ -1,4 +1,17 @@
 require_relative '../lib/gamelib.rb'
+begin
+  require_relative '../../stdlib/wav.rb'
+  require_relative '../../stdlib/pa.rb'
+  $music = Thread.new do
+    `ffmpeg -i music/tetrinal.ogg music/tetrinal.wav` unless File.readable?('music/tetrinal.wav')
+    buff, meta = wave_read(File.open('music/tetrinal.wav'))
+    meta[:loop] = true
+    PulseSimple.play_buffer(buff.read(meta[:size]), **meta)
+  end
+# rescue
+  # ignore
+end if File.readable?('music/tetrinal.ogg') || File.readable?('music/tetrinal.wav')
+
 
 # theese are my dirty little secrets:
 class Array
@@ -59,6 +72,13 @@ class Tetrinal < TerminalGame
     @random = opts[:random] ? true : false
     @mutex_draw = Mutex.new
     @mutex_drop = Mutex.new
+  end
+
+  def game_exit(e=nil)
+      exit!(0)
+  end
+  def game_quit
+    raise TerminalGameEnd, "quit (Score #{@score})"
   end
 
   def fps
