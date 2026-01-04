@@ -1,9 +1,7 @@
 HELP_TEXT = []
 HELP_TEXT << 'Commands:'
 HELP_TEXT << '  <year> <season>: run an interactive malinder Terminal UI, decide what you want'
-HELP_TEXT << '      season is one of: winter, spring, summer, fall'
-HELP_TEXT << '      controls: arrow keys, q to quit, 1 for nope, 2/a is ok, 3/y is want'
-HELP_TEXT << ''
+HELP_TEXT << '      season is one of: winter, spring, summer, fall (or numbers from 1 respectively)'
 HELP_TEXT << '  stats [--by-season]: get some statistics about your choices'
 HELP_TEXT << '  status: prints information about malinder\'s database and the git folders'
 HELP_TEXT << '  show <id>: lookup an entry from cache'
@@ -44,6 +42,17 @@ HELP_TEXT << '  --json may output json instead'
 HELP_TEXT << ''
 HELP_TEXT << '  -u, --log-suffix allows setting the user'
 HELP_TEXT << '  --no-default-filter disables filtering using DEFAULT_FILTER config option'
+HELP_TEXT << ''
+HELP_TEXT << '  Terminal UI controls:'
+HELP_TEXT << '      left/right arrow keys: step through list'
+HELP_TEXT << '      q to quit'
+HELP_TEXT << '      1: log nope'
+HELP_TEXT << '      2/a: log ok'
+HELP_TEXT << '      3/y: log want'
+HELP_TEXT << '      r: add related anime to list (unless its filtered or already seen)'
+HELP_TEXT << '      R: add all related anime from cache'
+HELP_TEXT << '      h: toggle hide other, see --hide-other'
+HELP_TEXT << '      u: undo'
 
 def output_or_process(id_list, data, formatted_text)
 	case OPTIONS
