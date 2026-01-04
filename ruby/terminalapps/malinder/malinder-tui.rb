@@ -187,6 +187,8 @@ class MALinder < TerminalGame
 			logchoice('want')
 		when "\e[15~"
 			# empty, this triggers the redraw below this block
+		when 'h'
+			@hide_other = !@hide_other
 		when 'u'
 			if undo = UNDO_BUFFER.pop
 				case undo[:type]
