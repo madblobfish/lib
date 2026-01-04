@@ -717,7 +717,7 @@ if __FILE__ == $PROGRAM_NAME
 			season_str = SEASON_SHORTCUTS.fetch(ARGV.last, ARGV.last)
 			season = "&& season == #{season_str}"
 			# for checking and better error messages
-			raise 'missing json, run malinder.sh first' unless File.exist?("#{CONFIG_DIR}sources/#{year}-#{season_str}.json")
+			raise 'missing json, run malinder.sh first' unless File.exist?("#{SOURCES_DIR}#{year}-#{season_str}.json")
 		end
 		output_or_process(
 			lambda{cache_query("year == #{year} #{season} && choice == -").map{|a| a['id']} },

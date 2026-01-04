@@ -74,8 +74,9 @@ def configurable_default(name, default)
 	Object.const_set(name, default) unless Object.const_defined?(name)
 end
 configurable_default(:API, 'https://api.myanimelist.net/v2/')
+configurable_default(:SOURCES_DIR, "#{CONFIG_DIR}sources/")
 configurable_default(:AUTOPULL_SOURCES_WAIT, 86400*2)
-sources_outdated = (Time.now - File.mtime("#{CONFIG_DIR}sources/.git/FETCH_HEAD")).to_f >= AUTOPULL_SOURCES_WAIT rescue true
+sources_outdated = (Time.now - File.mtime("#{SOURCES_DIR}.git/FETCH_HEAD")).to_f >= AUTOPULL_SOURCES_WAIT rescue true
 configurable_default(:AUTOPULL_SOURCES, AUTOPULL_SOURCES_WAIT == 0 ? true : AUTOPULL_SOURCES_WAIT == -1 ? false : sources_outdated)
 configurable_default(:AUTOPULL_CONFIG_WAIT, 86400)
 config_outdated = (Time.now - File.mtime("#{CONFIG_DIR}.git/FETCH_HEAD")).to_f >= AUTOPULL_CONFIG_WAIT rescue true
@@ -95,8 +96,8 @@ LOG_FILE_NAME = "choices#{LOG_SUFFIX}.log"
 configurable_default(:LOG_FILE_PATH, "#{CONFIG_DIR}#{LOG_FILE_NAME}")
 configurable_default(:LOCKING, true)
 configurable_default(:FAV_FILE_PATH, "#{CONFIG_DIR}favorites#{LOG_SUFFIX}.txt")
-configurable_default(:DELETIONS_PATH, "#{CONFIG_DIR}sources/deletions.txt")
-configurable_default(:OFFSETS_PATH, "#{CONFIG_DIR}sources/offsets.txt")
+configurable_default(:DELETIONS_PATH, "#{SOURCES_DIR}deletions.txt")
+configurable_default(:OFFSETS_PATH, "#{SOURCES_DIR}offsets.txt")
 configurable_default(:BAD_WORDS,
 	%w(
 		mini idol cultivat chibi promotion game pokemon pokémon sport mecha machine transformer
