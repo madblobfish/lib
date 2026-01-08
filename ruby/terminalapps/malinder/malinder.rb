@@ -140,27 +140,16 @@ if __FILE__ == $PROGRAM_NAME
 		puts "and parsing took #{ b - a }"
 		puts ''
 		puts 'git: config:'
-		blah = lambda do |cmd, chdir, check_status=true|
-			out, status = Open3.capture2e(*cmd, chdir: chdir)
-			puts out
-			raise "cmd faild #{cmd.inspect}" unless status.success?
-		end
-		blah[['git', 'show', '--no-patch', '--pretty=format:%h: %s'], CONFIG_DIR]
-		blah[['git', 'status', '--short'], CONFIG_DIR]
+		execute_cmd(['git', 'show', '--no-patch', '--pretty=format:%h: %s'], CONFIG_DIR)
+		execute_cmd(['git', 'status', '--short'], CONFIG_DIR)
 		puts ''
 		puts 'git: sources:'
-		blah[['git', 'show', '--no-patch', '--pretty=format:%h: %s'], "#{CONFIG_DIR}sources/"]
-		blah[['git', 'status', '--short'], "#{CONFIG_DIR}sources/"]
+		execute_cmd(['git', 'show', '--no-patch', '--pretty=format:%h: %s'], SOURCES_DIR)
+		execute_cmd(['git', 'status', '--short'], SOURCES_DIR)
 	elsif ARGV == ['pull']
-		Dir.chdir("#{CONFIG_DIR}sources/") do
-			system('git', 'pull', '--ff-only', exception: true)
-		end
-		Dir.chdir(CONFIG_DIR) do
-			system('git', 'pull', '--ff-only', exception: true)
-		end
-		Dir.chdir(SUBTITLES_PATH) do
-			system('git', 'pull', '--ff-only', exception: true)
-		end if SUBTITLES_PATH
+		execute_cmd(['git', 'pull', '--ff-only'], SOURCES_DIR)
+		execute_cmd(['git', 'pull', '--ff-only'], CONFIG_DIR)
+		execute_cmd(['git', 'pull', '--ff-only'], SUBTITLES_PATH) if SUBTITLES_PATH
 	elsif ARGV == ['push']
 		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true)
 	elsif ARGV.first == 'commit' && (1..3).include?(ARGV.length)
@@ -559,10 +548,10 @@ if __FILE__ == $PROGRAM_NAME
 		end
 	elsif ARGV == ['watch']
 		lock_logfile(true)
-		Dir.chdir(SUBTITLES_PATH) do
-			system('git', 'pull', '--ff-only', exception: true)
+		if AUTOPULL_SUBTITLES && SUBTITLES_PATH && !OFFLINE
+			execute_cmd(['git', 'pull', '--ff-only'], SUBTITLES_PATH)
 			puts ''
-		end if AUTOPULL_SUBTITLES && SUBTITLES_PATH && !OFFLINE
+		end
 		require 'socket'
 		require 'json'
 		mpv_ipc_socket = "/run/user/#{Process.uid}/malinder-mpv"
@@ -587,6 +576,7 @@ if __FILE__ == $PROGRAM_NAME
 			files = parse_local_files(proc do |seen, ep, id, state|
 				OPTIONS[:all] || ep > seen && !(!OPTIONS[:all] && %w(nope broken seen).include?(state))
 			end).reject{|id,eps| eps.empty?}
+			first_eps = []
 			files.each_with_index do |(id, eps), idx|
 				choice = CHOICES.fetch(id.to_s, {})
 				name = choice.fetch('name', CACHE[id]&.fetch('title', 'unknown'))
@@ -594,6 +584,7 @@ if __FILE__ == $PROGRAM_NAME
 				state = choice.fetch('state', 'partly,0').split(',', 2)
 				seen_so_far = state.last.to_i
 				seen_so_far -= 1 if state.last.include?(',')
+				first_eps << id if eps.map(&:last).include?(1)
 				ep = eps.map{|ep| episode_wrap(id, ep.last)}.map do |ep|
 					ret = ep == seen_so_far + 1 ? TerminalGame.color(10){"(#{ep})"} : ep.to_s
 					ret += TerminalGame.color(11){']'} if ep.to_i == num_episodes
@@ -616,6 +607,11 @@ if __FILE__ == $PROGRAM_NAME
 			user_input = STDIN.readline.rstrip().split(',',3)
 			user_input = [last_selected.to_s] if user_input == []
 			user_choice = Integer(user_input.first, 10) rescue -1
+			if user_input.first.downcase == 'r'
+				user_choice = files.keys.index(first_eps.sample)
+				user_choice = files.size.times.to_a.sample if user_input.first == 'R'
+				p "Roulette choose #{user_choice}"
+			end
 			last_selected = user_choice
 			user_choice_ep = Integer(user_input[1], 10) rescue -1
 			user_choice_time = user_input[2]

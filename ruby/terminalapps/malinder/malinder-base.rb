@@ -385,3 +385,9 @@ def lock_logfile(block=false)
 		LOG_FILE.flock(8) # unlock(8)
 	end
 end
+
+def execute_cmd(cmd, chdir, check_status=true)
+	out, status = Open3.capture2e(*cmd, chdir: chdir)
+	puts out
+	raise "cmd faild #{cmd.inspect}" if !status.success? && check_status
+end
