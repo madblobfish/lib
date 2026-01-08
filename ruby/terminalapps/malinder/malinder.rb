@@ -603,7 +603,8 @@ if __FILE__ == $PROGRAM_NAME
 				puts 'all seen or none here'
 				exit 0
 			end
-			puts "which: [#{files.size.times.to_a.map{|e| e == last_selected ? "(#{e})" : e}.join('/')}]?"
+			roulette = first_eps.any? ? '/r' : ''
+			puts "which: [#{files.size.times.to_a.map{|e| e == last_selected ? "(#{e})" : e}.join('/')}#{roulette}]?"
 			user_input = STDIN.readline.rstrip().split(',',3)
 			user_input = [last_selected.to_s] if user_input == []
 			user_choice = Integer(user_input.first, 10) rescue -1
