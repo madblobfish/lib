@@ -62,6 +62,7 @@ class MALinder < TerminalGame
 		end
 		print("\r\n"*2)
 		paragraph = anime['synopsis'] + "\n"
+		paragraph = "- No Synopsis -\n" if anime['synopsis'] == ''
 		paragraph += "\nType: #{anime['media_type']}" if anime['media_type']
 		paragraph += "\nSource: #{anime['source']}" if anime['source']
 		paragraph += "\nStatus: #{anime['status']}" if anime['status']
