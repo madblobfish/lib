@@ -232,7 +232,7 @@ def load_all_to_cache()
 			old = CHOICES.fetch(v['id'].to_s, {})
 			v['state'] = old.fetch('state', '-')
 			v['choice'] = v['state'].split(',', 2).first
-			v['choices_related'] = fetch_related(v['id']).flat_map{|rel| rel['entry'].select{|r| r['type'] == 'anime'}.map{|r| CHOICES.fetch(r['mal_id'].to_s, {}).fetch('state', '-')}} rescue ['ratelimited']
+			# v['choices_related'] = fetch_related(v['id']).flat_map{|rel| rel['entry'].select{|r| r['type'] == 'anime'}.map{|r| CHOICES.fetch(r['mal_id'].to_s, {}).fetch('state', '-')}} rescue ['ratelimited']
 			CHOICES_OTHERS.each do |name, c|
 				choice = c.fetch(v['id'].to_s, {}).fetch('state', '-')
 				v['state-' + name] = choice
