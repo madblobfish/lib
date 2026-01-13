@@ -31,9 +31,9 @@ class MALinder < TerminalGame
 		@scroll = 0
 		@par_len = 0
 	end
-	def size_change_handler;sync_draw{draw(true)};end #redraw on size change
+	def size_change_handler;sync_draw{draw()};end #redraw on size change
 
-	def draw(redraw=false)
+	def draw()
 		raise TerminalGameEnd, 'empty (all marked or nothing here)' if @season.empty?
 		anime = @season[@current]
 		counter = " (#{@current+1}/#{@season.size})"
