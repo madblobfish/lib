@@ -124,9 +124,9 @@ class MALinder < TerminalGame
 		else
 			paragraph = "#{break_lines(text_color_bad_words(paragraph), @cols)}\n\n\nCould not load image"
 		end
-		paragraph = paragraph.gsub(/\n(\s*\n)+/, "\n\n").gsub(/\n/, "\r\n")
-		@par_len = paragraph.split("\r\n").length
-		print(paragraph.split("\r\n").drop(@scroll).take(@rows - 3).join("\r\n"))
+		paragraph = paragraph.gsub(/\n(\s*\n)+/, "\n\n").gsub(/\n/, "\r\n").split("\r\n")
+		@par_len = paragraph.length
+		print(paragraph.drop(@scroll).take(@rows - 3).join("\r\n"))
 		move_cursor(0,0)
 		if VIPS
 			begin
