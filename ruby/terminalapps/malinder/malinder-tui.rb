@@ -28,6 +28,8 @@ class MALinder < TerminalGame
 			exit(0)
 		end
 		@current = 0
+		@scroll = 0
+		@par_len = 0
 	end
 	def size_change_handler;sync_draw{draw(true)};end #redraw on size change
 
@@ -122,7 +124,9 @@ class MALinder < TerminalGame
 		else
 			paragraph = "#{break_lines(text_color_bad_words(paragraph), @cols)}\n\n\nCould not load image"
 		end
-		print(paragraph.gsub(/\n(\s*\n)+/, "\n\n").gsub(/\n/, "\r\n"))
+		paragraph = paragraph.gsub(/\n(\s*\n)+/, "\n\n").gsub(/\n/, "\r\n")
+		@par_len = paragraph.split("\r\n").length
+		print(paragraph.split("\r\n").drop(@scroll).take(@rows - 3).join("\r\n"))
 		move_cursor(0,0)
 		if VIPS
 			begin
@@ -147,12 +151,18 @@ class MALinder < TerminalGame
 
 	def input_handler(input)
 		case input
+		when "\e[A" #up
+			@scroll -= 1 unless @scroll <= 0
+		when "\e[B" #down
+			@scroll += 1  if @scroll < (@par_len - @rows + 3)
 		when "\e[C" #right
 			@current += 1
 			@current %= @season.size
+			@scroll = 0
 		when "\e[D" #left
 			@current -= 1
 			@current = @season.size-1 if @current < 0
+			@scroll = 0
 		when "\e", 'q' #quit
 			exit()
 		when 'r', 'R'
@@ -196,9 +206,11 @@ class MALinder < TerminalGame
 					LOG_FILE.truncate(LOG_FILE.size() - undo[:bytes])
 					@season.insert(undo[:pos], undo[:anime])
 					@current = undo[:pos]
+					@scroll = 0
 				when :related
 					undo[:animes].length.times{@season.delete_at(undo[:pos])}
 					@current = undo[:pos]
+					@scroll = 0
 				else
 					print("\rthis is a bug!")
 				end

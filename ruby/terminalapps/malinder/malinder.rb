@@ -45,6 +45,7 @@ HELP_TEXT << '  --no-default-filter disables filtering using DEFAULT_FILTER conf
 HELP_TEXT << ''
 HELP_TEXT << '  Terminal UI controls:'
 HELP_TEXT << '      left/right arrow keys: step through list'
+HELP_TEXT << '      up/down arrow keys: scroll text'
 HELP_TEXT << '      q to quit'
 HELP_TEXT << '      1: log nope'
 HELP_TEXT << '      2/a: log ok'
