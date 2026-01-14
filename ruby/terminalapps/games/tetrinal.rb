@@ -1,16 +1,18 @@
 require_relative '../lib/gamelib.rb'
-begin
-  require_relative '../../stdlib/wav.rb'
-  require_relative '../../stdlib/pa.rb'
-  $music = Thread.new do
-    `ffmpeg -i music/tetrinal.ogg music/tetrinal.wav` unless File.readable?('music/tetrinal.wav')
-    buff, meta = wave_read(File.open('music/tetrinal.wav'))
-    meta[:loop] = true
-    PulseSimple.play_buffer(buff.read(meta[:size]), **meta)
+if (File.readable?('music/tetrinal.ogg') || File.readable?('music/tetrinal.wav')) && !ARGV.delete('--no-music')
+  begin
+    require_relative '../../stdlib/wav.rb'
+    require_relative '../../stdlib/pa.rb'
+    $music = Thread.new do
+      `ffmpeg -i music/tetrinal.ogg music/tetrinal.wav` unless File.readable?('music/tetrinal.wav')
+      buff, meta = wave_read(File.open('music/tetrinal.wav'))
+      meta[:loop] = true
+      PulseSimple.play_buffer(buff.read(meta[:size]), **meta)
+    end
+  # rescue
+    # ignore
   end
-# rescue
-  # ignore
-end if File.readable?('music/tetrinal.ogg') || File.readable?('music/tetrinal.wav')
+end
 
 
 # theese are my dirty little secrets:
@@ -249,6 +251,7 @@ if ARGV.include?('--help')
   puts '  size_y: (default: 20)'
   puts '  size_x: (default: 9)'
   puts ''
+  puts '--no-music           no music and sfx'
   puts '--random-tiles       randomly generate tiles'
   puts '--number-tiles       use number tiles (changes size to 30x40 if not given)'
   puts '--background=white   white background (default dark)'
