@@ -190,6 +190,16 @@ class MALinder < TerminalGame
 				type: :related,
 				pos: @current,
 			}
+		when 'F' # flush and unlock lock
+			if UNDO_BUFFER.empty?
+				print("nothing to flush")
+				return
+			end
+			UNDO_BUFFER.clear
+			@first_write = true
+			unlock_logfile()
+			print("cleared undu and unlocked")
+			return
 		when '1'
 			logchoice('nope')
 		when '2'
