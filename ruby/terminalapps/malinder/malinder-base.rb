@@ -386,7 +386,17 @@ def lock_logfile(block=false)
 	end
 end
 
-def execute_cmd(cmd, chdir, check_status=true)
+def unlock_logfile()
+	LOG_FILE.flock(8) # unlock(8)
+end
+
+def execute_cmd(cmd, chdir=nil, check_status=true, **opts)
+	chdir = '.' if chdir.nil?
+	if opts[:interactive]
+		return Dir.chdir(chdir) do
+			system(*cmd, exception: check_status)
+		end
+	end
 	out, status = Open3.capture2e(*cmd, chdir: chdir)
 	puts out
 	raise "cmd faild #{cmd.inspect}" if !status.success? && check_status
