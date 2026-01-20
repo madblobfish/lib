@@ -674,6 +674,10 @@ if __FILE__ == $PROGRAM_NAME
 				timepos = JSON.parse(control_socket.recvfrom(1000)[0])['data'].to_i
 				control_socket.write(JSON.generate({ 'command': ['get_property', 'time-remaining'] }) + "\n")
 				remaining = JSON.parse(control_socket.recvfrom(1000)[0])['data'] || 0
+				if timepos == 0
+					puts 'didn\'t watch'
+					next
+				end
 				if %w(k y).include?(user_input)
 					state_string = 'seen' if anime.fetch('num_episodes', -1) == wanted_ep && remaining <= 4
 					state_string += ",#{wanted_ep}"
