@@ -371,7 +371,7 @@ end
 
 def lock_logfile(block=false)
 	unless LOCKING
-		yielf if block_given?
+		yield if block_given?
 		return
 	end
 	ret = LOG_FILE.flock(6) # exclusive(2) | nonblock(4)
