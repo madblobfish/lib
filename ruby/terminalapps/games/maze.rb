@@ -2,7 +2,7 @@ require_relative '../lib/gamelib'
 require_relative '../../stdlib/color_palette.rb' rescue nil
 
 class Maze < TerminalGame
-  def initialize(size_x=70, size_y=16, death=false)
+  def initialize(size_x=70, size_y=16, death=false, loops=0)
     @fps = :manual
     @size = [size_y, size_x]
     # @player = @size.map{|x|rand(x)}
@@ -11,7 +11,7 @@ class Maze < TerminalGame
     # @goal = [0,0]
     # @goal = @size.map{|x|rand(x)}
     # @goal = @size.map{|x|rand(x)} if @goal == @player
-    @map = maze_gen_bt(@size)
+    @map = maze_gen_bt(@size, loops)
     @goal = @map[:start]
     @start_time = Time.now
     @backwalk = 0
@@ -20,7 +20,7 @@ class Maze < TerminalGame
     @death = death
   end
 
-  def maze_gen_bt(size=[70,16])
+  def maze_gen_bt(size=[70,16], loops=0)
     GC.disable # more speed
     door_open_ud = Hash.new{false}
     door_open_lr = Hash.new{false}
@@ -57,6 +57,14 @@ class Maze < TerminalGame
           break
         end
         path.pop
+      end
+    end
+    loops.times do
+      coord = size.map{|e| rand(e)}
+      if rand(2) == 0
+        door_open_ud[coord] = true
+      else
+        door_open_lr[coord] = true
       end
     end
     GC.enable
@@ -157,39 +165,41 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   deth = ARGV.delete('--death') ? true : false
+  loops = ARGV.last.to_i
   case ARGV.first
   when 'eazy'
-    Maze.new(7,13,deth).run()
+    Maze.new(7,13,deth, loops).run()
     # Miswalk: 0
     # Backwalk: 0
     # Steps: 23
     # Path: 24
     # Time: 7.520582832s
   when 'normal'
-    Maze.new(10,16,deth).run()
+    Maze.new(10,16,deth, loops).run()
     # Miswalk: 0
     # Backwalk: 0
     # Steps: 93
     # Path: 84
     # Time: 21.404004426s
   when 'har'
-    Maze.new(15,40,deth).run()
+    Maze.new(15,40,deth, loops).run()
     # Miswalk: 0
     # Backwalk: 39
     # Steps: 255
     # Path: 178
     # Time: 88.105600061s
   when 'hard'
-    Maze.new(28,100,deth).run()
+    Maze.new(28,100,deth, loops).run()
     # Miswalk: 109
     # Backwalk: 218
     # Steps: 1918
     # Path: 1374
     # Time: 1937.503126671s
   when 'hardr'
-    Maze.new(51,190,deth).run()
+    Maze.new(51,190,deth, loops).run()
   else
     puts 'hi we got 4 modi [hardr|hard|har|normal|eazy]'
     puts 'try --death for more fun'
+    puts 'adding a whole number will add some random loops'
   end
 end
