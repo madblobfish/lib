@@ -7,6 +7,7 @@ if ARGV.include?('--help')
   puts '--nocurrent do not load the configured logfile'
   puts '--gitmerge integration as git custom merge driver: see readme!'
   puts '--json output json instead'
+  puts '--all output contains nopes'
   puts '--inplace override the choices file, only for non json'
   puts '-v be more loud'
   puts '--help print this'
@@ -18,6 +19,8 @@ INPLACE = ARGV.delete('--inplace')
 VERBOSE = ARGV.delete('-v')
 NOCURRENT = ARGV.delete('--nocurrent')
 GITMERGE = ARGV.delete('--gitmerge')
+ALL = ARGV.delete('--all')
+
 if GITMERGE
   raise "nope" unless NOCURRENT
   raise "nope" unless INPLACE
@@ -129,6 +132,7 @@ else
   configurable_default(:JSON_IGNORE, [])
   headers = %w(id year season state ts name favorite num_episodes average_episode_duration rank mean title_en title_ja)
   body = csv.map do |r|
+    next if !ALL && r[3] == 'nope'
     next if JSON_IGNORE.include?(r[5])
     next if JSON_IGNORE.include?(r[0].to_s)
     if e = CACHE_FULL[r[0].to_i]
