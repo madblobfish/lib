@@ -661,20 +661,21 @@ if __FILE__ == $PROGRAM_NAME
 				control_socket.read_nonblock(1000) rescue nil
 				socket_worked = true
 
-				puts 'File is loaded change to MPV now, remove/keep?[y/k/N]?'
+				puts 'File is loaded. Change to MPV now. Action: remove/keep/none?[y/K/n]?'
 				user_input = STDIN.readline.rstrip()
 				state_string = 'partly'
 				if user_input.start_with?('d')
 					state_string = 'broken'
 					user_input.delete_prefix!('d')
 				end
+				user_input = 'k' if user_input == '' # default to keep
 				# empty socket again
 				control_socket.read_nonblock(9000) rescue nil
 				control_socket.write(JSON.generate({ 'command': ['get_property', 'time-pos'] }) + "\n")
 				timepos = JSON.parse(control_socket.recvfrom(1000)[0])['data'].to_i
 				control_socket.write(JSON.generate({ 'command': ['get_property', 'time-remaining'] }) + "\n")
 				remaining = JSON.parse(control_socket.recvfrom(1000)[0])['data'] || 0
-				if timepos == 0
+				if timepos == 0 && remaining != 0
 					puts 'didn\'t watch'
 					next
 				end
@@ -690,7 +691,7 @@ if __FILE__ == $PROGRAM_NAME
 
 					# log to logfile
 					add_log_entry(anime, state_string)
-					puts 'logged to logfile'
+					puts "logged to logfile: #{state_string.inspect}"
 				end
 				if user_input == 'y'
 					if remaining <= 4
