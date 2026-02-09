@@ -568,7 +568,7 @@ if __FILE__ == $PROGRAM_NAME
 			retry
 		end
 		socket_worked = false
-		SUBTITLE_CANIDATES = Dir[SUBTITLES_PATH + '*/*.{ass,srt}'] rescue []
+		SUBTITLE_CANIDATES = Dir[SUBTITLES_PATH + '/**/*.{ass,srt}'] rescue []
 
 		# TODO: listen to "end-file" event
 		# TODO: query "playback-time" and log this optionally
