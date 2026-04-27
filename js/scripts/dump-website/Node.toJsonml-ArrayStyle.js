@@ -28,4 +28,4 @@ NamedNodeMap.prototype.toObject = function(){
 	}
 	return out;
 };
-document.toJsonml().toSource()
+JSON.stringify(document.toJsonml())
