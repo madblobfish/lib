@@ -3,6 +3,36 @@ require 'vips' rescue raise 'run "gem install ruby-vips", also install libjxl, l
 Vips.cache_set_max_mem(1024*1024*1024)
 require 'open3'
 
+class HashCache
+  def initialize(size=20)
+    @size = size
+    @order = []
+    @wrapped_hash = {}
+  end
+  def [](k)
+    @wrapped_hash[k]
+  end
+  def has_key?(k)
+    @wrapped_hash.has_key?(k)
+  end
+  def []=(k,v)
+    if ! @wrapped_hash.has_key?(k)
+      @order << k
+      @wrapped_hash.delete(@order.shift) if @order.size >= @size
+    end
+    @wrapped_hash[k] = v
+  end
+  def reject!(&block)
+    @wrapped_hash.reject!(block)
+  end
+  def shuffle!
+    @wrapped_hash.shuffle!
+  end
+  def size
+    @wrapped_hash.size
+  end
+end
+
 class ImageViewer < TerminalGame
   IMAGE_PLACEMENTS = [
     [0.5, 0.5], # middle middle / center
@@ -39,6 +69,7 @@ class ImageViewer < TerminalGame
       raise 'feed me folders and/or images'
     end
     files = agrgs.flat_map{|f| File.directory?(f) ? Dir.children(f).map{|p|f+'/'+p} : File.readable?(f) ? f : nil}.compact.uniq.map{|f| f.delete_prefix('./')}
+    @image_cache = HashCache.new()
     @images = files.map do |f|
       begin
         [f.tr('//','/'), Vips::Image.new_from_file(f)]
@@ -75,6 +106,7 @@ class ImageViewer < TerminalGame
       @images_cycle %= @images.size if @rotate and cycle
     end
     current_filename, current_img, gif_params = @images[@images_cycle]
+    current_img = @image_cache[current_filename] if @image_cache.has_key?(current_filename)
     rowsize = @draw_status_line ? @size_row : 0
     frames = []
     if gif_params
@@ -106,6 +138,8 @@ class ImageViewer < TerminalGame
     end
     move_cursor(0,0)
     imgid = kitty_graphics_img_load(buffer)
+    @image_cache[current_filename] = current_img unless @image_cache[current_filename] == current_img
+    @images[@images_cycle][1] = Vips::Image.new_from_file(current_filename)
     kitty_graphics_img_pixel_place(
       imgid,
       0,
