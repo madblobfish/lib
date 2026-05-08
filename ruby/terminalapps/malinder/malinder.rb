@@ -350,6 +350,7 @@ if __FILE__ == $PROGRAM_NAME
 		count_watched = 0
 		count_chosen_episodes = 0
 		count_watched_episodes = 0
+		unresolvable_in_choices = false
 		CHOICES.each do |id, v|
 			if anime = CACHE_FULL[id.to_i]
 				status, seen_eps, seen_time = v['state'].split(',', 3)
@@ -374,10 +375,12 @@ if __FILE__ == $PROGRAM_NAME
 				end
 			else
 				unless id.start_with?('imdb,') || v['state'] == 'nope' || DELETIONS[id]
+					unresolvable_in_choices = true
 					STDERR.puts 'could not resolve: ' + id
 				end
 			end
 		end
+		STDERR.puts '' if unresolvable_in_choices
 		puts CHOICES.map{|k,v|v['state'].split(',').first}.group_by{|e|e}.map{|a,b|[a,b.count]}.sort_by{|k,v|v}.map{|e| e.join(': ') }
 		puts ''
 		puts FAVORITES.group_by{|a,b| b}.map{|k,v| "#{k}: #{v.count}"}
@@ -394,6 +397,9 @@ if __FILE__ == $PROGRAM_NAME
 		print_percent['Watched Episodes ', count_watched_episodes, count_chosen_episodes]
 		print_percent['Tracked', CHOICES.size, CACHE.size]
 		print_percent['Filtered Cache vs full Cache', CACHE.size, CACHE_FULL.size]
+		puts ''
+		print_percent['Deletions in CHOICES vs known deletions', CHOICES.values_at(*DELETIONS.keys).count{|x|!x.nil?}, DELETIONS.size]
+		print_percent['Deletions in CACHE', CACHE_FULL.values_at(*DELETIONS.keys).count{|x|!x.nil?}, DELETIONS.size]
 		if OPTIONS[:by_season]
 			puts ''
 			CACHE.reject{|k,a| a['media_type'] == 'music'}.group_by{|k,v| v.fetch('start_season', {})}.sort{|a,b|a.first.values <=> b.first.values}.each do |season, nimes|
