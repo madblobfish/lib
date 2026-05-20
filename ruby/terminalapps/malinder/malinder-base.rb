@@ -285,7 +285,7 @@ def fetch_related(id, sleeps=false)
 		related = File.read(cached_file)
 	else
 		# backoff a bit to not run into ratelimits
-		age = Time.now - File.mtime("#{CACHE_DIR_RELATIONS}")
+		age = Time.now - File.mtime(CACHE_DIR_RELATIONS)
 		if sleeps
 			sleep(1 - [age.to_f, 0].max + 0.1) if age.to_f <= 1
 		elsif age.to_f <= 1
