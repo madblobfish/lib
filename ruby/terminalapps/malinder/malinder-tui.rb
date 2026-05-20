@@ -218,6 +218,7 @@ class MALinder < TerminalGame
 					@season.insert(undo[:pos], undo[:anime])
 					@current = undo[:pos]
 					@scroll = 0
+					CHOICES.delete(undo[:anime]['id'].to_s)
 				when :related
 					undo[:animes].length.times{@season.delete_at(undo[:pos])}
 					@current = undo[:pos]
@@ -239,6 +240,7 @@ class MALinder < TerminalGame
 		written_bytes = add_log_entry(anime, choice)
 		@season.delete_at(@current)
 		exit() if @season.empty?
+		CHOICES[anime['id'].to_s] = {'state' => choice} # this is a stub, should work
 		UNDO_BUFFER << {
 			anime: anime,
 			type: :log,
