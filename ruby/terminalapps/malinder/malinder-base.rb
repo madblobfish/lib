@@ -241,6 +241,7 @@ def load_all_to_cache()
 			v['timestamp'] = old.fetch('ts', date.to_i)
 			v['c1'] = old.fetch('c1', nil)
 			v.merge!(v.fetch('start_season', {}))
+			v['alternative_titles'].delete_if{|k,v| v.nil? || v == ''}
 			v['japanese'] = v['alternative_titles'].fetch('ja', v['title']).contains_japanese? ? 'yes' : 'no'
 			v['duration'] = v['average_episode_duration'].to_i * v['num_episodes'].to_i rescue 0
 			v['genres'] = v['genres']&.map{|h| (h.is_a?(Hash) ? h['name']: h).downcase.tr(' ', '_')}
