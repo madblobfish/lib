@@ -232,7 +232,10 @@ def load_all_to_cache()
 			old = CHOICES.fetch(v['id'].to_s, {})
 			v['state'] = old.fetch('state', '-')
 			v['choice'] = v['state'].split(',', 2).first
-			# v['choices_related'] = fetch_related(v['id']).flat_map{|rel| rel['entry'].select{|r| r['type'] == 'anime'}.map{|r| CHOICES.fetch(r['mal_id'].to_s, {}).fetch('state', '-')}} rescue ['ratelimited']
+			# related = fetch_related(v['id'], false, true) rescue nil
+			# v['related'] = related
+			# v['preloaded'] = (related.is_a?(Array) && image(v, true)).to_s # needs higher 'ulimit -n 2048'
+			# v['choices_related'] = related.flat_map{|rel| rel['entry'].select{|r| r['type'] == 'anime'}.map{|r| CHOICES.fetch(r['mal_id'].to_s, {}).fetch('state', '-')}} rescue ['ratelimited']
 			CHOICES_OTHERS.each do |name, c|
 				choice = c.fetch(v['id'].to_s, {}).fetch('state', '-')
 				v['state-' + name] = choice
@@ -278,11 +281,11 @@ def season_shortcuts(input)
 	s
 end
 
-def fetch_related(id, sleeps=false)
+def fetch_related(id, sleeps=false, nofetch=false)
 	return [] if id.to_s.start_with?('imdb,')
 	return [] if id.to_i == 0
 	cached_file = CACHE_DIR_RELATIONS + id.to_i.to_s + '.json'
-	if File.exist?(cached_file)
+	if File.exist?(cached_file) || nofetch
 		related = File.read(cached_file)
 	else
 		# backoff a bit to not run into ratelimits
