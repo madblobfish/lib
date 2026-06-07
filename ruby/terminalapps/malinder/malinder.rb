@@ -120,15 +120,13 @@ if __FILE__ == $PROGRAM_NAME
 		lock_logfile(true)
 		filename = ARGV.fetch(1, LOG_FILE_NAME)
 		filename = CONFIG_DIR + filename unless filename.include?("/")
-		system(ENV.fetch('EDITOR', 'nano'), filename, exception: true)
+		execute_cmd([ENV.fetch('EDITOR', 'nano'), filename], CONFIG_DIR, interactive: true)
 	elsif ARGV.first == 'db-pfusch'
-		exec("ruby", "#{__dir__}/malinder-db-pfusch.rb", *ARGV_ORIGINAL.drop(1))
+		execute_cmd(["ruby", "#{__dir__}/malinder-db-pfusch.rb", *ARGV_ORIGINAL.drop(1)], interactive: true)
 
 	# git integration
 	elsif ARGV == ['add']
-		Dir.chdir(CONFIG_DIR) do
-			system('git', 'add', '-p', exception: true)
-		end
+		execute_cmd(['git', 'add', '-p'], CONFIG_DIR, interactive: true)
 	elsif ARGV == ['status']
 		a = Time.now
 		load_all_to_cache()
@@ -152,7 +150,7 @@ if __FILE__ == $PROGRAM_NAME
 		execute_cmd(['git', 'pull', '--ff-only'], CONFIG_DIR)
 		execute_cmd(['git', 'pull', '--ff-only'], SUBTITLES_PATH) if SUBTITLES_PATH
 	elsif ARGV == ['push']
-		system({'GIT_DIR'=> "#{CONFIG_DIR}.git"}, 'git', 'push', exception: true)
+		execute_cmd(['git', 'push'])
 	elsif ARGV.first == 'commit' && (1..3).include?(ARGV.length)
 		require 'date'
 		message = ARGV.fetch(1, DateTime.now.strftime('%F'))
@@ -556,7 +554,7 @@ if __FILE__ == $PROGRAM_NAME
 	elsif ARGV == ['watch']
 		lock_logfile(true)
 		if AUTOPULL_SUBTITLES && SUBTITLES_PATH && !OFFLINE
-			execute_cmd(['git', 'pull', '--ff-only'], SUBTITLES_PATH)
+			execute_cmd(['git', 'pull', '--ff-only'], SUBTITLES_PATH, interactive: true)
 			puts ''
 		end
 		require 'socket'
