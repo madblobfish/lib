@@ -338,7 +338,9 @@ def prefetch(list)
 		fetch_related(a['id'], true)
 		image(a)
 		print('.')
-	rescue
+	rescue => e
+		print('x')
+		next if e.message.start_with?('500 - ')
 		raise a['id'].to_s
 	end
 end
