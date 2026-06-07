@@ -208,6 +208,13 @@ class MALinder < TerminalGame
 			logchoice('want')
 		when "\e[15~"
 			# empty, this triggers the redraw below this block
+		when 'S'
+			anime = @season[@current]
+			choice = 'seen'
+			choice += ",#{anime['num_episodes']}" if anime['num_episodes'] and anime['num_episodes'] != 0
+			logchoice(choice)
+		when 'D'
+			logchoice('broken')
 		when 'h'
 			@hide_other = !@hide_other
 		when 'u'
