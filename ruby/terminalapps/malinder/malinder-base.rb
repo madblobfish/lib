@@ -337,6 +337,9 @@ def prefetch(list)
 		a = CACHE_FULL[a] if a.is_a?(Integer)
 		fetch_related(a['id'], true)
 		image(a)
+		print('.')
+	rescue
+		raise a['id'].to_s
 	end
 end
 
