@@ -104,7 +104,7 @@ class MALinder < TerminalGame
 					color = [200,100,60] if CACHE_FULL.has_key?(id)
 					if cache
 						title = cache.fetch('alternative_titles', {})['en'] rescue nil
-						title = cache['title'] if title.nil? || title == ''
+						title ||= cache['title']
 						color = [255] * 3
 					end
 					choice = CHOICES.fetch(id.to_s, {}).fetch('state', '-')
