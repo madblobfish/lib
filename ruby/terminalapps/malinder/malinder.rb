@@ -84,15 +84,14 @@ if __FILE__ == $PROGRAM_NAME
 	end
 	ARGV_ORIGINAL = ARGV.map{|e| e.dup}
 
-	def pars_arg(const, flag)
+	def pars_arg(flag)
 		if ARGV.include?(flag)
-			Object.const_set(const, ARGV.delete_at(ARGV.index(flag) + 1))
+			value = ARGV.delete_at(ARGV.index(flag) + 1)
 			ARGV.delete(flag)
+			value
 		end
 	end
-	pars_arg(:LOG_SUFFIX, '--log-suffix')
-	pars_arg(:LOG_SUFFIX, '-u')
-	raise 'wat yo doin?!' if Object.const_defined?(:LOG_SUFFIX) && LOG_SUFFIX.nil?
+	LOG_SUFFIX_OVERRIDE = pars_arg('--log-suffix') || pars_arg('-u')
 	OPTIONS = {
 		all: ARGV.delete('--all'),
 		by_season: ARGV.delete('--by-season'),
@@ -178,10 +177,10 @@ if __FILE__ == $PROGRAM_NAME
 	exit 0 if didcommand
 
 	GC.disable
-	print %w(loading precalc caching preparing starting).sample if STDOUT.isatty
+	print %w(loading precalc caching preparing starting startup preheating).sample if STDOUT.isatty
 	require_relative 'malinder-tui.rb'
 	load_all_to_cache
-	print "\r         \r" if STDOUT.isatty
+	print "\r          \r" if STDOUT.isatty
 	GC.enable
 
 	if ARGV.first == 'results' && (2..4).include?(ARGV.length)
