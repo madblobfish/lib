@@ -41,6 +41,7 @@ class MALinder < TerminalGame
 		move_cursor(0,0)
 		clear_from_cursor() if no_redo_image
 		clear() unless no_redo_image
+		print(anime['symbols']) if anime['symbols']
 		if anime['alternative_titles']
 			if anime['alternative_titles']['en'] and anime['alternative_titles']['en'] != ''
 				print(text_color_bad_words((anime['alternative_titles']['en'].inspect + counter).center(@cols)))
@@ -139,10 +140,6 @@ class MALinder < TerminalGame
 			rescue RuntimeError => e
 				raise unless e.message.start_with?('Could not load image for: ')
 			end
-		end
-		if anime['symbols']
-			move_cursor(0,0)
-			print(anime['symbols'])
 		end
 
 		# print("\r\n")
