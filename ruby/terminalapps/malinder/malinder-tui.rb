@@ -155,10 +155,10 @@ class MALinder < TerminalGame
 		case input
 		when "\e[A" #up
 			@scroll -= 1 unless @scroll <= 0
-			return draw(true)
+			return sync_draw{draw(true)}
 		when "\e[B" #down
 			@scroll += 1  if @scroll < (@par_len - @rows + 3)
-			return draw(true)
+			return sync_draw{draw(true)}
 		when "\e[C" #right
 			@current += 1
 			@current %= @season.size
