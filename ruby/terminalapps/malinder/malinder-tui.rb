@@ -54,10 +54,9 @@ class MALinder < TerminalGame
 	end
 
 	def draw_description(anime)
-		draw_title(anime)
-		print("\r\n"*(@scroll>0?1:2))
-		paragraph = anime['synopsis'] + "\n"
-		paragraph = "- No Synopsis -\n" if anime['synopsis'] == ''
+		print("\r\n")
+		separator = "\n  "
+		paragraph = "\r\n" + (anime['synopsis'] != '' ? anime['synopsis'] : "- No Synopsis -") + "\n"
 		paragraph += "\nType: #{anime['media_type']}" if anime['media_type']
 		paragraph += "\nSource: #{anime['source']}" if anime['source']
 		paragraph += "\nStatus: #{anime['status']}" if anime['status']
@@ -73,18 +72,16 @@ class MALinder < TerminalGame
 		paragraph += "\n\nState: #{CHOICES[anime['id'].to_s]['state']}" if CHOICES.has_key?(anime['id'].to_s)
 		others = CHOICES_OTHERS.select{|name, choices| choices.has_key?(anime['id'].to_s)}
 		if others.any? && !@hide_other
-			separator = "\n  "
 			paragraph += "\n\nOthers:" + separator
 			paragraph += others.map{|name, choices| "#{name}: #{choices[anime['id'].to_s]['state']}" }.join(separator)
 		end
 		related = fetch_related(anime['id']) rescue ''
+		paragraph += "\n\nRelated:" + separator
 		if related.is_a?(String)
-			paragraph += "\n\nRelated:\n  #{related}"
+			paragraph += related
 		elsif related == []
-			paragraph += "\n\nRelated:\n  Nothing"
+			paragraph += 'Nothing'
 		elsif related.any?
-			separator = "\n  "
-			paragraph += "\n\nRelated:" + separator
 			paragraph += related.map do |rel|
 				rel['entry'].map do |r|
 					id = r['mal_id']
@@ -118,16 +115,16 @@ class MALinder < TerminalGame
 				end
 			end.join(separator)
 		end
-		if not VIPS
-			paragraph += "\n\n\nNote: ruby-vips not installed => graphics are not displayed"
-		elsif image(anime, true)
-			paragraph = break_lines(text_color_bad_words(paragraph), @cols/2+1)
-		else
-			paragraph = "#{break_lines(text_color_bad_words(paragraph), @cols)}\n\n\nCould not load image"
-		end
-		paragraph = paragraph.gsub(/\n(\s*\n)+/, "\n\n").gsub(/\n/, "\r\n").split("\r\n")
+		paragraph =
+			if VIPS && image(anime, true)
+				break_lines(text_color_bad_words(paragraph), @cols/2+1)
+			else
+				msg = 'Could not load image'
+				msg = 'ruby-vips not installed => graphics are not displayed' if !VIPS
+				"#{break_lines(text_color_bad_words(paragraph), @cols)}\n\n\nNote: #{msg}"
+			end.gsub(/\n(\s*\n)+/, "\n\n").gsub(/\n/, "\r\n").split("\r\n")
 		@par_len = paragraph.length
-		print(paragraph.drop(@scroll).take(@rows - 3).join("\r\n"))
+		print(paragraph.drop(@scroll).take(@rows - 2).join("\r\n"))
 		move_cursor(0,0)
 		print(anime['symbols']) if anime['symbols']
 	end
@@ -139,6 +136,8 @@ class MALinder < TerminalGame
 			move_cursor(0,0)
 			clear_from_cursor() if no_redo_image
 			clear() unless no_redo_image
+			print(color_reset_code)
+			draw_title(anime)
 			draw_description(anime)
 		end
 		if VIPS && !no_redo_image
