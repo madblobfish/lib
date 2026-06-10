@@ -31,37 +31,30 @@ class MALinder < TerminalGame
 		@scroll = 0
 		@par_len = 0
 	end
-	def size_change_handler;sync_draw{draw()};end #redraw on size change
+	def size_change_handler;draw();end
+  def initial_draw;draw();end
 
-	def draw(no_redo_image=false)
-		raise TerminalGameEnd, 'empty (all marked or nothing here)' if @season.empty?
-		anime = @season[@current]
+	def draw_title(anime)
 		counter = " (#{@current+1}/#{@season.size})"
 		normal_title = text_color_bad_words((anime['title'].inspect + counter).center(@cols))
-		move_cursor(0,0)
-		clear_from_cursor() if no_redo_image
-		clear() unless no_redo_image
-		print(anime['symbols']) if anime['symbols']
-		if anime['alternative_titles']
-			if anime['alternative_titles']['en'] and anime['alternative_titles']['en'] != ''
-				print(text_color_bad_words((anime['alternative_titles']['en'].inspect + counter).center(@cols)))
-			else
-				print(normal_title)
-			end
-			if anime['alternative_titles']['ja']
-				print("\r\n")
-				overlength = anime['alternative_titles']['ja'].gsub(/[0-9a-z\/+_-]/i, '').length
-				unless anime['alternative_titles']['ja'].contains_japanese?
-					bold()
-					print(get_color_code([255,255,0]) + anime['alternative_titles']['ja'].center(@cols - overlength))
-					print(color_reset_code())
-				else
-					print(text_color_bad_words(anime['alternative_titles']['ja'].center(@cols - overlength)))
-				end
-			end
-		else
-			print(normal_title)
+		unless anime['alternative_titles'] || anime['alternative_titles']['en'] || anime['alternative_titles']['en'] == ''
+			return print(normal_title)
 		end
+		print(text_color_bad_words((anime['alternative_titles']['en'].inspect + counter).center(@cols)))
+		return unless anime['alternative_titles']['ja']
+		print("\r\n")
+		overlength = anime['alternative_titles']['ja'].gsub(/[0-9a-z\/+_-]/i, '').length
+		if anime['alternative_titles']['ja'].contains_japanese?
+			print(text_color_bad_words(anime['alternative_titles']['ja'].center(@cols - overlength)))
+		else
+			bold()
+			print(get_color_code([255,255,0]) + anime['alternative_titles']['ja'].center(@cols - overlength))
+			print(color_reset_code())
+		end
+	end
+
+	def draw_description(anime)
+		draw_title(anime)
 		print("\r\n"*(@scroll>0?1:2))
 		paragraph = anime['synopsis'] + "\n"
 		paragraph = "- No Synopsis -\n" if anime['synopsis'] == ''
@@ -71,8 +64,8 @@ class MALinder < TerminalGame
 		paragraph += "\nStart: #{anime['start_date']}" if anime['start_date']
 		paragraph += "\nEpisodes: #{anime['num_episodes']}" if anime['num_episodes'] and anime['num_episodes'] != 0
 		if anime['average_episode_duration']
-			paragraph += "\nDuration: #{Duration.new(anime['average_episode_duration']).to_s}"
-			paragraph += ", total: #{Duration.new(anime['average_episode_duration'].to_i * anime['num_episodes'].to_i).to_s}"
+			paragraph += "\nDuration: #{Duration.new(dur = anime['average_episode_duration'].to_i)}"
+			paragraph += ", total: #{Duration.new(dur * anime['num_episodes'].to_i)}"
 		end
 		paragraph += "\nScore: #{anime['mean']}" if anime['mean']
 		paragraph += "\nGenres: #{anime['genres'].join(', ')}" if anime['genres']
@@ -116,7 +109,12 @@ class MALinder < TerminalGame
 					end
 					url_prefix = MAL_PREFIX
 					url_prefix = MAL_MANGA_PREFIX if r['type'] == 'manga'
-					[get_color_code(color) + url_prefix + id.to_s, choice, rel['relation'], title + color_reset_code].join("\t")
+					[
+						get_color_code(color) + url_prefix + id.to_s,
+						choice,
+						rel['relation'],
+						title + color_reset_code
+					].join("\t")
 				end
 			end.join(separator)
 		end
@@ -131,6 +129,18 @@ class MALinder < TerminalGame
 		@par_len = paragraph.length
 		print(paragraph.drop(@scroll).take(@rows - 3).join("\r\n"))
 		move_cursor(0,0)
+		print(anime['symbols']) if anime['symbols']
+	end
+
+	def draw(no_redo_image=false)
+		raise TerminalGameEnd, 'empty (all marked or nothing here)' if @season.empty?
+		anime = @season[@current]
+		sync_draw do
+			move_cursor(0,0)
+			clear_from_cursor() if no_redo_image
+			clear() unless no_redo_image
+			draw_description(anime)
+		end
 		if VIPS && !no_redo_image
 			begin
 				current_img = image(anime)
@@ -141,9 +151,6 @@ class MALinder < TerminalGame
 				raise unless e.message.start_with?('Could not load image for: ')
 			end
 		end
-
-		# print("\r\n")
-		# kitty_graphics_img_display(imgid)
 	rescue
 		raise "current anime id: #{anime['id']}"
 	end
@@ -153,11 +160,11 @@ class MALinder < TerminalGame
 		when "\e[A" #up
 			return if @scroll <= 0
 			@scroll -= 1
-			return sync_draw{draw(true)}
+			return draw(true)
 		when "\e[B" #down
 			return unless @scroll < (@par_len - @rows + 3)
 			@scroll += 1
-			return sync_draw{draw(true)}
+			return draw(true)
 		when "\e[C" #right
 			@current += 1
 			@current %= @season.size
