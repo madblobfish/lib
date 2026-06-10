@@ -13,6 +13,9 @@ class TerminalGame
     def clear
       print "\e[2J"
     end
+    def clear_from_cursor
+      print "\e[J"
+    end
     def cursor_save
       print "\e[s"
     end
