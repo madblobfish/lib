@@ -154,10 +154,12 @@ class MALinder < TerminalGame
 	def input_handler(input)
 		case input
 		when "\e[A" #up
-			@scroll -= 1 unless @scroll <= 0
+			return if @scroll <= 0
+			@scroll -= 1
 			return sync_draw{draw(true)}
 		when "\e[B" #down
-			@scroll += 1  if @scroll < (@par_len - @rows + 3)
+			return unless @scroll < (@par_len - @rows + 3)
+			@scroll += 1
 			return sync_draw{draw(true)}
 		when "\e[C" #right
 			@current += 1
