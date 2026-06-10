@@ -33,13 +33,14 @@ class MALinder < TerminalGame
 	end
 	def size_change_handler;sync_draw{draw()};end #redraw on size change
 
-	def draw()
+	def draw(no_redo_image=false)
 		raise TerminalGameEnd, 'empty (all marked or nothing here)' if @season.empty?
 		anime = @season[@current]
 		counter = " (#{@current+1}/#{@season.size})"
 		normal_title = text_color_bad_words((anime['title'].inspect + counter).center(@cols))
 		move_cursor(0,0)
-		clear
+		clear_from_cursor() if no_redo_image
+		clear() unless no_redo_image
 		if anime['alternative_titles']
 			if anime['alternative_titles']['en'] and anime['alternative_titles']['en'] != ''
 				print(text_color_bad_words((anime['alternative_titles']['en'].inspect + counter).center(@cols)))
@@ -129,7 +130,7 @@ class MALinder < TerminalGame
 		@par_len = paragraph.length
 		print(paragraph.drop(@scroll).take(@rows - 3).join("\r\n"))
 		move_cursor(0,0)
-		if VIPS
+		if VIPS && !no_redo_image
 			begin
 				current_img = image(anime)
 				scale_by = current_img.size.zip([@size_x/2, @size_y]).map{|want,have| want > have ? have/want.to_f : 1}.min
@@ -154,8 +155,10 @@ class MALinder < TerminalGame
 		case input
 		when "\e[A" #up
 			@scroll -= 1 unless @scroll <= 0
+			return draw(true)
 		when "\e[B" #down
 			@scroll += 1  if @scroll < (@par_len - @rows + 3)
+			return draw(true)
 		when "\e[C" #right
 			@current += 1
 			@current %= @season.size
