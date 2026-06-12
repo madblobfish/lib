@@ -30,7 +30,7 @@ An optional configuration file for `malinder` can be placed in `~/.config/malind
 Please refer to the `configurable_default` function within the code for customizable options such as:
 ```
 DEFAULT_HEADERS = {'X-MAL-CLIENT-ID': 'asdf'}
-LOG_SUFFIX = '-yourname'
+LOG_SUFFIX = 'yourname'
 # LOCKING = true # lock the logfile, newly started instances check this and fail or wait, this is the default
 
 #configure how long to wait until again pulling automatically
@@ -67,7 +67,7 @@ pacman -Syu libvips # or your distribution's way
 git clone https://github.com/madblobfish/lib ~/madblobfish-lib
 alias malinder="ruby ~/madblobfish-lib/ruby/games/malinder.rb"
 mkdir ~/.config/malinder/; cd ~/.config/malinder
-#echo LOG_SUFFIX = "-$USER" > config.rb # thats the default
+#echo LOG_SUFFIX = "$USER" > config.rb # thats the default
 git init; git add .; git commit -m 'init'
 git clone git@server:malindersources sources # do this yourself lol, meaning you need to load the seasonal files from mal
 
