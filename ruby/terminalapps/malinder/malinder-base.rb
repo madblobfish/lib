@@ -167,9 +167,9 @@ def read_choices(file)
 		r['c1'] = r.fetch('c1', r.fetch(nil, nil))
 		r['c2'] = r.fetch('c2', nil)
 		r['c3'] = r.fetch('c3', nil)
-		r['year'] = r.fetch('year', cached_entry.fetch('year', nil))
+		r['year'] = cached_entry.fetch('year', r.fetch('year', nil))
 		r['year'] = Integer(r['year'], 10) rescue r['year']
-		r['season'] = r.fetch('season', cached_entry.fetch('season', nil))
+		r['season'] = cached_entry.fetch('season', r.fetch('season', nil))
 		r['state']&.chomp!(',')
 		r['state'] = r.fetch('state') do
 			seencount, state = (r.fetch('seencount(state)').to_s.split('(').map{|x|x.chomp(')').split(',').first.strip} + ['partly']).first(2)
