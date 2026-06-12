@@ -233,7 +233,11 @@ class MALinder < TerminalGame
 					@season.insert(undo[:pos], undo[:anime])
 					@current = undo[:pos]
 					@scroll = 0
-					CHOICES.delete(undo[:anime]['id'].to_s)
+					if undo[:prior]
+						CHOICES[undo[:anime]['id'].to_s] = undo[:prior]
+					else
+						CHOICES.delete(undo[:anime]['id'].to_s)
+					end
 				when :related
 					undo[:animes].length.times{@season.delete_at(undo[:pos])}
 					@current = undo[:pos]
@@ -250,7 +254,6 @@ class MALinder < TerminalGame
 
 	def logchoice(choice)
 		anime = @season[@current]
-		return if CHOICES.has_key?(anime['id'].to_s)
 		lock_logfile() if @first_write # sorry to exit for now
 		written_bytes = add_log_entry(anime, choice)
 		@season.delete_at(@current)
@@ -261,6 +264,7 @@ class MALinder < TerminalGame
 			type: :log,
 			bytes: written_bytes,
 			pos: @current,
+			prior: CHOICES[anime['id'].to_s],
 		}
 		@current %= @season.size
 	end
