@@ -91,7 +91,7 @@ CACHE_DIR_RELATIONS = CACHE_DIR + 'relations/'
 FileUtils.mkdir_p(CACHE_DIR_IMAGES)
 FileUtils.mkdir_p(CACHE_DIR_RELATIONS)
 configurable_default(:DEFAULT_HEADERS, {}) # currently unused
-LOG_SUFFIX = '-' + LOG_SUFFIX_OVERRIDE if Object.const_defined?(:LOG_SUFFIX_OVERRIDE) && LOG_SUFFIX_OVERRIDE
+LOG_SUFFIX = LOG_SUFFIX_OVERRIDE if Object.const_defined?(:LOG_SUFFIX_OVERRIDE) && LOG_SUFFIX_OVERRIDE
 configurable_default(:LOG_SUFFIX, ENV['USER'])
 LOG_FILE_NAME = "choices-#{LOG_SUFFIX}.log"
 configurable_default(:LOG_FILE_PATH, "#{CONFIG_DIR}#{LOG_FILE_NAME}")
