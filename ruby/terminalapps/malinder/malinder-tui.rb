@@ -35,12 +35,10 @@ class MALinder < TerminalGame
   def initial_draw;draw();end
 
 	def draw_title(anime)
-		counter = " (#{@current+1}/#{@season.size})"
-		normal_title = text_color_bad_words((anime['title'].inspect + counter).center(@cols))
-		unless anime['alternative_titles'] || anime['alternative_titles']['en'] || anime['alternative_titles']['en'] == ''
-			return print(normal_title)
-		end
-		print(text_color_bad_words((anime['alternative_titles']['en'].inspect + counter).center(@cols)))
+		alt = anime['alternative_titles']
+		title = anime['title']
+		title = alt['en'] unless alt.nil? || alt['en'].nil? || alt['en'] == ''
+		print(text_color_bad_words((title.inspect + " (#{@current+1}/#{@season.size})").center(@cols)))
 		return unless anime['alternative_titles']['ja']
 		print("\r\n")
 		overlength = anime['alternative_titles']['ja'].gsub(/[0-9a-z\/+_-]/i, '').length
