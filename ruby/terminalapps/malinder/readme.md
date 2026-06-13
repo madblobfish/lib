@@ -6,7 +6,7 @@
 After setting up the directories with sources, `malinder` loads this data into RAM. You can then execute various commands to create and manage a database (which we call log or logfile) that lists things you've seen or want to see.
 
 * The `<year> <season>` command allows you to discover series of a season.
-* The `results` command compares two such databases and finds common entries.
+* The `matches` command compares two such databases and finds common entries.
 * The `malinder-db-pfusch.rb` script enables merging multiple databases (it is recommended to track a separate file for each group of people).
 * Run `malinder` without arguments to learn the other commands.
 
@@ -79,8 +79,8 @@ malinder 2000 winter
 malinder log 1 seen; malinder log 1 4
 malinder db-pfusch --inplace choices-relative.txt ~/.config/malinder/sharedfile.txt
 malinder stats
-malinder results choices-relative.log
-malinder results name 2030 winter # will use the 'choices-name.log' file
+malinder matches choices-relative.log
+malinder matches name 2030 winter # will use the 'choices-name.log' file
 
 # watch and file helpers, mostly interactive
 malinder fix-names

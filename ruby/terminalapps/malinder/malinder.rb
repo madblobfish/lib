@@ -12,10 +12,11 @@ HELP_TEXT << '  log <id/search> <status>: change the status of an anime'
 HELP_TEXT << '      adds the episode count if status is just seen'
 HELP_TEXT << '      adds "partial," if status is a number'
 HELP_TEXT << '      rewrites the entire log file!'
-HELP_TEXT << '  results [a_log] <b_log> [year season|querysyntax]: find out common wants'
+HELP_TEXT << '  matches [a_log] <b_log> [year season|querysyntax]: find out common wants'
 HELP_TEXT << '      limits by year and season if given'
 HELP_TEXT << '      e.g.: someguy.log 2013 summer'
 HELP_TEXT << '      e.g.: /tmp/some.log "(year <= 2019) && type != movie"'
+HELP_TEXT << '      --all will show missing choices'
 HELP_TEXT << '  catchup [a_log] <b_log> [c_log...] [year] [season]: shows differences in state'
 HELP_TEXT << '      limits by year and season if given'
 HELP_TEXT << '      so you can catch up, decide what to watch together now or just check in case of spoilers'
@@ -187,7 +188,7 @@ if __FILE__ == $PROGRAM_NAME
 	print "\r          \r" if STDOUT.isatty
 	GC.enable
 
-	if ARGV.first == 'results' && (2..4).include?(ARGV.length)
+	if %w(matches results).include?(ARGV.first) && (2..4).include?(ARGV.length)
 		ARGV.shift
 		season = nil
 		season_query = ''
@@ -225,16 +226,17 @@ if __FILE__ == $PROGRAM_NAME
 		[a,b].map{|x|x.default = []}
 
 		res = {
-			'want/want'=> (a['want'] & b['want']).sort,
-			'want/ok'=> (a['want'] & b['okay']).sort,
-			'ok/want'=> (a['okay'] & b['want']).sort,
-			# 'want/ok & ok/want'=> ((a['okay'] & b['want']) + (a['want'] & b['okay'])).sort,
-			# 'okay'=> (a['okay'] & b['okay']).sort,
-			'nope/want'=> (a['nope'] & b['want']).sort,
-			'want/nope'=> (a['want'] & b['nope']).sort,
-			'-/*'=> (bids - (aids & bids)).sort,
-			'*/-'=> (aids - (aids & bids)).sort,
+			'want/want'=> sort_ids(a['want'] & b['want']),
+			'want/ok'=> sort_ids(a['want'] & b['okay']),
+			'ok/want'=> sort_ids(a['okay'] & b['want']),
+			# 'want/ok & ok/want'=> sort_ids((a['okay'] & b['want']) + (a['want'] & b['okay'])),
+			# 'okay'=> sort_ids(a['okay'] & b['okay']),
+			'nope/want'=> sort_ids(a['nope'] & b['want']),
+			'want/nope'=> sort_ids(a['want'] & b['nope']),
+			'-/*'=> sort_ids(bids - (aids & bids)),
+			'*/-'=> sort_ids(aids - (aids & bids)),
 		}
+		%w(-/* */-).each{|s| res.delete(s)} unless OPTIONS[:all]
 		output_or_process(nil, res, lambda{
 			prefixes = [own_file, other_file].map{|p| choices_path_to_prefix(p)}
 			res.map do |k,v|
