@@ -16,6 +16,10 @@ HELP_TEXT << '  results [a_log] <b_log> [year season|querysyntax]: find out comm
 HELP_TEXT << '      limits by year and season if given'
 HELP_TEXT << '      e.g.: someguy.log 2013 summer'
 HELP_TEXT << '      e.g.: /tmp/some.log "(year <= 2019) && type != movie"'
+HELP_TEXT << '  catchup [a_log] <b_log> [c_log...] [year] [season]: shows differences in state'
+HELP_TEXT << '      limits by year and season if given'
+HELP_TEXT << '      so you can catch up, decide what to watch together now or just check in case of spoilers'
+HELP_TEXT << '      --all also works here'
 HELP_TEXT << '  db-pfusch [--help]: merge or normalize choices'
 HELP_TEXT << '      see its own help for more details'
 HELP_TEXT << ''
@@ -243,6 +247,34 @@ if __FILE__ == $PROGRAM_NAME
 				r << v
 			end
 		})
+	elsif ARGV.first == 'catchup'
+		ARGV.shift
+		files = ARGV.select{|x| File.exist?(choices_path(x)) rescue false}
+		files.each{|f| ARGV.delete(f)}
+		own_choices = choices_path_to_prefix(LOG_FILE_PATH)
+		files.unshift(own_choices) if files.one?
+		year = Integer(ARGV.shift, 10) rescue nil
+		season = season_shortcuts(ARGV.shift) rescue nil
+		raise "could not parse all arguments: #{ARGV.inspect}" unless ARGV.empty?
+		raise "needs at least two files to compare (own is added automatically): #{files.inspect}" if files.length < 2
+
+		files.map!{|f| choices_path_to_prefix(f)}
+		files.map!{|f| [f, parse_choices(f).select{|k,v| (year.nil? || v['year'] == year) && (season.nil? || v['season'] == season)}]}
+		sort_ids(files.map(&:last).flat_map(&:keys).uniq).each do |id|
+			states = files.map{|(f,c)| [f, c.fetch(id, {}).fetch('state', '-')]}
+			next if states.map(&:last).count('nope') >= states.length-1
+			if OPTIONS[:all] || (!states.map(&:last).uniq.one? && states.map{|(f,c)| STATE_LEVEL[c.split(',', 2).first]}.count(0) != states.length)
+				first = states.map{|(f,c)| [f, [STATE_LEVEL[c.split(',', 2).first], c.split(',', 2).last.to_i]]}.max(2){|(_,a),(_,b)| a<=>b}
+				if !first.one? && !first.map(&:last).uniq.one? && !STATE_DONE.include?(CHOICES.fetch(id,{}).fetch('state','-').split(',',2).first)
+					TerminalGame.color(first.first.first == own_choices ? 3 : 5) if STDOUT.isatty
+				elsif states.map(&:last).uniq.one?
+					TerminalGame.color(2) if STDOUT.isatty
+				end
+				puts id + states.map{|(f,c)| " #{f}:#{c}"}.join('') + TerminalGame.color_reset_code()
+			end
+		end
+
+
 	# elsif ARGV.first == 'add'
 	# 	lock_logfile(true)
 	# 	ARGV.shift # throw away first argument

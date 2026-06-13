@@ -120,10 +120,10 @@ SEASON_SHORTCUTS = {
 	'1'=> 'winter', '2'=> 'spring', '3'=> 'summer', '4'=> 'fall',
 }
 STATE_LEVEL = {
+	# hack
+	'-'=> 0,
 	# initial
-	'want'=> 0, 'nope'=> 0, 'okay'=> 0,
-	# intermediate
-	'backlog'=> 1,
+	'want'=> 0, 'nope'=> 0, 'okay'=> 0, 'backlog'=> 0,
 	# progress
 	'partly'=> 2,
 	# stopped
@@ -132,8 +132,9 @@ STATE_LEVEL = {
 	# done
 	'seen'=> 5,
 }
-STATE_ACTIVE = %w(partly paused broken)
-STATE_INACTIVE = STATE_LEVEL.keys - STATE_ACTIVE
+STATE_ACTIVE = %w(partly paused broken) # carries progress indication
+STATE_INACTIVE = STATE_LEVEL.keys - STATE_ACTIVE # progress indication optional, but does not matter
+STATE_DONE = %w(nope seen broken) # finished
 CACHE = {}
 CACHE_FULL = {}
 if File.readable?(FAV_FILE_PATH)
@@ -152,8 +153,7 @@ CSV_OPTS = {
 }
 CSV_OPTS[:skip_lines] = /^(#|$|<<+|==+|>>+|\|\|+)/
 def read_choices(file)
-	file = CONFIG_DIR + file if File.exist?(CONFIG_DIR + file) # allow relative paths
-	file = CONFIG_DIR + "choices-#{file}.log" if File.exist?(CONFIG_DIR + "choices-#{file}.log")
+	file = choices_path(file)
 	return [] if File.empty?(file)
 	headers = %w(id year season state ts name c1 c2 c3)
 	headers = true if File.read(file, 20).start_with?("id\t", "seencount(state)\t")
@@ -201,6 +201,14 @@ def parse_choices(file)
 	return out
 end
 
+def choices_path(path_or_filename_or_suffix)
+	f = path_or_filename_or_suffix
+	return nil if f.nil?
+	return f if File.exist?(f)
+	return CONFIG_DIR + f if File.exist?(CONFIG_DIR + f) # allow relative paths
+	return CONFIG_DIR + "choices-#{f}.log" if File.exist?(CONFIG_DIR + "choices-#{f}.log")
+	raise "Could not figure out path for #{f}"
+end
 def choices_path_to_prefix(path_or_filename)
 	path_or_filename.rpartition('/').last.sub(/^choices-(.*).log$/, '\1')
 end
@@ -415,4 +423,8 @@ def execute_cmd(cmd, chdir=nil, check_status=true, **opts)
 	out, status = Open3.capture2e(*cmd, chdir: chdir)
 	puts out
 	raise "cmd faild #{cmd.inspect}" if !status.success? && check_status
+end
+
+def sort_ids(list)
+	list.sort{|a,b| Integer(a,10) <=> Integer(b,10) rescue a <=> b}
 end
