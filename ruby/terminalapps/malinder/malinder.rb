@@ -265,7 +265,9 @@ if __FILE__ == $PROGRAM_NAME
 		sort_ids(files.map(&:last).flat_map(&:keys).uniq).each do |id|
 			states = files.map{|(f,c)| [f, c.fetch(id, {}).fetch('state', '-')]}
 			next if states.map(&:last).count('nope') >= states.length-1
-			if OPTIONS[:all] || (!states.map(&:last).uniq.one? && states.map{|(f,c)| STATE_LEVEL[c.split(',', 2).first]}.count(0) != states.length)
+			active_aligned = states.map(&:last).uniq.one? && STATE_ACTIVE.include?(states[0][1].split(',', 2)[0])
+			differing_states = !states.map(&:last).uniq.one? && states.map{|(f,c)| STATE_LEVEL[c.split(',', 2).first]}.count(0) != states.length
+			if OPTIONS[:all] || active_aligned || differing_states
 				first = states.map{|(f,c)| [f, [STATE_LEVEL[c.split(',', 2).first], c.split(',', 2).last.to_i]]}.max(2){|(_,a),(_,b)| a<=>b}
 				if !first.one? && !first.map(&:last).uniq.one? && !STATE_DONE.include?(CHOICES.fetch(id,{}).fetch('state','-').split(',',2).first)
 					TerminalGame.color(first.first.first == own_choices ? 3 : 5) if STDOUT.isatty

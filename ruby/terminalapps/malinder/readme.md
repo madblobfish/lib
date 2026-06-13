@@ -6,7 +6,8 @@
 After setting up the directories with sources, `malinder` loads this data into RAM. You can then execute various commands to create and manage a database (which we call log or logfile) that lists things you've seen or want to see.
 
 * The `<year> <season>` command allows you to discover series of a season.
-* The `matches` command compares two such databases and finds common entries.
+* The `matches` command compares two such databases and finds common shows that are not started yet.
+* The `catchup` is similar but focuses on seeing where one is ahead/behind.
 * The `malinder-db-pfusch.rb` script enables merging multiple databases (it is recommended to track a separate file for each group of people).
 * Run `malinder` without arguments to learn the other commands.
 
