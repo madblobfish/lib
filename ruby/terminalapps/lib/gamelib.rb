@@ -108,9 +108,9 @@ class TerminalGame
     def __break_lines_stretch(string, width)
       if string.length < width # underfull, try duplicating single spaces
         split_line = string.split(/ \b/)
+        rng = Random.new(string.hash)
         (width - string.length).times do
           break if split_line.one?
-          rng = Random.new(string.hash)
           location = rng.rand(split_line.length-1)
           split_line[location] = split_line[location] + '  ' + split_line.delete_at(location+1)
         end
