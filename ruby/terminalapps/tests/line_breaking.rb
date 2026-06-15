@@ -9,6 +9,7 @@ class LineBreaking < TerminalGame
     @hyphenation = true
     @annotations = true
     @hyphenate_harder = false
+    @stretch = true
     @columns = columns
 
     @text = text || (
@@ -42,7 +43,8 @@ class LineBreaking < TerminalGame
         @text,
         column_size,
         hyphenation: @hyphenation,
-        hyphenate_harder: @hyphenate_harder
+        hyphenate_harder: @hyphenate_harder,
+        stretch: @stretch,
       )
       orig_text = text
       hyphen_score = text.hyphens.count{|e| e[:result].first.chomp!('-'); e[:result].map(&:length).min <= 3 }
@@ -52,7 +54,8 @@ class LineBreaking < TerminalGame
       end
       print text.split("\r\n").map{|s| lengths << s.length; @annotations ? "#{s.inspect} (#{s.length})" : s }[@scroll_pos[0]..(@scroll_pos[0] + @size[0])].join("\r\n")
       print "\r\n\r\n"
-      puts "Wanted Size: #{@size[1]}, columns: #{@columns}, column size: #{column_size}, #{@hyphenation ? 'hyphenated' + (@hyphenate_harder ? ' hard': '') : ''}\r"
+      hyphenation = @hyphenation ? ', hyphenated' + (@hyphenate_harder ? ' hard': '') : ''
+      puts "Wanted Size: #{@size[1]}, columns: #{@columns}, column size: #{column_size}#{hyphenation}#{@stretch ? ', stretchy' : ''}\r"
       puts "#{color(9)}badness score: #{orig_text.badness}#{color_reset_code}\r"
       # puts "whitespace score: #{lengths.map{|l| r = (@size[1] - l); r <= 2 ? 0 : l == 0 ? 0 : r}.sum}\r"
       puts "hyphen count: #{orig_text.hyphens.count}, hyphen score: #{hyphen_score}\r"
@@ -64,6 +67,8 @@ class LineBreaking < TerminalGame
 
   def input_handler(input)
     case input
+    when "\e", 'q' #quit
+      exit()
     when "\e[A" # up
       @scroll_pos[0] -= 1
       @scroll_pos[0] = 0 if @scroll_pos[0].negative?
@@ -83,6 +88,8 @@ class LineBreaking < TerminalGame
     when "C"
       @columns -= 1
       @columns = 1 if @columns <= 0
+    when "s"
+      @stretch = ! @stretch
     when "n"
       @annotations = ! @annotations
     when "h"

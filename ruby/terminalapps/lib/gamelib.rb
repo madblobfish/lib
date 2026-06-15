@@ -105,6 +105,19 @@ class TerminalGame
       def string.badness=(badness); @badness = badness; end
       def string.badness; @badness; end
     end
+    def __break_lines_stretch(string, width)
+      if string.length < width # underfull, try duplicating single spaces
+        split_line = string.split(/ \b/)
+        (width - string.length).times do
+          break if split_line.one?
+          location = rand(split_line.length-1)
+          split_line[location] = split_line[location] + '  ' + split_line.delete_at(location+1)
+        end
+        split_line.join(' ')
+      else
+        string
+      end
+    end
     def break_lines(string, width, **opts)
       if string.include?("\n\n")
         ret, hyph, bad = string.split("\n\n").map do |s|
@@ -118,6 +131,7 @@ class TerminalGame
 
       punctation = opts.fetch(:punctation, /(?:[ .,!—()\n-])/)
       hyphenation = opts.fetch(:hyphenation, true)
+      stretch = opts.fetch(:stretch, true)
       hyphenate_harder = opts.fetch(:hyphenate_harder, false) ? {left: 0, right: 0} : {}
       ignore_whitespace = opts.fetch(:ignore_whitespace, 2)
       badness_window_length = opts.fetch(:ignore_whitespace, 3)
@@ -147,6 +161,7 @@ class TerminalGame
           space_left = width - current_line_space + (separator == ' ' ? 1 : 0)
           hyphenation = hyph[start, space_left]
           if hyphenation.first && hyphenation.last.length <= width
+            current_line = __break_lines_stretch(current_line, width-hyphenation.first.length) if stretch
             out += current_line + hyphenation.first + "\r\n"
             line += 1
             current_line_space += hyphenation.first.length
@@ -174,6 +189,7 @@ class TerminalGame
           else # no hyphenation found
             raise TerminalGameException, "not enough space" if current_line == ''
             current_line.chomp!(' ') # eat trailing space
+            current_line = __break_lines_stretch(current_line, width) if stretch
             out += current_line + "\r\n"
             line += 1
             doover_hyphenate = false
@@ -217,6 +233,7 @@ class TerminalGame
         end
       end
       current_line.chomp!(' ')
+      current_line = __break_lines_stretch(current_line, width) if stretch && current_line.length+ignore_whitespace >= [width*0.85, 2].max
       case current_line.length
       when 1..14
         badness += 100
