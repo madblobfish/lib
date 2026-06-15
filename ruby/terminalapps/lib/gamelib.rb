@@ -110,7 +110,8 @@ class TerminalGame
         split_line = string.split(/ \b/)
         (width - string.length).times do
           break if split_line.one?
-          location = rand(split_line.length-1)
+          rng = Random.new(string.hash)
+          location = rng.rand(split_line.length-1)
           split_line[location] = split_line[location] + '  ' + split_line.delete_at(location+1)
         end
         split_line.join(' ')
