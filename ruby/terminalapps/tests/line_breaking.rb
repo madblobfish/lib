@@ -99,7 +99,7 @@ class LineBreaking < TerminalGame
     # else
     #   raise TerminalGameEnd, input.inspect
     end
-    draw
+    sync_draw{draw}
   end
 end
 
