@@ -181,12 +181,10 @@ if __FILE__ == $PROGRAM_NAME
 	end
 	exit 0 if didcommand
 
-	GC.disable
 	print %w(loading precalc caching preparing starting startup preheating).sample if STDOUT.isatty
 	require_relative 'malinder-tui.rb'
 	load_all_to_cache
 	print "\r          \r" if STDOUT.isatty
-	GC.enable
 
 	if %w(matches results).include?(ARGV.first) && (2..4).include?(ARGV.length)
 		ARGV.shift
