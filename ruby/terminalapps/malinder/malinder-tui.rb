@@ -158,9 +158,15 @@ class MALinder < TerminalGame
 			return if @scroll <= 0
 			@scroll -= 1
 			return draw(true)
+		when "\e[5~" #page up
+			@scroll = [@scroll - @rows, 0].max
+			return draw(true)
 		when "\e[B" #down
 			return unless @scroll < (@par_len - @rows + 3)
 			@scroll += 1
+			return draw(true)
+		when "\e[6~" #page down
+			@scroll = [[@scroll + @rows - 3, @par_len - @rows - 3].min, 0].max
 			return draw(true)
 		when "\e[C" #right
 			@current += 1
