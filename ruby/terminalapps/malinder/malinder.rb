@@ -29,7 +29,7 @@ HELP_TEXT << ''
 HELP_TEXT << '  pull/push: runs "git pull" or "git pull" in config folder'
 HELP_TEXT << '  diff [--cached]: runs "git diff" in config folder, optionally shows added changes'
 HELP_TEXT << '  add: runs "git add -p" in config folder'
-HELP_TEXT << '  restore: runs "git add -p" in config folder'
+HELP_TEXT << '  restore: runs "git restore -p" in config folder'
 HELP_TEXT << '  commit [message]: runs "git commit" in config folder, default message is the current day in iso8601 format'
 HELP_TEXT << '  log [-p]: runs "git log" in config folder, optionally with diffs'
 HELP_TEXT << ''
@@ -132,6 +132,8 @@ if __FILE__ == $PROGRAM_NAME
 	# git integration
 	elsif ARGV == ['add']
 		execute_cmd(['git', 'add', '-p'], CONFIG_DIR, interactive: true)
+	elsif ARGV == ['restore']
+		execute_cmd(['git', 'restore', '-p'], CONFIG_DIR, interactive: true)
 	elsif ARGV == ['status']
 		a = Time.now
 		load_all_to_cache()
