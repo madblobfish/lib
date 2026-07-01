@@ -4,10 +4,11 @@ Vips.cache_set_max_mem(1024*1024*1024)
 require 'open3'
 
 class HashCache
-  def initialize(size=20)
+  def initialize(size=20, &delete_block)
     @size = size
     @order = []
     @wrapped_hash = {}
+    @delete_block = delete_block.nil? ? lambda{|k|} : delete_block
   end
   def [](k)
     @wrapped_hash[k]
@@ -18,7 +19,8 @@ class HashCache
   def []=(k,v)
     if ! @wrapped_hash.has_key?(k)
       @order << k
-      @wrapped_hash.delete(@order.shift) if @order.size >= @size
+      @wrapped_hash.delete(@order.shift) if @order.size > @size
+      @delete_block[k]
     end
     @wrapped_hash[k] = v
   end
@@ -30,6 +32,9 @@ class HashCache
   end
   def size
     @wrapped_hash.size
+  end
+  def max_size
+    @size
   end
 end
 
@@ -69,7 +74,14 @@ class ImageViewer < TerminalGame
       raise 'feed me folders and/or images'
     end
     files = agrgs.flat_map{|f| File.directory?(f) ? Dir.children(f).map{|p|f+'/'+p} : File.readable?(f) ? f : nil}.compact.uniq.map{|f| f.delete_prefix('./')}
-    @image_cache = HashCache.new()
+    @image_cache = HashCache.new() do |key|
+      idx = @images.find_index{|v| v[0] == key}
+      @images[idx][1] = begin
+          Vips::Image.new_from_file(key)
+        rescue Vips::Error
+          nil
+        end
+    end
     @images = files.map do |f|
       begin
         [f.tr('//','/'), Vips::Image.new_from_file(f)]
@@ -106,7 +118,11 @@ class ImageViewer < TerminalGame
       @images_cycle %= @images.size if @rotate and cycle
     end
     current_filename, current_img, gif_params = @images[@images_cycle]
-    current_img = @image_cache[current_filename] if @image_cache.has_key?(current_filename)
+    if current_img.nil?
+      clear
+      print("image #{current_filename.inspect} not found anymore ;(")
+      return
+    end
     rowsize = @draw_status_line ? @size_row : 0
     frames = []
     if gif_params
@@ -138,8 +154,6 @@ class ImageViewer < TerminalGame
     end
     move_cursor(0,0)
     imgid = kitty_graphics_img_load(buffer)
-    @image_cache[current_filename] = current_img unless @image_cache[current_filename] == current_img
-    @images[@images_cycle][1] = Vips::Image.new_from_file(current_filename)
     kitty_graphics_img_pixel_place(
       imgid,
       0,
@@ -162,6 +176,7 @@ class ImageViewer < TerminalGame
     #   id = kitty_graphics_img_load(frame.pngsave_buffer)
     #   kitty_graphics_img_pixel_place_center(id, *frame.size.map{|e| (e).to_i}, 0, -rowsize)
     # end
+    @image_cache[current_filename] = current_img
   end
 
   def input_handler(input)
@@ -170,10 +185,12 @@ class ImageViewer < TerminalGame
       @zoom /= 1.5
     when "+"
       @zoom *= 1.5
+    when "0"
+      @zoom = 1
     when "q", "\e" # escape
       exit()
     when " " # space
-      @roate_stopped = ! @roate_stopped
+      @roate_stopped = ! @roate_stopped if @rotate
     when "\e[C" # right
       @images_cycle += 1
       @images_cycle %= @images.size
@@ -184,19 +201,26 @@ class ImageViewer < TerminalGame
       @images_cycle = @images.size-1 if @images_cycle < 0
       @zoom_pos = [0,0]
       @zoom = 1
+    when "\e[5~" # screen up
+      @zoom_pos[1] -= @size_y
+      @zoom_pos[1] = 0 if @zoom_pos[1] < 0
+    when "\e[6~" # screen down
+      @zoom_pos[1] += @size_y
     when "\e[1;5A" # ctrl up
-      @zoom_pos[1] -= @size_y/5
+      @zoom_pos[1] -= @size_y/3
       @zoom_pos[1] = 0 if @zoom_pos[1] < 0
     when "\e[1;5B" # ctrl down
-      @zoom_pos[1] += @size_y/5
+      @zoom_pos[1] += @size_y/3
     when "\e[1;5C" # ctrl right
-      @zoom_pos[0] += @size_x/5
+      @zoom_pos[0] += @size_x/3
     when "\e[1;5D" # ctrl left
-      @zoom_pos[0] -= @size_x/5
+      @zoom_pos[0] -= @size_x/3
       @zoom_pos[0] = 0 if @zoom_pos[0] < 0
     when "p"
       @place += 1
       @place %= IMAGE_PLACEMENTS.length
+    when "S"
+      @draw_status_line = ! @draw_status_line
     else
       # raise input.inspect # for implementing new commands
       return
