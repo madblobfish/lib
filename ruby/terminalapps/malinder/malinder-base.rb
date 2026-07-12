@@ -91,6 +91,7 @@ CACHE_DIR_RELATIONS = CACHE_DIR + 'relations/'
 FileUtils.mkdir_p(CACHE_DIR_IMAGES)
 FileUtils.mkdir_p(CACHE_DIR_RELATIONS)
 configurable_default(:DEFAULT_HEADERS, {}) # currently unused
+configurable_default(:LOG_HEADERS_DEFAULT, %w(id year season state ts name c1 c2 c3))
 LOG_SUFFIX = LOG_SUFFIX_OVERRIDE if Object.const_defined?(:LOG_SUFFIX_OVERRIDE) && LOG_SUFFIX_OVERRIDE
 configurable_default(:LOG_SUFFIX, ENV['USER'])
 LOG_FILE_NAME = "choices-#{LOG_SUFFIX}.log"
@@ -155,7 +156,7 @@ CSV_OPTS[:skip_lines] = /^(#|$|<<+|==+|>>+|\|\|+)/
 def read_choices(file)
 	file = choices_path(file)
 	return [] if File.empty?(file)
-	headers = %w(id year season state ts name c1 c2 c3)
+	headers = LOG_HEADERS_DEFAULT
 	headers = true if File.read(file, 20).start_with?("id\t", "seencount(state)\t")
 	CSV.read(file, **CSV_OPTS, headers: headers).map do |r|
 		r = r.to_h.reject{|k,v| v.nil?}

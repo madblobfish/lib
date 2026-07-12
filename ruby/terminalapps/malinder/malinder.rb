@@ -324,7 +324,7 @@ if __FILE__ == $PROGRAM_NAME
 			puts "corrected to '#{log_value}' for you :)" unless log_value == 'seen'
 		end
 		found = false
-		headers = File.readlines(LOG_FILE).first.split("\t")
+		headers = (File.readlines(LOG_FILE).first&.split("\t") || LOG_HEADERS_DEFAULT)
 		newcontent = File.readlines(LOG_FILE).map do |e|
 			if e.start_with?("#{nime['id']}\t")
 				raise 'found anime twice!' if found
