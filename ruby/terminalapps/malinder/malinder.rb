@@ -244,7 +244,7 @@ if __FILE__ == $PROGRAM_NAME
 			res.map do |k,v|
 				r = []
 				r << '' if k == '-/*'
-				r << k.split('/').zip(prefixes)
+				r << '# ' + k.split('/').zip(prefixes)
 					.reject{|c,p|c == '*'}
 					.map{|c, p| LOG_FILE_PATH.end_with?(p+'.log') ? "choice == #{c}" : "choice-#{p} == #{c}"}
 					.join(' && ') + season_query
