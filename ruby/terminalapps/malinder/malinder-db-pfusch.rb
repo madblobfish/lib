@@ -71,11 +71,11 @@ csv.each do |entry|
 end
 
 YEAR_SEASON = {'winter'=>1, 'spring'=>2, 'summer'=>3, 'fall'=>4}
-output = merged.map{|k,v| v.values_at(*%w(id year season state ts name c1 c2 c3)) }
+output = merged.map{|k,v| v.values_at(*LOG_HEADERS_DEFAULT) }
   .sort_by{|e| x = e.values_at(1,2,0,4,5); x[1] = YEAR_SEASON[x[1]]; x.map(&:to_s).map(&:downcase)}
 
 unless OUTPUT_JSON
-  out = "id\tyear\tseason\tstate\tts\tname\tc1\tc2\tc3\n"
+  out = LOG_HEADERS_DEFAULT.join("\t") + "\n"
   out += CSV.generate(col_sep: "\t"){|o| output.each{|r| o << r.reverse.drop_while(&:nil?).reverse}}
   if File.read(LOG_FILE_PATH) == out
     STDERR.puts('', 'files do not diff')
