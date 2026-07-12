@@ -20,6 +20,7 @@ HELP_TEXT << '      --all will show missing choices'
 HELP_TEXT << '  catchup [a_log] <b_log> [c_log...] [year] [season]: shows differences in state'
 HELP_TEXT << '      limits by year and season if given'
 HELP_TEXT << '      so you can catch up, decide what to watch together now or just check in case of spoilers'
+HELP_TEXT << '      Colors: green (state same), purple (you catchup), yellow (others), white (no need, --all adds these)'
 HELP_TEXT << '      --all also works here'
 HELP_TEXT << '  db-pfusch [--help]: merge or normalize choices'
 HELP_TEXT << '      see its own help for more details'
@@ -263,21 +264,31 @@ if __FILE__ == $PROGRAM_NAME
 
 		files.map!{|f| choices_path_to_prefix(f)}
 		files.map!{|f| [f, parse_choices(f).select{|k,v| (year.nil? || v['year'] == year) && (season.nil? || v['season'] == season)}]}
+		out = []
 		sort_ids(files.map(&:last).flat_map(&:keys).uniq).each do |id|
 			states = files.map{|(f,c)| [f, c.fetch(id, {}).fetch('state', '-')]}
 			next if states.map(&:last).count('nope') >= states.length-1
 			active_aligned = states.map(&:last).uniq.one? && STATE_ACTIVE.include?(states[0][1].split(',', 2)[0])
 			differing_states = !states.map(&:last).uniq.one? && states.map{|(f,c)| STATE_LEVEL[c.split(',', 2).first]}.count(0) != states.length
-			if OPTIONS[:all] || active_aligned || differing_states
+			if active_aligned || differing_states
 				first = states.map{|(f,c)| [f, [STATE_LEVEL[c.split(',', 2).first], c.split(',', 2).last.to_i]]}.max(2){|(_,a),(_,b)| a<=>b}
-				if !first.one? && !first.map(&:last).uniq.one? && !STATE_DONE.include?(CHOICES.fetch(id,{}).fetch('state','-').split(',',2).first)
-					TerminalGame.color(first.first.first == own_choices ? 3 : 5) if STDOUT.isatty
+				first_eps = first.map(&:last).uniq.map(&:last).max
+				last_eps = states.map{|(f,c)| c.split(',', 2).last.to_i}.min
+				own_state = CHOICES.fetch(id,{}).fetch('state','-').split(',',2)
+				is_first = first_eps == own_state.last.to_i
+				diff = is_first ? (last_eps - own_state.last.to_i) : (first_eps - own_state.last.to_i)
+				color = ''
+				if !first.one? && !first.map(&:last).uniq.one? && !STATE_DONE.include?(own_state.first)
+					color = TerminalGame.get_color_code(first.first.first == own_choices ? 3 : 5) if STDOUT.isatty
 				elsif states.map(&:last).uniq.one?
-					TerminalGame.color(2) if STDOUT.isatty
+					color = TerminalGame.get_color_code(2) if STDOUT.isatty
+				else
+					next unless OPTIONS[:all]
 				end
-				puts id + states.map{|(f,c)| " #{f}:#{c}"}.join('') + TerminalGame.color_reset_code()
+				out << [diff, color + id + states.map{|(f,c)| "\t#{f}:#{c}"}.join("") + "\t" + CACHE_FULL[id.to_i]['title'] + TerminalGame.color_reset_code()]
 			end
 		end
+		out.sort_by(&:first).each{|d,l| puts l } # "diff(#{d}) #{l}"}
 
 
 	# elsif ARGV.first == 'add'
