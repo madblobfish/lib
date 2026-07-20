@@ -178,6 +178,7 @@ def read_choices(file)
 			seencount_fac = $1 ? ".#{Integer($1)}" : ''
 			"#{state},#{seencount}#{seencount_fac}".gsub('partly,0','want').gsub('plonk','broken')
 		end
+		r.delete('seencount(state)') if r['seencount(state)']
 		if r['state'] == 'seen' && cached_entry&.any? && cached_entry['num_episodes'] != 0
 			r['state'] += ",#{cached_entry['num_episodes']}"
 		end
