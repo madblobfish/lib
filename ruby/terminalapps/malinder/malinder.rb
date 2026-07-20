@@ -40,6 +40,8 @@ HELP_TEXT << '  clean: cleanup already seen'
 HELP_TEXT << '  missing: list missing episodes in current dir'
 HELP_TEXT << '  watch [--all] [log]: watch new and track in log'
 HELP_TEXT << '      --all will show all parsable files'
+# HELP_TEXT << '      --no-exclude ignore EXCLUDE_LOG_PATHS'
+# HELP_TEXT << '      --exclude-only ignore EXCLUDE_LOG_PATHS'
 HELP_TEXT << ''
 HELP_TEXT << '  --json may make it output json'
 HELP_TEXT << '  --text may make it output text'
@@ -107,6 +109,8 @@ if __FILE__ == $PROGRAM_NAME
 		interactive: ARGV.delete('--interactive') || ARGV.delete('-i'),
 		json: ARGV.delete('--json'),
 		no_default_filter: ARGV.delete('--no-default-filter'),
+		no_exclude: ARGV.delete('--no-exclude'),
+		exclude_only: ARGV.delete('--exclude-only'),
 		prefetch: ARGV.delete('--prefetch'),
 		push: ARGV.delete('--push'),
 		text: ARGV.delete('--text'),
@@ -623,12 +627,16 @@ if __FILE__ == $PROGRAM_NAME
 		socket_worked = false
 		SUBTITLE_CANIDATES = Dir[SUBTITLES_PATH + '/**/*.{ass,srt}'] rescue []
 
+		EXCLUDE_LIST = {}.merge(*(OPTIONS[:no_exclude] ? [] : EXCLUDE_LOG_PATHS).flat_map{|f| parse_choices(f)})
+			.select{|_,c| (s = c['state'].split(',', 2).first) == 'want' || STATE_LEVEL[s].to_i >= 2}.map{|_,c| c['id']}
+
 		# TODO: listen to "end-file" event
 		# TODO: query "playback-time" and log this optionally
 		last_selected = nil
 		loop do
 			files = parse_local_files(proc do |seen, ep, id, state|
-				OPTIONS[:all] || ep > seen && !(!OPTIONS[:all] && %w(nope broken seen).include?(state))
+				(OPTIONS[:all] || ep > seen && !(!OPTIONS[:all] && %w(nope broken seen).include?(state)) &&
+					(!OPTIONS[:exclude_only] && !EXCLUDE_LIST.include?(id.to_s) || OPTIONS[:exclude_only] && EXCLUDE_LIST.include?(id.to_s)))
 			end).reject{|id,eps| eps.empty?}
 			first_eps = []
 			files.each_with_index do |(id, eps), idx|

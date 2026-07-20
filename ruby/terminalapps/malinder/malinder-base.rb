@@ -90,6 +90,7 @@ CACHE_DIR_IMAGES = CACHE_DIR + 'images/'
 CACHE_DIR_RELATIONS = CACHE_DIR + 'relations/'
 FileUtils.mkdir_p(CACHE_DIR_IMAGES)
 FileUtils.mkdir_p(CACHE_DIR_RELATIONS)
+configurable_default(:EXCLUDE_LOG_PATHS, [])
 configurable_default(:DEFAULT_HEADERS, {}) # currently unused
 configurable_default(:LOG_HEADERS_DEFAULT, %w(id year season state ts name c1 c2 c3))
 LOG_SUFFIX = LOG_SUFFIX_OVERRIDE if Object.const_defined?(:LOG_SUFFIX_OVERRIDE) && LOG_SUFFIX_OVERRIDE
