@@ -55,15 +55,15 @@ csv.each do |entry|
   entry['c3'] = merged[id]['c3'] if entry['c3'].nil?
   cmp_state_level = [merged[id], entry].max(2){|a,b| STATE_LEVEL[state_split[a].first] <=> STATE_LEVEL[state_split[b].first]}
   cmp_watch_state = [merged[id], entry].max(2){|a,b| state_split[a].last <=> state_split[b].last}
-  if cmp_state_level.one?
-    if cmp_watch_state.one? && cmp_state_level != cmp_watch_state
+  if cmp_state_level.uniq.one?
+    if cmp_watch_state.uniq.one? && cmp_state_level != cmp_watch_state
       state = state_split[cmp_state_level.first].first
       cmp_state_level.first['state'] = state + ',' + state_split[cmp_watch_state.first].last
     end
     merged[id] = cmp_state_level.first
     next
   end
-  if cmp_watch_state.one?
+  if cmp_watch_state.uniq.one?
     merged[id] = cmp_watch_state.first
     next
   end
