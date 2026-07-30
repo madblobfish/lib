@@ -37,6 +37,12 @@ class TerminalGame
     def bold_code(enable = true)
       "\e[#{enable ? '' : '2'}1m"
     end
+    def underline(style = :straight)
+      code = ':' + {none: 0, straight: 1, double: 2, curly: 3, dotted: 4, dashed: 5}.fetch(style, style).to_i.to_s
+      code = '' if code == ':1'
+      return "\e[24m" if code == ':0'
+      "\e[4#{code}m"
+    end
     def color(color = 15, mode = :fg, &block)
       if block_given?
         return get_color_code(color, mode) + block[] + color_reset_code()
@@ -53,7 +59,7 @@ class TerminalGame
       "\e[0m"
     end
     def get_color_code(color = 15, mode = :fg)
-      code = {fg: 38, bg: 48}[mode]
+      code = {fg: 38, bg: 48, ul: 58}[mode]
       raise 'invalid color mode' if code.nil?
       if color.is_a? Integer
         "\e[#{code};5;#{color.to_i}m"
