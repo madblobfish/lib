@@ -648,7 +648,10 @@ if __FILE__ == $PROGRAM_NAME
 				seen_so_far -= 1 if state.last.include?(',')
 				first_eps << id if eps.map(&:last).include?(1)
 				ep = eps.map{|ep| episode_wrap(id, ep.last)}.map do |ep|
-					ret = ep == seen_so_far + 1 ? TerminalGame.color(10){"(#{ep})"} : ep.to_s
+					other = CHOICES_OTHERS.count{|_,c| c.fetch(id.to_s, {}).fetch('state', "partly,0").split(',', 2).last.to_i == ep + 1}
+					ret = TerminalGame.underline(other)
+					ret += ep == seen_so_far + 1 ? TerminalGame.color(10){"(#{ep})"} : ep.to_s
+					ret += TerminalGame.underline(:none)
 					ret += TerminalGame.color(11){']'} if ep.to_i == num_episodes
 					ret
 				end.join(', ')
