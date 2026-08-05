@@ -31,44 +31,67 @@ end
 
 load_all_to_cache()
 lock_logfile()
-merged = {}
-csv = []
-csv = read_choices(LOG_FILE_PATH) unless NOCURRENT
-ARGV.each{|f| csv += read_choices(f)}
+inputs = ARGV.map{|f| read_choices(f)}
+inputs.unshift(read_choices(LOG_FILE_PATH)) unless NOCURRENT
 state_split = lambda{|x| x['state'].split(',', 2)}
-csv.each do |entry|
-  if entry['id'].nil?
-    STDERR.puts('ID missing! throwing away for now, sorry')
-    next
-  end
-  id = entry['id'].to_s
-  unless CACHE_FULL[id.to_i] || DELETIONS[id]
-    STDERR.puts('ID Lookupfail: ' + id) unless entry['id'].nil? or id.start_with?('imdb,')
-  end
-  unless merged.has_key?(id)
-    merged[id] = entry
-    next
-  end
-  entry['ts'] = merged[id]['ts'] = [entry['ts'], merged[id]['ts']].min
-  entry['c1'] = merged[id]['c1'] if entry['c1'].nil?
-  entry['c2'] = merged[id]['c2'] if entry['c2'].nil?
-  entry['c3'] = merged[id]['c3'] if entry['c3'].nil?
-  cmp_state_level = [merged[id], entry].max(2){|a,b| STATE_LEVEL[state_split[a].first] <=> STATE_LEVEL[state_split[b].first]}
-  cmp_watch_state = [merged[id], entry].max(2){|a,b| state_split[a].last <=> state_split[b].last}
-  if cmp_state_level.uniq.one?
-    if cmp_watch_state.uniq.one? && cmp_state_level != cmp_watch_state
-      state = state_split[cmp_state_level.first].first
-      cmp_state_level.first['state'] = state + ',' + state_split[cmp_watch_state.first].last
+merged = {}
+inputs.each do |csv|
+  # stage 1 clean: one file is merged top to bottom
+  cleaned = {}
+  csv.each do |entry|
+    if entry['id'].nil?
+      STDERR.puts('ID missing! throwing away for now, sorry')
+      next
     end
-    merged[id] = cmp_state_level.first
+    id = entry['id'].to_s
+    unless CACHE_FULL[id.to_i] || DELETIONS[id]
+      STDERR.puts('ID Lookupfail: ' + id) unless entry['id'].nil? or id.start_with?('imdb,')
+    end
+    unless cleaned.has_key?(id)
+      cleaned[id] = entry
+      next
+    end
+    entry['ts'] = cleaned[id]['ts'] = [entry['ts'], cleaned[id]['ts']].min
+    entry['c1'] = cleaned[id]['c1'] if entry['c1'].nil?
+    entry['c2'] = cleaned[id]['c2'] if entry['c2'].nil?
+    entry['c3'] = cleaned[id]['c3'] if entry['c3'].nil?
+    cleaned[id] = entry # use last processed line as truth!
+  end
+  first_file = false
+  if merged.empty?
+    merged = cleaned
     next
   end
-  if cmp_watch_state.uniq.one?
-    merged[id] = cmp_watch_state.first
-    next
+
+  # stage 2 merge: files are merged by highest state
+  cleaned.each do |id, entry|
+    id = entry['id']
+    unless merged.has_key?(id)
+      merged[id] = entry
+      next
+    end
+    entry['ts'] = merged[id]['ts'] = [entry['ts'], merged[id]['ts']].min
+    entry['c1'] = merged[id]['c1'] if entry['c1'].nil?
+    entry['c2'] = merged[id]['c2'] if entry['c2'].nil?
+    entry['c3'] = merged[id]['c3'] if entry['c3'].nil?
+    cmp_state_level_lambda = lambda{|x| STATE_LEVEL[state_split[x].first]}
+    cmp_state_level = [cleaned[id], entry].max(2){|a,b| cmp_state_level_lambda[a] <=> cmp_state_level_lambda[b]}
+    cmp_watch_state = [cleaned[id], entry].max(2){|a,b| state_split[a].last <=> state_split[b].last}
+    if cmp_state_level.uniq.one?
+      if cmp_watch_state.uniq.one? && cmp_state_level != cmp_watch_state
+        cmp_state_level.first['state'] = state_split[cmp_state_level.first].first + ',' + state_split[cmp_watch_state.first].last
+      end
+      cleaned[id] = cmp_state_level.first
+      next
+    end
+    if cmp_watch_state.uniq.one?
+      cleaned[id] = cmp_watch_state.first
+      next
+    end
   end
-  merged[id] = entry # use last processed line as truth!
 end
+
+
 
 YEAR_SEASON = {'winter'=>1, 'spring'=>2, 'summer'=>3, 'fall'=>4}
 output = merged.map{|k,v| v.values_at(*LOG_HEADERS_DEFAULT) }
