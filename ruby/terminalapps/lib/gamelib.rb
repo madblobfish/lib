@@ -84,8 +84,20 @@ class TerminalGame
       system('stty '+ TTY_CLEAN_STATE)
     end
 
+    OS =
+      if RUBY_PLATFORM.downcase.end_with?('linux')
+        :linux
+      elsif RUBY_PLATFORM.match?(/darwin|mac os/)
+        :meck
+      elsif RUBY_PLATFORM.match?(/mswin|msys|mingw|cygwin|bccwin|wince|emc/)
+        :window
+      else
+        raise "PLATFORM unknown, #{RUBY_PLATFORM.inspect}"
+      end
+    SIZE_QUERY_MAGIC_NUMBER = {linux: 0x5413, meck: 0x40087468, window: 0x5401}[OS]
+
     def tty_size_query
-      raise "AHHHHHHH" unless STDOUT.ioctl(0x5413, buff="") == 0
+      raise "AHHHHHHH" unless STDOUT.ioctl(SIZE_QUERY_MAGIC_NUMBER, buff="") == 0
       # rows, cols, size_x, size_y =
       buff.unpack("SSSS")
     end
