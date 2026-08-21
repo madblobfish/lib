@@ -662,17 +662,17 @@ if __FILE__ == $PROGRAM_NAME
 				if state_string.empty? && choice.empty?
 					state_string = '[ - ]'
 				end
-				puts "#{idx}: #{id} #{state_string}'#{name}': #{ep}"
+				puts "#{[idx].map{|x| x < 10 ? (x+1) % 10 : x }[0]}: #{id} #{state_string}'#{name}': #{ep}"
 			end
 			if files.empty?
 				puts 'all seen or none here'
 				exit 0
 			end
 			roulette = first_eps.any? ? "/r(#{first_eps.count})" : ''
-			puts "which: [#{files.size.times.to_a.map{|e| e == last_selected ? "(#{e})" : e}.join('/')}#{roulette}]?"
+			puts "which: [#{files.size.times.to_a.map{|x| x < 10 ? (x+1) % 10 : x }.map{|e| e == last_selected ? "(#{e})" : e}.join('/')}#{roulette}]?"
 			user_input = STDIN.readline.rstrip().split(',',3)
 			user_input = [last_selected.to_s] if user_input == []
-			user_choice = Integer(user_input.first, 10) rescue -1
+			user_choice = [(Integer(user_input.first, 10) rescue -1)].map{|x| x>= 0 && x < 10 ? (x+9) % 10 : x }[0]
 			if user_input.first.downcase == 'r'
 				user_choice = files.keys.index(first_eps.sample)
 				user_choice = files.size.times.to_a.sample if user_input.first == 'R'
