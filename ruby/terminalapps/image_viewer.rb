@@ -192,11 +192,13 @@ class ImageViewer < TerminalGame
     when " " # space
       @roate_stopped = ! @roate_stopped if @rotate
     when "\e[C" # right
+      return if @images.one?
       @images_cycle += 1
       @images_cycle %= @images.size
       @zoom_pos = [0,0]
       @zoom = 1
     when "\e[D" # left
+      return if @images.one?
       @images_cycle -= 1
       @images_cycle = @images.size-1 if @images_cycle < 0
       @zoom_pos = [0,0]
