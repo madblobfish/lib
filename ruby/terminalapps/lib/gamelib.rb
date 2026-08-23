@@ -31,11 +31,15 @@ class TerminalGame
     def size_query
       print "\e[14t"
     end
-    def bold(enable = true)
+    def bold(enable = true, &block)
       print bold_code(enable)
+      if block_given? && enable
+        print block[]
+        print bold_code(false)
+      end
     end
     def bold_code(enable = true)
-      "\e[#{enable ? '' : '2'}1m"
+      "\e[#{enable ? '1' : '22'}m"
     end
     def underline(style = :straight)
       code = ':' + {none: 0, straight: 1, double: 2, curly: 3, dotted: 4, dashed: 5}.fetch(style, style).to_i.to_s
