@@ -413,11 +413,12 @@ class TerminalGame
   end
 
   # kitty_graphics
+  # supports_kitty_graphics, but might leave stdin dirty!
   def supports_kitty_graphics(used_in_normal_tty = !inited?)
     require 'base64'
     print "\e_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\e\\\e[c \n "
     return false unless STDIN.readpartial(8) == "\e_Gi=31;"
-    STDIN.readpartial(20) # thow away some more bytes
+    STDIN.readpartial(40) # thow away some more bytes
     return true
   end
   def _kitty_graphics_img_get_id
