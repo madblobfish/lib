@@ -208,14 +208,14 @@ class ImageViewer < TerminalGame
       @zoom_pos[1] = 0 if @zoom_pos[1] < 0
     when "\e[6~" # screen down
       @zoom_pos[1] += @size_y
-    when "\e[1;5A" # ctrl up
+    when "\e[1;5A", "\e[1;3A" # ctrl/alt up
       @zoom_pos[1] -= @size_y/3
       @zoom_pos[1] = 0 if @zoom_pos[1] < 0
-    when "\e[1;5B" # ctrl down
+    when "\e[1;5B", "\e[1;3B" # ctrl/alt down
       @zoom_pos[1] += @size_y/3
-    when "\e[1;5C" # ctrl right
+    when "\e[1;5C", "\e[1;3C" # ctrl/alt right
       @zoom_pos[0] += @size_x/3
-    when "\e[1;5D" # ctrl left
+    when "\e[1;5D", "\e[1;3D" # ctrl/alt left
       @zoom_pos[0] -= @size_x/3
       @zoom_pos[0] = 0 if @zoom_pos[0] < 0
     when "p"
