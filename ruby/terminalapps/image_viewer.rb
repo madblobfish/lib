@@ -53,6 +53,16 @@ class ImageViewer < TerminalGame
   def inspect #make errors short
     '#<ImageViewer>'
   end
+  def load_img(path)
+    [path.tr('//','/'), Vips::Image.new_from_file(path)]
+  rescue Vips::Error
+    cmd = ['ffmpeg', '-timelimit', '3', '-loglevel', 'quiet', '-ss', '1:20', '-i', path, '-vframes', '1', '-vcodec', 'png', '-an', '-f', 'image2pipe', '-']
+    png, err, status = Open3.capture3(*cmd)
+    if status == 0
+      return [path.tr('//','/'), Vips::Image.new_from_buffer(png, '')] rescue nil
+    end
+    return nil
+  end
   def initialize(agrgs)
     @require_kitty_graphics = true
     @draw_status_line = agrgs.delete('--no-status').nil? ? true : false
@@ -76,29 +86,11 @@ class ImageViewer < TerminalGame
     files = agrgs.flat_map{|f| File.directory?(f) ? Dir.children(f).map{|p|f+'/'+p} : File.readable?(f) ? f : nil}.compact.uniq.map{|f| f.delete_prefix('./')}
     @image_cache = HashCache.new() do |key|
       idx = @images.find_index{|v| v[0] == key}
-      @images[idx][1] = begin
-          Vips::Image.new_from_file(key)
-        rescue Vips::Error
-          nil
-        end
+      _, img = load_img(key)
+      @images[idx][1] = img unless img.nil?
     end
-    @images = files.map do |f|
-      begin
-        [f.tr('//','/'), Vips::Image.new_from_file(f)]
-      rescue Vips::Error
-        cmd = ['ffmpeg', '-timelimit', '1', '-loglevel', 'quiet', '-ss', '1:20', '-i', f, '-vframes', '1', '-vcodec', 'png', '-an', '-f', 'image2pipe', '-']
-        png, status = Open3.capture2(*cmd)
-        if status == 0
-          [f.tr('//','/'), Vips::Image.new_from_buffer(png, '')] rescue nil
-        else
-          nil
-        end
-      end
-    end.compact
-    unless @images.size > 0
-      raise 'no (readable and supported) images found'
-    end
-    @images.reject!{|a,b| b.nil?}
+    @images = files.map{|f| load_img(f)}.compact.reject{|a,b| b.nil?}
+    raise 'no (readable and supported) images found' unless @images.size > 0
     @images.shuffle! if @random
     @skip_next_draw = false
     @roate_stopped = false
