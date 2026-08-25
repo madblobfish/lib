@@ -112,7 +112,7 @@ class ImageViewer < TerminalGame
     current_filename, current_img, gif_params = @images[@images_cycle]
     if current_img.nil?
       clear
-      print("image #{current_filename.inspect} not found anymore ;(")
+      print("\rimage #{current_filename.inspect} not found anymore ;(")
       return
     end
     rowsize = @draw_status_line ? @size_row : 0
