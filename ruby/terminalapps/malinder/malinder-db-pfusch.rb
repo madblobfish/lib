@@ -78,7 +78,7 @@ inputs.each do |csv|
     cmp_state_level = [cleaned[id], entry].max(2){|a,b| cmp_state_level_lambda[a] <=> cmp_state_level_lambda[b]}
     cmp_watch_state = [cleaned[id], entry].max(2){|a,b| state_split[a].last <=> state_split[b].last}
     if cmp_state_level.uniq.one?
-      if cmp_watch_state.uniq.one? && cmp_state_level != cmp_watch_state
+      unless cmp_watch_state.uniq.one? && cmp_state_level.first != cmp_watch_state.first
         cmp_state_level.first['state'] = state_split[cmp_state_level.first].first + ',' + state_split[cmp_watch_state.first].last
       end
       cleaned[id] = cmp_state_level.first
