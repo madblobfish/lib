@@ -115,7 +115,7 @@ class MALinder < TerminalGame
 		end
 		paragraph =
 			if VIPS && image(anime, true)
-				break_lines(text_color_bad_words(paragraph), @cols/2+1)
+				break_lines(text_color_bad_words(paragraph), (@cols/3.0*2 - 2).floor).split("\r\n").map{|e| " "+e }.join("\r\n")
 			else
 				msg = 'Could not load image'
 				msg = 'ruby-vips not installed => graphics are not displayed' if !VIPS
@@ -141,9 +141,9 @@ class MALinder < TerminalGame
 		if VIPS && !no_redo_image
 			begin
 				current_img = image(anime)
-				scale_by = current_img.size.zip([@size_x/2, @size_y]).map{|want,have| want > have ? have/want.to_f : 1}.min
+				scale_by = current_img.size.zip([@size_x/3, @size_y]).map{|want,have| want > have ? have/want.to_f : 1}.min
 				imgid = kitty_graphics_img_load((scale_by == 1 ? current_img : current_img.resize(scale_by)).pngsave_buffer)
-				kitty_graphics_img_pixel_place_center(imgid, *current_img.size.map{|e| (e*scale_by).to_i}, (@size_x/4).to_i, 0)
+				kitty_graphics_img_pixel_place_center(imgid, *current_img.size.map{|e| (e*scale_by).to_i}, (@size_x/3).to_i, 0)
 			rescue RuntimeError => e
 				raise unless e.message.start_with?('Could not load image for: ')
 			end
