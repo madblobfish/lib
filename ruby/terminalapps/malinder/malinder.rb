@@ -678,7 +678,7 @@ if __FILE__ == $PROGRAM_NAME
 				user_choice = files.size.times.to_a.sample if user_input.first == 'R'
 				p "Roulette choose #{user_choice}"
 			end
-			last_selected = user_choice
+			last_selected = [user_choice].map{|x| x < 10 ? (x+1) % 10 : x }[0]
 			user_choice_ep = Integer(user_input[1], 10) rescue -1
 			user_choice_time = user_input[2]
 			if user_choice >= 0
@@ -701,7 +701,7 @@ if __FILE__ == $PROGRAM_NAME
 					puts 'nothing there'
 					next
 				elsif choices.length != 1
-					puts 'choose the first one'
+					puts "choose the first file available: #{choices.first.inspect}"
 				end
 
 				control_socket.write(JSON.generate({ 'command': ['set', 'pause', 'yes'] }) + "\n")
