@@ -109,7 +109,7 @@ class MALinder < TerminalGame
 						choice,
 						rel['relation'],
 						title + color_reset_code
-					].join("\t")
+					].join("  ")
 				end
 			end.join(separator)
 		end

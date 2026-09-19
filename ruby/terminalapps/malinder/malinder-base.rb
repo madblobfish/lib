@@ -320,6 +320,7 @@ rescue SocketError => e
 	raise unless e.message.include?('(getaddrinfo: ')
 	'No internet, lol'
 rescue RuntimeError => e
+	return "got error 504 (Gateway Timeout)" if e.message.start_with?('504 - ')
 	raise unless e.message.start_with?('429 - ') or e.message == 'offline'
 	'Ratelimited - got Error 429'
 end
