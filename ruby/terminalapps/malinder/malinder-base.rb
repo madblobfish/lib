@@ -109,7 +109,7 @@ configurable_default(:BAD_WORDS,
 		youku bilibili summary strongest invincible
 	)	+ [
 		'love live', 'boys love', 'sailor moon', 'music film', 'music video', 'variety program',
-		'martial art'
+		'martial art', 'martial emperor', 'spirit realm'
 	]
 )
 configurable_default(:BAD_WORDS_REGEX, /\b#{ Regexp.union(BAD_WORDS).source }\b/i)

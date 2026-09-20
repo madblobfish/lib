@@ -560,11 +560,15 @@ if __FILE__ == $PROGRAM_NAME
 				end
 			end
 			series = title.split('-', 2).first&.strip
-			if series.nil?
+			if series.nil? || series == ''
 				puts "skipping: #{f}"
 				next
 			end
-			CLEAN_CACHE[series] ||= cache_query("names textsearch '#{series}'")
+			begin
+				CLEAN_CACHE[series] ||= cache_query("names textsearch '#{series.split("'",2).first}'", true)
+			rescue RuntimeError
+				raise "at #{series.inspect}"
+			end
 			prefixes = CLEAN_CACHE[series].map{|x| "#{x['id']}-S00E#{episode.strip}-"}
 			if prefixes == 1
 				puts "rename: #{file.inspect} with prefix #{prefixes.first.inspect}?"
@@ -641,8 +645,8 @@ if __FILE__ == $PROGRAM_NAME
 			first_eps = []
 			files.each_with_index do |(id, eps), idx|
 				choice = CHOICES.fetch(id.to_s, {})
-				name = choice.fetch('name', CACHE[id]&.fetch('title', 'unknown'))
-				num_episodes = CACHE.fetch(id, {}).fetch('num_episodes', -1)
+				name = choice.fetch('name', CACHE_FULL[id]&.fetch('title', 'unknown'))
+				num_episodes = CACHE_FULL.fetch(id, {}).fetch('num_episodes', -1)
 				state = choice.fetch('state', 'partly,0').split(',', 2)
 				seen_so_far = state.last.to_i
 				seen_so_far -= 1 if state.last.include?(',')
@@ -687,7 +691,7 @@ if __FILE__ == $PROGRAM_NAME
 					puts 'not there'
 					next
 				end
-				anime = CACHE.fetch(id, {})
+				anime = CACHE_FULL.fetch(id, {})
 				current_ep, current_time = CHOICES.fetch(id.to_s, {}).fetch('state', ',0').split(',', 2).last.split(',', 2)
 				current_ep = current_ep.to_i
 				current_ep -= 1 if current_time
