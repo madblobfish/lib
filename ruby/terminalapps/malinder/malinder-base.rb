@@ -308,7 +308,7 @@ def fetch_related(id, sleeps=false, nofetch=false)
 		elsif age.to_f <= 1
 			return 'Ratelimited - internally'
 		end
-		related = fetch("https://api.jikan.moe/v4/anime/#{id.to_i}/relations").body
+		related = fetch("https://api.tenrai.org/v1/anime/#{id.to_i}/relations").body
 		if related.include?('"status":500,')
 			(return "Error 500: #{JSON.parse(related)['message']}") rescue nil
 			return 'Error 500'
