@@ -31,6 +31,12 @@ class TerminalGame
     def size_query
       print "\e[14t"
     end
+    def color_stack_push
+      "\e]30001\e\\"
+    end
+    def color_stack_pop
+      "\e]30101\e\\"
+    end
     def bold(enable = true, &block)
       print bold_code(enable)
       if block_given? && enable
