@@ -274,6 +274,6 @@ class MALinder < TerminalGame
 	end
 
 	def text_color_bad_words(text)
-		text.gsub(BAD_WORDS_REGEX){|w| get_color_code([255,0,0]) + w + color_reset_code()}
+		text.gsub(BAD_WORDS_REGEX){|w| color_stack_push()+get_color_code([255,0,0]) + w + color_reset_code()+color_stack_pop()}
 	end
 end
