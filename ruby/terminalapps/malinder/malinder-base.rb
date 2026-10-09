@@ -315,7 +315,12 @@ def fetch_related(id, sleeps=false, nofetch=false)
 		end
 		File.write(cached_file, related)
 	end
-	JSON.parse(related).fetch('data').map{|e| e["entries"] = e["entry"]; e}.select{|e| e["entries"]&.any?}
+	ret = JSON.parse(related).fetch('data').flat_map{|e| e.fetch("entries", e.fetch('entry', e))}
+	ret.each{|r|
+		r["mal_id"] ||= r["malId"]
+		r["title"] ||= r["name"]
+	}
+	ret
 rescue SocketError => e
 	raise unless e.message.include?('(getaddrinfo: ')
 	'No internet, lol'

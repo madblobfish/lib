@@ -468,7 +468,7 @@ if __FILE__ == $PROGRAM_NAME
 		if OPTIONS[:recurse]
 			offline = is_offline?
 			seen = [id]
-			while search = related.flat_map{|a| a['entry']}.select{|a| a['type'] == 'anime' && ! seen.include?(a['mal_id'])}.first
+			while search = related.select{|a| a['type'] == 'anime' && ! seen.include?(a['mal_id'])}.first
 				rel = fetch_related(search['mal_id'], !offline)
 				if rel == 'No internet, lol'
 					print '.'
@@ -482,14 +482,14 @@ if __FILE__ == $PROGRAM_NAME
 			end
 		end
 		output_or_process(
-			lambda{related.map{|a|a["id"]}.sort()},
+			lambda{related.select{|a| a['type'] == 'anime'}.map{|a|a["mal_id"]}.sort()},
 			related,
 			'well... use --json or --interactive here for now' # no clue how to present this
 		)
 	elsif ARGV[0] == 'fetch_related'
-		p fetch_related(ARGV[1].to_i).flat_map{|rel|rel['entry']}
-		p fetch_related(ARGV[1].to_i).flat_map{|rel|rel['entry'].map{|r| r['mal_id']}}
-		p fetch_related(ARGV[1].to_i).flat_map{|rel|rel['entry'].map{|r| CHOICES.fetch(r['mal_id'].to_s, {}).fetch('state', '-')}}
+		p fetch_related(ARGV[1].to_i)
+		p fetch_related(ARGV[1].to_i).select{|a| a['type'] == 'anime'}.map{|r| r['mal_id']}
+		p fetch_related(ARGV[1].to_i).flat_map{|r| CHOICES.fetch(r['mal_id'].to_s, {}).fetch('state', '-')}
 
 	elsif ARGV.first == 'show' && ARGV.length == 2
 		id = Integer(ARGV[1], 10)

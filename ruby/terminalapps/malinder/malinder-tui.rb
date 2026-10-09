@@ -81,36 +81,34 @@ class MALinder < TerminalGame
 			paragraph += 'Nothing'
 		elsif related.any?
 			paragraph += related.map do |rel|
-				rel['entry'].map do |r|
-					id = r['mal_id']
-					cache = CACHE[id] if r['type'] == 'anime'
-					title = r['name']
-					# color pattern:
-					## yellow when not in CACHE
-					## redish/orange when default filterd (in full cache)
-					## white when in CACHE
-					## gray when not an anime
-					color = [180,180,0]
-					color = [200,100,60] if CACHE_FULL.has_key?(id)
-					if cache
-						title = cache.fetch('alternative_titles', {})['en'] rescue nil
-						title ||= cache['title']
-						color = [255] * 3
-					end
-					choice = CHOICES.fetch(id.to_s, {}).fetch('state', '-')
-					if r['type'] != 'anime'
-						choice = '-'
-						color = [150] * 3
-					end
-					url_prefix = MAL_PREFIX
-					url_prefix = MAL_MANGA_PREFIX if r['type'] == 'manga'
-					[
-						get_color_code(color) + url_prefix + id.to_s,
-						choice,
-						rel['relation'],
-						title + color_reset_code
-					].join("  ")
+				id = rel.fetch('mal_id')
+				cache = CACHE[id] if rel['type'] == 'anime'
+				title = rel['title']
+				# color pattern:
+				## yellow when not in CACHE
+				## redish/orange when default filterd (in full cache)
+				## white when in CACHE
+				## gray when not an anime
+				color = [180,180,0]
+				color = [200,100,60] if CACHE_FULL.has_key?(id)
+				if cache
+					title = cache.fetch('alternative_titles', {})['en'] rescue nil
+					title ||= cache['title']
+					color = [255] * 3
 				end
+				choice = CHOICES.fetch(id.to_s, {}).fetch('state', '-')
+				if rel['type'] != 'anime'
+					choice = '-'
+					color = [150] * 3
+				end
+				url_prefix = MAL_PREFIX
+				url_prefix = MAL_MANGA_PREFIX if rel['type'] == 'manga'
+				[
+					get_color_code(color) + url_prefix + id.to_s,
+					choice,
+					rel['relation'],
+					title + color_reset_code()
+				].join("  ")
 			end.join(separator)
 		end
 		paragraph =
@@ -185,13 +183,12 @@ class MALinder < TerminalGame
 				return
 			end
 			already_seen = UNDO_BUFFER.select{|e| e[:type]==:log}.map{|e| e[:anime]['id'] }
-			animes = related.flat_map{|r|
-				r['entry']
-					.reject{|e| e['type'] != 'anime'}
-					.reject{|e| @season.map{|a|a['id']}.include?(e['mal_id'])}
-					.reject{|e| CHOICES.has_key?(e['mal_id'].to_s) if input == 'r'}
-					.reject{|e| already_seen.include?(e['mal_id'])}
-			}.uniq.map{|e| (input == 'r' ? CACHE : CACHE_FULL)[e['mal_id']]}.compact
+			animes = related
+				.reject{|e| e['type'] != 'anime'}
+				.reject{|e| @season.map{|a|a['id']}.include?(e['mal_id'])}
+				.reject{|e| CHOICES.has_key?(e['mal_id'].to_s) if input == 'r'}
+				.reject{|e| already_seen.include?(e['mal_id'])}
+				.uniq.map{|e| (input == 'r' ? CACHE : CACHE_FULL)[e['mal_id']]}.compact
 			if animes.empty?
 				print("\rnothing found or already in choices")
 				return
