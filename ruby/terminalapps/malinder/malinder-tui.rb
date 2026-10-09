@@ -113,11 +113,11 @@ class MALinder < TerminalGame
 		end
 		paragraph =
 			if VIPS && image(anime, true)
-				break_lines(text_color_bad_words(paragraph), (@cols/3.0*2 - 2).floor).split("\r\n").map{|e| " "+e }.join("\r\n")
+				break_lines_optimize(text_color_bad_words(paragraph), (@cols/3.0*2 - 2).floor, squeeze: true).split("\r\n").map{|e| " "+e }.join("\r\n")
 			else
 				msg = 'Could not load image'
 				msg = 'ruby-vips not installed => graphics are not displayed' if !VIPS
-				"#{break_lines(text_color_bad_words(paragraph), @cols)}\n\n\nNote: #{msg}"
+				"#{break_lines_optimize(text_color_bad_words(paragraph), @cols, squeeze: true)}\n\n\nNote: #{msg}"
 			end.gsub(/\n(\s*\n)+/, "\n\n").gsub(/\n/, "\r\n").split("\r\n")
 		@par_len = paragraph.length
 		print(paragraph.drop(@scroll).take(@rows - 2).join("\r\n"))

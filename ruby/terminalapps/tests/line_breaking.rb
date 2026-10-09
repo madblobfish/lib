@@ -10,6 +10,8 @@ class LineBreaking < TerminalGame
     @annotations = true
     @hyphenate_harder = false
     @stretch = true
+    @squeeze = true
+    @optimized = false
     @columns = columns
 
     @text = text || (
@@ -30,6 +32,13 @@ class LineBreaking < TerminalGame
     )
   end
 
+  def call_break(t,c, **args)
+    if @optimized
+      break_lines_optimize(t,c,**args)
+    else
+      break_lines(t,c,**args)
+    end
+  end
   def draw
     clear
     move_cursor
@@ -37,14 +46,14 @@ class LineBreaking < TerminalGame
     spaces_between_columns = @columns - 1
     spaces_between_columns_amount = 3
     column_size = (@size[1] / @columns) - spaces_between_columns*spaces_between_columns_amount
-    # raise "AHHH" if column_size <= 4
     begin
-      text = break_lines(
+      text = call_break(
         @text,
         column_size,
         hyphenation: @hyphenation,
         hyphenate_harder: @hyphenate_harder,
         stretch: @stretch,
+        squeeze: @squeeze,
       )
       orig_text = text
       hyphen_score = text.hyphens.count{|e| e[:result].first.chomp!('-'); e[:result].map(&:length).min <= 3 }
@@ -55,7 +64,7 @@ class LineBreaking < TerminalGame
       print text.split("\r\n").map{|s| lengths << s.length; @annotations ? "#{s.inspect} (#{s.length})" : s }[@scroll_pos[0]..(@scroll_pos[0] + @size[0])].join("\r\n")
       print "\r\n\r\n"
       hyphenation = @hyphenation ? ', hyphenated' + (@hyphenate_harder ? ' hard': '') : ''
-      puts "Wanted Size: #{@size[1]}, columns: #{@columns}, column size: #{column_size}#{hyphenation}#{@stretch ? ', stretchy' : ''}\r"
+      puts "Wanted Size: #{@size[1]}, columns: #{@columns}, column size: #{column_size}#{hyphenation}#{@stretch ? ', stretchy' : ''}#{@squeeze ? ', squeezey' : ''}#{@optimized ? ', optimizedy' : ''}\r"
       puts "#{color(9)}badness score: #{orig_text.badness}#{color_reset_code}\r"
       # puts "whitespace score: #{lengths.map{|l| r = (@size[1] - l); r <= 2 ? 0 : l == 0 ? 0 : r}.sum}\r"
       puts "hyphen count: #{orig_text.hyphens.count}, hyphen score: #{hyphen_score}\r"
@@ -90,6 +99,10 @@ class LineBreaking < TerminalGame
       @columns = 1 if @columns <= 0
     when "s"
       @stretch = ! @stretch
+    when "S"
+      @squeeze = ! @squeeze
+    when "o"
+      @optimized = ! @optimized
     when "n"
       @annotations = ! @annotations
     when "h"

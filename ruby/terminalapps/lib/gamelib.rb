@@ -133,11 +133,19 @@ class TerminalGame
       def string.badness=(badness); @badness = badness; end
       def string.badness; @badness; end
     end
+    SQUEEZE_REGEXP = /([.,?:!"()]) (?<=[^"(])| (["(])/
+    def __break_lines_squeeze(string, times)
+      times.times do
+        string.sub!(SQUEEZE_REGEXP, '\1\2')
+      end
+      string
+    end
     def __break_lines_stretch(string, width)
-      if string.length < width # underfull, try duplicating single spaces
+      length = remove_escape_codes(string).length
+      if length < width # underfull, try duplicating single spaces
         split_line = string.split(/ \b/)
         rng = Random.new(string.hash)
-        (width - string.length).times do
+        (width - length).times do
           break if split_line.one?
           location = rng.rand(split_line.length-1)
           split_line[location] = split_line[location] + '  ' + split_line.delete_at(location+1)
@@ -161,6 +169,7 @@ class TerminalGame
       punctation = opts.fetch(:punctation, /(?:[ .,!—()\n-])/)
       hyphenation = opts.fetch(:hyphenation, true)
       stretch = opts.fetch(:stretch, true)
+      squeeze = opts.fetch(:squeeze, false)
       hyphenate_harder = opts.fetch(:hyphenate_harder, false) ? {left: 0, right: 0} : {}
       ignore_whitespace = opts.fetch(:ignore_whitespace, 2)
       badness_window_length = opts.fetch(:ignore_whitespace, 3)
@@ -185,9 +194,19 @@ class TerminalGame
       while not rest.empty?
         start, separator, rest = rest.partition(punctation)
         current_length = remove_escape_codes(current_line+start+separator).length
+        current_line_space = remove_escape_codes(current_line + separator).length
+        space_left = width - current_line_space + (separator == ' ' ? 1 : 0)
+        if squeeze && start && space_left < start.length
+          space_squeezeable = remove_escape_codes(current_line+separator+start).scan(SQUEEZE_REGEXP).count
+          rest_len = remove_escape_codes(start).length
+          if space_left + space_squeezeable > rest_len
+            squeeze_amount = rest_len - space_left
+            current_line = __break_lines_squeeze(current_line, squeeze_amount)
+            current_length -= squeeze_amount
+            current_line_space -= squeeze_amount
+          end
+        end
         if current_length > width + (separator == ' ' ? 1 : 0)
-          current_line_space = remove_escape_codes(current_line + separator).length
-          space_left = width - current_line_space + (separator == ' ' ? 1 : 0)
           hyphenation = hyph[start, space_left]
           if hyphenation.first && hyphenation.last.length <= width
             current_line = __break_lines_stretch(current_line, width-hyphenation.first.length) if stretch
@@ -275,6 +294,16 @@ class TerminalGame
       _break_lines_mod_string(ret)
       ret.hyphens = hyphens
       ret.badness = badness
+      ret
+    end
+    def break_lines_optimize(string, width, **opts)
+      opts[:squeeze] = false if s = opts[:squeeze]
+      ret = break_lines(string, width, **opts)
+      if s && ret.hyphens.count > 0
+        opts[:squeeze] = true
+        ret_s = break_lines(string, width, **opts)
+        ret = ret_s if ret_s.hyphens.count < ret.hyphens.count
+      end
       ret
     end
   end
