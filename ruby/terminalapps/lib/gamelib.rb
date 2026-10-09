@@ -299,10 +299,11 @@ class TerminalGame
     def break_lines_optimize(string, width, **opts)
       opts[:squeeze] = false if s = opts[:squeeze]
       ret = break_lines(string, width, **opts)
-      if s && ret.hyphens.count > 0
+      if s
         opts[:squeeze] = true
         ret_s = break_lines(string, width, **opts)
-        ret = ret_s if ret_s.hyphens.count < ret.hyphens.count
+        hyph = ret.hyphens.count - ret_s.hyphens.count
+        ret = ret_s if hyph > 0 || (hyph == 0 && ret.badness - ret_s.badness >= 50)
       end
       ret
     end
