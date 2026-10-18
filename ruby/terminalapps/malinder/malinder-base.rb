@@ -98,7 +98,7 @@ configurable_default(:LOG_SUFFIX, ENV['USER'])
 LOG_FILE_NAME = "choices-#{LOG_SUFFIX}.log"
 configurable_default(:LOG_FILE_PATH, "#{CONFIG_DIR}#{LOG_FILE_NAME}")
 configurable_default(:LOCKING, true)
-configurable_default(:FAV_FILE_PATH, "#{CONFIG_DIR}favorites#{LOG_SUFFIX}.txt")
+configurable_default(:FAV_FILE_PATH, "#{CONFIG_DIR}favorites-#{LOG_SUFFIX}.txt")
 configurable_default(:DELETIONS_PATH, "#{SOURCES_DIR}deletions.txt")
 configurable_default(:OFFSETS_PATH, "#{SOURCES_DIR}offsets.txt")
 configurable_default(:BAD_WORDS,
