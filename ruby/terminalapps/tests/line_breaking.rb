@@ -1,17 +1,18 @@
 require_relative '../lib/gamelib'
 
 class LineBreaking < TerminalGame
-  def initialize(size_x=13, size_y=33, text=nil, columns=1)
+  def initialize(size_x=105, size_y=33, text=nil, columns=1)
     @fps = :manual
 
     @scroll_pos = [0,0]
     @size = [size_y, size_x]
     @hyphenation = true
     @annotations = true
+    @metadata = false
     @hyphenate_harder = false
     @stretch = true
     @squeeze = true
-    @optimized = false
+    @optimized = true
     @columns = columns
 
     @text = text || (
@@ -61,14 +62,28 @@ class LineBreaking < TerminalGame
         c = text.split("\r\n").each_slice(@size[0])
         text = c.first.zip(*c.drop(1).take(@columns - 1)).map{|arr| arr.compact.map{|s|s.ljust(column_size, ' ')}.join(' '*spaces_between_columns_amount) }.join("\r\n")
       end
-      print text.split("\r\n").map{|s| lengths << s.length; @annotations ? "#{s.inspect} (#{s.length})" : s }[@scroll_pos[0]..(@scroll_pos[0] + @size[0])].join("\r\n")
       print "\r\n\r\n"
-      hyphenation = @hyphenation ? ', hyphenated' + (@hyphenate_harder ? ' hard': '') : ''
-      puts "Wanted Size: #{@size[1]}, columns: #{@columns}, column size: #{column_size}#{hyphenation}#{@stretch ? ', stretchy' : ''}#{@squeeze ? ', squeezey' : ''}#{@optimized ? ', optimizedy' : ''}\r"
-      puts "#{color(9)}badness score: #{orig_text.badness}#{color_reset_code}\r"
-      # puts "whitespace score: #{lengths.map{|l| r = (@size[1] - l); r <= 2 ? 0 : l == 0 ? 0 : r}.sum}\r"
-      puts "hyphen count: #{orig_text.hyphens.count}, hyphen score: #{hyphen_score}\r"
-      # puts "#{orig_text.hyphens.map{|h| h.inspect }.join("\r\n")}"
+      print text.split("\r\n").map{|s| lengths << s.length; @annotations ? " #{s.inspect} (#{s.length})" : ' ' + s }[@scroll_pos[0]..(@scroll_pos[0] + @size[0])].join("\r\n")
+      print "\r\n\r\n"
+      if @metadata
+        hyphenation = @hyphenation ? ', hyphenated' + (@hyphenate_harder ? ' hard': '') : ''
+        puts "Wanted Size: #{@size[1]}, columns: #{@columns}, column size: #{column_size}#{hyphenation}#{@stretch ? ', stretchy' : ''}#{@squeeze ? ', squeezey' : ''}#{@optimized ? ", optimizedy(#{orig_text.optimizer_res.join(', ')})" : ''}\r"
+        puts "#{color(9)}badness score: #{orig_text.badness}#{color_reset_code}\r"
+        # puts "whitespace score: #{lengths.map{|l| r = (@size[1] - l); r <= 2 ? 0 : l == 0 ? 0 : r}.sum}\r"
+        puts "hyphen count: #{orig_text.hyphens.count}, hyphen score: #{hyphen_score}\r"
+        # puts "#{orig_text.hyphens.map{|h| h.inspect }.join("\r\n")}"
+      else
+        puts "Commands:"
+        puts "\r   s       - toggle stretch"
+        puts "\r   shift+s - toggle squeeze"
+        puts "\r   c       - add column"
+        puts "\r   shift+c - remove column"
+        puts "\r   h       - toggle hyphenation"
+        puts "\r   shift+h - hyphenate stronger or normal"
+        puts "\r   n       - toggle annotate"
+        puts "\r   o       - toggle optimize"
+        puts "\r   m       - show inner metadata"
+      end
     rescue TerminalGameException => e
       puts e.message
     end
@@ -105,6 +120,8 @@ class LineBreaking < TerminalGame
       @optimized = ! @optimized
     when "n"
       @annotations = ! @annotations
+    when "m"
+      @metadata = ! @metadata
     when "h"
       @hyphenation = ! @hyphenation
     when "H"
