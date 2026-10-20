@@ -101,6 +101,7 @@ configurable_default(:LOCKING, true)
 configurable_default(:FAV_FILE_PATH, "#{CONFIG_DIR}favorites-#{LOG_SUFFIX}.txt")
 configurable_default(:DELETIONS_PATH, "#{SOURCES_DIR}deletions.txt")
 configurable_default(:OFFSETS_PATH, "#{SOURCES_DIR}offsets.txt")
+configurable_default(:PARAGRAPHING_OPTIONS, {squeeze: true, stretch: true, hyphenation: true})
 configurable_default(:BAD_WORDS,
 	%w(
 		mini idol cultivat chibi promotion game pokemon pokémon sport mecha machine transformer

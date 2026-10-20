@@ -132,8 +132,10 @@ class TerminalGame
       def string.hyphens; @hyphens; end
       def string.badness=(badness); @badness = badness; end
       def string.badness; @badness; end
+      def string.optimizer_res=(optimizer_res); @optimizer_res = optimizer_res; end
+      def string.optimizer_res; @optimizer_res||[]; end
     end
-    SQUEEZE_REGEXP = /([.,?:!"()]) (?<=[^"(])| (["(])/
+    SQUEEZE_REGEXP = /([.,?;:!"()]) (?<=[^"(])| (["(])/
     def __break_lines_squeeze(string, times)
       times.times do
         string.sub!(SQUEEZE_REGEXP, '\1\2')
@@ -143,16 +145,18 @@ class TerminalGame
     def __break_lines_stretch(string, width)
       length = remove_escape_codes(string).length
       if length < width # underfull, try duplicating single spaces
+        stretched_amount = 0
         split_line = string.split(/ \b/)
         rng = Random.new(string.hash)
         (width - length).times do
           break if split_line.one?
           location = rng.rand(split_line.length-1)
           split_line[location] = split_line[location] + '  ' + split_line.delete_at(location+1)
+          stretched_amount += 1
         end
-        split_line.join(' ')
+        [split_line.join(' '), stretched_amount]
       else
-        string
+        [string, 0]
       end
     end
     def break_lines(string, width, **opts)
@@ -166,7 +170,8 @@ class TerminalGame
         return ret
       end
 
-      punctation = opts.fetch(:punctation, /(?:[ .,!—()\n-])/)
+      punctuation = opts.fetch(:punctuation, /(?:[ .,!?—()\n-])/)
+      aesthetic_punctuation = /(?:[.,!?)])/
       hyphenation = opts.fetch(:hyphenation, true)
       stretch = opts.fetch(:stretch, true)
       squeeze = opts.fetch(:squeeze, false)
@@ -192,7 +197,7 @@ class TerminalGame
       rest = string
       current_line = ''
       while not rest.empty?
-        start, separator, rest = rest.partition(punctation)
+        start, separator, rest = rest.partition(punctuation)
         current_length = remove_escape_codes(current_line+start+separator).length
         current_line_space = remove_escape_codes(current_line + separator).length
         space_left = width - current_line_space + (separator == ' ' ? 1 : 0)
@@ -204,12 +209,16 @@ class TerminalGame
             current_line = __break_lines_squeeze(current_line, squeeze_amount)
             current_length -= squeeze_amount
             current_line_space -= squeeze_amount
+            badness += 2 * squeeze_amount
           end
         end
         if current_length > width + (separator == ' ' ? 1 : 0)
           hyphenation = hyph[start, space_left]
           if hyphenation.first && hyphenation.last.length <= width
-            current_line = __break_lines_stretch(current_line, width-hyphenation.first.length) if stretch
+            if stretch
+              current_line, stretched = __break_lines_stretch(current_line, width-hyphenation.first.length)
+              badness += stretched*3 if stretch
+            end
             out += current_line + hyphenation.first + "\r\n"
             line += 1
             current_line_space += hyphenation.first.length
@@ -237,12 +246,18 @@ class TerminalGame
           else # no hyphenation found
             raise TerminalGameException, "not enough space" if current_line == ''
             current_line.chomp!(' ') # eat trailing space
-            current_line = __break_lines_stretch(current_line, width) if stretch
+            if stretch
+              current_line, stretched = __break_lines_stretch(current_line, width)
+              badness += stretched*3 if stretch
+            end
             out += current_line + "\r\n"
             line += 1
             doover_hyphenate = false
-            if current_line[-1].match?(punctation) && start == '' && separator == ' '
+            if current_line[-1].match?(punctuation) && start == '' && separator == ' '
               separator = '' # cut off spaces following linebreaks and punctation
+            end
+            if current_line[-1].match?(aesthetic_punctuation)
+              badness -= 20
             end
             current_line = ''
 
@@ -281,11 +296,15 @@ class TerminalGame
         end
       end
       current_line.chomp!(' ')
-      current_line = __break_lines_stretch(current_line, width) if stretch && current_line.length+ignore_whitespace >= [width*0.85, 2].max
+      if stretch && current_line.length+ignore_whitespace >= [width*0.85, 2].max
+        current_line, stretched = __break_lines_stretch(current_line, width)
+        badness += stretched*3
+      end
       case current_line.length
       when 1..14
         badness += 100
       when (width-ignore_whitespace)..(width)
+        badness -= 50 if current_line.length == width
         # noop :)
       when ([width*0.85, 2].max)..(width-ignore_whitespace)
         badness += 100
@@ -297,14 +316,16 @@ class TerminalGame
       ret
     end
     def break_lines_optimize(string, width, **opts)
-      opts[:squeeze] = false if s = opts[:squeeze]
-      ret = break_lines(string, width, **opts)
-      if s
-        opts[:squeeze] = true
-        ret_s = break_lines(string, width, **opts)
-        hyph = ret.hyphens.count - ret_s.hyphens.count
-        ret = ret_s if hyph > 0 || (hyph == 0 && ret.badness - ret_s.badness >= 50)
-      end
+      # todo add support to remove hyphenation and other params to run against the quality function below
+      variant_opts = %i(
+        sqeeze
+        hyphenation
+      ).map{|o| o if opts[o] }.compact
+      variants = [nil].product(*variant_opts.map{|x|[{x=>false},{x=>true}]}).map{|x| opts.merge(*x.compact)}
+      variants = [] if opts[:no_optimize]
+      variants += [opts.dup]
+      ret, v = variants.uniq.map{|v| [break_lines(string, width, **v), v]}.min{|(a,_),(b,_)| a.hyphens.count*150 + a.badness <=> b.hyphens.count*150 + b.badness}
+      ret.optimizer_res = v.select{|_,v|v}.keys
       ret
     end
   end
