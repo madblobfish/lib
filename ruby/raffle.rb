@@ -4,7 +4,7 @@ def raffle(names, lots)
   raise "doesn't work that way" if names.length <= lots || lots <= 0
   h = lambda{|seed, data| OpenSSL::HMAC.hexdigest("SHA256", seed, data)}
 
-  seed = h["fixed-pre-seed", names.join("\n")]
+  seed = h["fixed-pre-seed", names.sort.join("\n").downcase]
   names.sort_by{|n| h[seed, n]}.take(lots)
 end
 
